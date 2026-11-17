@@ -6,3 +6,17 @@ local.properties
 keystore.properties
 *.jks
 *.keystore
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Editors / IDEs (Visual Studio, VS Code, CLion, CMake presets)
+.vs/
+.vscode/
+.idea/
+*.user
+CMakeUserPresets.json
+
+# Claude Code: personal settings only. Skills and CLAUDE.md are shared and committed.
+.claude/settings.local.json

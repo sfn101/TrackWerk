@@ -44,9 +44,12 @@ std::string unique_render_path(FileSystem& fs, const std::string& dir, const std
 
 // ─── SAVE ────────────────────────────────────────────────────────────────────────────────────────
 
+static std::string project_save_path(const songcore::SongcoreHost& host, FileSystem& fs) {
+    return fs.projects_directory() + "/" + songcore::project_file_name(host.project().name) + ".ptp";
+}
+
 ActionResult save_project(songcore::SongcoreHost& host, FileSystem& fs, AppState& s) {
-    const std::string path =
-        fs.projects_directory() + "/" + songcore::project_file_name(host.project().name) + ".ptp";
+    const std::string path = project_save_path(host, fs);
 
     if (!write_project(host, fs, path)) return ActionResult{false, "SAVE FAILED"};
 
@@ -135,6 +138,16 @@ bool copy_in_pieces(const std::string& from, const std::string& to,
 }
 
 }  // namespace
+
+bool save_would_replace_other_song(const songcore::SongcoreHost& host, FileSystem& fs, const AppState& s) {
+    const std::string target = project_save_path(host, fs);
+    if (!fs.file_exists(target)) return false;
+#ifdef _WIN32
+    return comparable_path(target) != comparable_path(s.projectPath);   // the file system ignores case
+#else
+    return target != s.projectPath;
+#endif
+}
 
 ActionResult collect_project(const songcore::SongcoreHost& host, FileSystem& fs,
                              const std::string& folder, const std::function<void(float)>& progress) {

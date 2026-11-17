@@ -47,6 +47,16 @@ void InputDispatcher::leave_to(ScreenType back) {
     go_to_screen(s_, {back, s_.previousColumn});
 }
 
+void InputDispatcher::save_project_now() {
+    before_save();
+    const ActionResult r = save_project(host_, fs_, s_);
+    set_status(s_, r.message, r.ok);
+}
+
+void InputDispatcher::open_project_browser() {
+    open_file_browser(AppState::BrowserPurpose::LOAD_PROJECT, browser_dir(BrowserDir::PROJECTS), {"ptp", "m8s"});
+}
+
 // ─── What A does ─────────────────────────────────────────────────────────────────────────────────
 
 void InputDispatcher::project_action() {
@@ -57,15 +67,15 @@ void InputDispatcher::project_action() {
 
         case ProjectRow::PROJECT:
             switch (s_.projectCursorColumn) {
-                case 1: {   // SAVE
-                    before_save();
-                    const ActionResult r = save_project(host_, fs_, s_);
-                    set_status(s_, r.message, r.ok);
+                case 1:     // SAVE: another song already at Projects/<name>.ptp asks first
+                    if (save_would_replace_other_song(host_, fs_, s_))
+                        s_.confirm.open(ConfirmDialogState::Kind::SAVE_OVERWRITE);
+                    else
+                        save_project_now();
                     break;
-                }
-                case 2:     // LOAD
-                    open_file_browser(AppState::BrowserPurpose::LOAD_PROJECT,
-                                      browser_dir(BrowserDir::PROJECTS), {"ptp", "m8s"});
+                case 2:     // LOAD, asking like NEW
+                    if (s_.project_dirty()) s_.confirm.open(ConfirmDialogState::Kind::LOAD_DISCARD);
+                    else                    open_project_browser();
                     break;
                 case 3:     // NEW
                     // Only ask if there is something to lose.

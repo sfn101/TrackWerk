@@ -988,6 +988,17 @@ if(PT_STUDIO_CHECK)
  target_compile_options(ptsettings-autosave-check PRIVATE -UNDEBUG)
 endif()
 
+# The damaged-file and LOAD/SAVE prompt checks (specs/audit-fixes-batch1.md). Portable, no assert:
+# CI runs them on Linux and Windows. On Windows turn on PT_SAFETY_CHECK alone; the rest of
+# PT_STUDIO_CHECK is Linux-only.
+option(PT_SAFETY_CHECK "Build the damaged-file and prompt checks" OFF)
+if(PT_STUDIO_CHECK OR PT_SAFETY_CHECK)
+ add_executable(ptcorrupt-files-check ../tests/studio/corrupt_files.cpp)
+ target_link_libraries(ptcorrupt-files-check PRIVATE pt-ui)
+ add_executable(ptload-save-prompts-check ../tests/studio/load_save_prompts.cpp)
+ target_link_libraries(ptload-save-prompts-check PRIVATE pt-ui)
+endif()
+
 # Reproducible public metadata; test fixture paths remain test-local.
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/pt_reproducible.cmake")
 pt_public_library_prefixes("${CMAKE_CURRENT_SOURCE_DIR}")

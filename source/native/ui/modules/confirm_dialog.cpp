@@ -38,6 +38,8 @@ std::string confirm_dialog_title(ConfirmDialogState::Kind kind) {
         case ConfirmDialogState::Kind::RECOVER:     return "RECOVER WORK?";
         case ConfirmDialogState::Kind::COLLECT_EXISTS: return "ALREADY IN SONGS";
         case ConfirmDialogState::Kind::FIRST_BEAT:  return "DISCARD WORK?";
+        case ConfirmDialogState::Kind::LOAD_DISCARD:   return "UNSAVED CHANGES - LOAD ANYWAY?";
+        case ConfirmDialogState::Kind::SAVE_OVERWRITE: return "SONG EXISTS - OVERWRITE?";
         case ConfirmDialogState::Kind::NONE:        break;
     }
     return "";
@@ -46,15 +48,18 @@ std::string confirm_dialog_title(ConfirmDialogState::Kind kind) {
 void draw_confirm_box(Canvas& c, const std::string& title, const Theme& t) {
     const std::string instruction = "A=YES  B=NO";
 
-    draw_modal_box(c, BOX_X, BOX_Y, BOX_W, BOX_H, t);
-
     const int titleW = Canvas::text_width(title, DLG_CHAR_SPACING, DLG_FONT_SCALE);
     const int instrW = Canvas::text_width(instruction, DLG_CHAR_SPACING, DLG_FONT_SCALE);
+    // Widened for a long question, as draw_choice_box does; the short ones keep the old box.
+    const int boxW = std::max(BOX_W, titleW + 48);
+    const int boxX = (DESIGN_W - boxW) / 2;
 
-    c.draw_text(title, BOX_X + (BOX_W - titleW) / 2, BOX_Y + DLG_TITLE_Y, t.textTitle,
+    draw_modal_box(c, boxX, BOX_Y, boxW, BOX_H, t);
+
+    c.draw_text(title, boxX + (boxW - titleW) / 2, BOX_Y + DLG_TITLE_Y, t.textTitle,
                 DLG_CHAR_SPACING, DLG_FONT_SCALE);
     // ⚠️ The YES line takes TXT VALUE, the one ink role bright in every palette.
-    c.draw_text(instruction, BOX_X + (BOX_W - instrW) / 2, BOX_Y + DLG_INSTR_Y, t.textValue,
+    c.draw_text(instruction, boxX + (boxW - instrW) / 2, BOX_Y + DLG_INSTR_Y, t.textValue,
                 DLG_CHAR_SPACING, DLG_FONT_SCALE);
 }
 

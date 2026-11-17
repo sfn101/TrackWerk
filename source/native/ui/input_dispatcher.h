@@ -752,6 +752,9 @@ class InputDispatcher {
     void start_new_project();
     // First beat's own new project under a free name (FIRSTBEAT, FIRSTBEAT2 …), so SAVE never overwrites.
     void begin_first_beat();
+    // PROJECT → SAVE / LOAD once any question is answered.
+    void save_project_now();
+    void open_project_browser();
 
     // Slot 0 across the board, and no selection. Shared by NEW and LOAD.
     void reset_editing_context();

@@ -26,6 +26,9 @@ std::string unique_render_path(FileSystem& fs, const std::string& dir, const std
 // Writes `<Projects>/<name>.ptp` and marks the document clean.
 ActionResult save_project(songcore::SongcoreHost& host, FileSystem& fs, AppState& s);
 
+// SAVE's target exists and is not the song open now (Windows ignores case: "Song" is "SONG").
+bool save_would_replace_other_song(const songcore::SongcoreHost& host, FileSystem& fs, const AppState& s);
+
 // ─── COLLECT: the song and every file it plays, copied into one folder under Songs/ ──────────────
 
 // The folder COLLECT writes: the project's file name.

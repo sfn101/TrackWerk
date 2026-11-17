@@ -28,6 +28,8 @@ struct ConfirmDialogState {
 
         COLLECT_EXISTS,   // PROJECT → COLLECT, when Songs/<name> is already there
         FIRST_BEAT,       // help → START (First beat), when DIRTY: the tutorial starts a new project
+        LOAD_DISCARD,     // PROJECT → LOAD, when DIRTY: YES opens the browser
+        SAVE_OVERWRITE,   // PROJECT → SAVE onto Projects/<name>.ptp that holds a different song
     };
 
     // COLLECT_EXISTS's answers, left to right; `arg` is the one under the cursor.

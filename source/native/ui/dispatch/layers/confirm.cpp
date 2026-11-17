@@ -72,6 +72,14 @@ void InputDispatcher::confirm_accept() {
             begin_first_beat();
             break;
 
+        case ConfirmDialogState::Kind::LOAD_DISCARD:   // the autosave goes only once a song loads
+            open_project_browser();
+            break;
+
+        case ConfirmDialogState::Kind::SAVE_OVERWRITE:
+            save_project_now();
+            break;
+
         case ConfirmDialogState::Kind::CHANGE_TYPE:
             // The direction comes back out of the dialog, so A+LEFT still steps backwards after a yes.
             toggle_instrument_type(argv);

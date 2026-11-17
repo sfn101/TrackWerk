@@ -4,7 +4,7 @@ Work top to bottom. Each item has its own spec; finish (build, test on Windows, 
 
 | # | Item | Spec | Status |
 |---|---|---|---|
-| 1 | Audit fixes, batch 1 (crashes and lost work) | [audit-fixes-batch1.md](audit-fixes-batch1.md) | Planned |
+| 1 | Audit fixes, batch 1 (crashes and lost work) | [audit-fixes-batch1.md](audit-fixes-batch1.md) | Done |
 | 2 | Latency display in Settings | [latency-display.md](latency-display.md) | Planned |
 | 3 | Full-screen visualizer (VI screen) | [fullscreen-visualizer.md](fullscreen-visualizer.md) | Planned |
 

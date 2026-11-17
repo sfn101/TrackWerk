@@ -358,6 +358,38 @@ inline std::vector<T> parse_pool(const json& j, const char* k, F&& parse_elem) {
 
 }  // namespace detail
 
+// Values the engine indexes or divides by, checked on the raw JSON before parse_project: a file that
+// fails is refused whole, never repaired. nullptr = fine, else what is wrong (for the log).
+// Doubles, so a huge number can't wrap into range on its way to int.
+inline const char* project_damage(const json& j) {
+    const auto outside = [](const json& o, const char* k, double lo, double hi) {
+        auto it = o.find(k);
+        return it != o.end() && it->is_number() && !(it->get<double>() >= lo && it->get<double>() <= hi);
+    };
+    const auto each = [&j](const char* pool, auto&& bad) -> bool {
+        auto it = j.find(pool);
+        if (it == j.end() || !it->is_array()) return false;
+        for (const auto& e : *it) if (e.is_object() && bad(e)) return true;
+        return false;
+    };
+    if (outside(j, "tempo", 20, 999)) return "tempo outside 20..999";
+    if (each("instruments", [&](const json& e) { return outside(e, "id", 0, POOL_INSTRUMENTS - 1); }))
+        return "instrument id outside 0..127";
+    if (each("phrases", [](const json& e) {
+            auto s = e.find("steps");
+            return s != e.end() && s->is_array() && s->size() < 16;
+        }))
+        return "phrase with fewer than 16 steps";
+    if (each("grooves", [](const json& e) {
+            auto s = e.find("steps");
+            if (s == e.end() || !s->is_array()) return false;
+            for (const auto& v : *s) if (v.is_number() && !(v.get<double>() >= -1 && v.get<double>() <= 255)) return true;
+            return false;
+        }))
+        return "groove step outside -1..255";
+    return nullptr;
+}
+
 // Parse a decoded .ptp object into a Project (field defaults for anything missing). Pools are taken
 // verbatim; normalize_project() repairs their sizes.
 inline Project parse_project(const json& j) {

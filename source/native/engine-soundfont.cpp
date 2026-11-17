@@ -16,8 +16,13 @@ namespace {
 int sfStreamRead(void* f, void* ptr, unsigned int size) {
     return (int)std::fread(ptr, 1, size, (FILE*)f);
 }
+// ⚠️ 64-bit: `long` is 32-bit on Windows, and a count past 2 GB seeked backwards forever.
 int sfStreamSkip(void* f, unsigned int count) {
-    return std::fseek((FILE*)f, (long)count, SEEK_CUR) == 0;
+#ifdef _WIN32
+    return _fseeki64((FILE*)f, static_cast<int64_t>(count), SEEK_CUR) == 0;
+#else
+    return fseeko((FILE*)f, static_cast<off_t>(count), SEEK_CUR) == 0;
+#endif
 }
 }  // namespace
 
@@ -60,7 +65,14 @@ tsf* AudioEngine::parseSoundfont(const char* path, int bank, int preset, LoadFai
     {
         std::vector<uint8_t> trimmed;
         sf_memory_guard_reset();
-        if (pt::sf_build_trimmed_font(path, bank, preset, trimmed) &&
+        bool damaged = false;
+        const bool built = pt::sf_build_trimmed_font(path, bank, preset, trimmed, &damaged);
+        if (damaged) {
+            LOGE("❌ Soundfont damaged (a chunk runs past the end), refused: %s", path);
+            *failure = LoadFailure::PARSE;
+            return nullptr;
+        }
+        if (built &&
             trimmed.size() <= static_cast<size_t>(INT_MAX)) {
             tsf* small = tsf_load_memory(trimmed.data(), static_cast<int>(trimmed.size()));
             if (small) {

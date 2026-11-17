@@ -103,3 +103,21 @@ int pt_rename(const char* from, const char* to) {
     if (!g_hooks.rename) return -1;
     return g_hooks.rename(from, to);
 }
+
+bool pt_seek64(FILE* f, int64_t pos) {
+    if (!f || pos < 0) return false;
+#if defined(_WIN32)
+    return _fseeki64(f, pos, SEEK_SET) == 0;
+#else
+    return fseeko(f, static_cast<off_t>(pos), SEEK_SET) == 0;
+#endif
+}
+
+int64_t pt_file_size64(FILE* f) {
+    if (!f) return -1;
+#if defined(_WIN32)
+    return _fseeki64(f, 0, SEEK_END) == 0 ? _ftelli64(f) : -1;
+#else
+    return fseeko(f, 0, SEEK_END) == 0 ? static_cast<int64_t>(ftello(f)) : -1;
+#endif
+}

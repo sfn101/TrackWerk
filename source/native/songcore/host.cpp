@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <new>
 #include <stdexcept>
 
@@ -60,7 +61,16 @@ void SongcoreHost::reset_midi_in() {
 bool SongcoreHost::push_project(const std::string& blob) {
     // allow_exceptions=false: a malformed blob leaves the previous project intact.
     json j = json::parse(blob, /*cb=*/nullptr, /*allow_exceptions=*/false);
-    if (j.is_discarded() || !j.is_object()) return false;
+    projectDamaged_ = true;
+    if (j.is_discarded() || !j.is_object()) {
+        std::fprintf(stderr, "project refused: not a JSON object\n");
+        return false;
+    }
+    if (const char* why = project_damage(j)) {
+        std::fprintf(stderr, "project refused: %s\n", why);
+        return false;
+    }
+    projectDamaged_ = false;
 
     Project parsed = parse_project(j);
     normalize_and_migrate(parsed);   // pool repair + v0→1 table-volume migration
@@ -368,9 +378,13 @@ void SongcoreHost::poll_sf_load() {
 
 bool SongcoreHost::load_project_file(const std::string& path, const std::string& baseDir) {
     std::string blob;
+    projectDamaged_ = false;   // an unreadable file is not a damaged one
     if (!pt_read_file(path.c_str(), blob)) return false;
-
-    return load_project_blob(blob,path,baseDir);
+    if (!load_project_blob(blob,path,baseDir)) {
+        if (projectDamaged_) std::fprintf(stderr, "  in %s\n", path.c_str());
+        return false;
+    }
+    return true;
 }
 
 bool SongcoreHost::load_project_blob(const std::string& blob,const std::string& path,const std::string& baseDir){

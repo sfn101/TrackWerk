@@ -51,7 +51,7 @@ struct Hydra {
     std::vector<Shdr> shdr;
 
     // Where the sample data sits; `smplSize` in bytes, 0 = none.
-    long     smplOffset = 0;
+    int64_t  smplOffset = 0;
     uint32_t smplSize   = 0;
 };
 
@@ -82,30 +82,35 @@ bool fourcc_is(const uint8_t* p, const char* id) { return std::memcmp(p, id, 4) 
 
 // Parses every `pdta` sub-chunk and finds `smpl`. ⚠️ An odd-sized chunk has an uncounted pad byte —
 // skipped, or the walk loses alignment (an SF3's Ogg data can be odd).
-bool read_hydra(FILE* f, Hydra& h) {
+// ⚠️ 64-bit positions, and every size checked against its LIST and the file before anything is read
+// or allocated: a crafted size hung the walk on Windows or asked for 4 GB. `*damaged` says which.
+bool read_hydra(FILE* f, Hydra& h, bool* damaged = nullptr) {
+    bool scratch = false;
+    bool& bad = damaged ? *damaged : scratch;
+    bad = false;
+    const int64_t fileEnd = pt_file_size64(f);
     uint8_t hdr[12];
-    if (std::fread(hdr, 1, 12, f) != 12) return false;
+    if (!pt_seek64(f, 0) || std::fread(hdr, 1, 12, f) != 12) return false;
     if (!fourcc_is(hdr, "RIFF") || !fourcc_is(hdr + 8, "sfbk")) return false;
 
-    for (;;) {
+    for (int64_t pos = 12; pos + 8 <= fileEnd; ) {
         uint8_t ch[8];
-        if (std::fread(ch, 1, 8, f) != 8) break;   // clean end of file
+        if (!pt_seek64(f, pos) || std::fread(ch, 1, 8, f) != 8) break;
         const uint32_t size = rd_u32(ch + 4);
+        const int64_t listEnd = pos + 8 + size;
+        if (listEnd > fileEnd) { bad = true; return false; }
+        pos = listEnd + (size & 1);
 
-        if (!fourcc_is(ch, "LIST")) {
-            if (std::fseek(f, static_cast<long>(size + (size & 1)), SEEK_CUR) != 0) break;
-            continue;
-        }
         uint8_t listType[4];
-        if (std::fread(listType, 1, 4, f) != 4) break;
-        const long listEnd = std::ftell(f) + static_cast<long>(size) - 4;
+        if (!fourcc_is(ch, "LIST") || size < 4 || std::fread(listType, 1, 4, f) != 4) continue;
 
         if (fourcc_is(listType, "pdta")) {
-            while (std::ftell(f) + 8 <= listEnd) {
+            for (int64_t sp = listEnd - size + 4; sp + 8 <= listEnd; ) {
                 uint8_t sub[8];
-                if (std::fread(sub, 1, 8, f) != 8) break;
+                if (!pt_seek64(f, sp) || std::fread(sub, 1, 8, f) != 8) break;
                 const uint32_t subSize = rd_u32(sub + 4);
-                const long     next    = std::ftell(f) + static_cast<long>(subSize + (subSize & 1));
+                if (sp + 8 + subSize > listEnd) { bad = true; return false; }
+                sp += 8 + subSize + (subSize & 1);
 
                 std::vector<uint8_t> raw;
                 auto slurp = [&](int recSize) -> int {
@@ -156,23 +161,22 @@ bool read_hydra(FILE* f, Hydra& h) {
                         r.sampleLink = rd_u16(p + 42); r.sampleType = rd_u16(p + 44);
                     });
                 }
-                if (std::fseek(f, next, SEEK_SET) != 0) break;
             }
         } else if (fourcc_is(listType, "sdta")) {
-            while (std::ftell(f) + 8 <= listEnd) {
+            for (int64_t sp = listEnd - size + 4; sp + 8 <= listEnd; ) {
                 uint8_t sub[8];
-                if (std::fread(sub, 1, 8, f) != 8) break;
+                if (!pt_seek64(f, sp) || std::fread(sub, 1, 8, f) != 8) break;
                 const uint32_t subSize = rd_u32(sub + 4);
+                if (sp + 8 + subSize > listEnd) { bad = true; return false; }
                 // `smpo` (the whole font as one Ogg stream) cannot be trimmed: smplSize stays 0 and
                 // the caller loads the whole bank.
                 if (fourcc_is(sub, "smpl")) {
-                    h.smplOffset = std::ftell(f);
+                    h.smplOffset = sp + 8;
                     h.smplSize   = subSize;
                 }
-                if (std::fseek(f, static_cast<long>(subSize + (subSize & 1)), SEEK_CUR) != 0) break;
+                sp += 8 + subSize + (subSize & 1);
             }
         }
-        if (std::fseek(f, listEnd, SEEK_SET) != 0) break;
     }
     // What tsf accepts: all nine tables, and phdr/inst/shdr with a real record plus the terminal.
     return h.phdr.size() >= 2 && h.inst.size() >= 2 && h.shdr.size() >= 2 &&
@@ -228,13 +232,15 @@ bool sf_read_preset_list(const char* path, std::vector<SfPreset>& out) {
     return !out.empty();
 }
 
-bool sf_build_trimmed_font(const char* path, int bank, int preset, std::vector<uint8_t>& out) {
+bool sf_build_trimmed_font(const char* path, int bank, int preset, std::vector<uint8_t>& out,
+                           bool* damaged) {
     out.clear();
+    if (damaged) *damaged = false;
     if (!path) return false;
     FILE* f = pt_fopen(path, "rb");
     if (!f) return false;
     Hydra h;
-    if (!read_hydra(f, h) || h.smplSize == 0) { std::fclose(f); return false; }
+    if (!read_hydra(f, h, damaged) || h.smplSize == 0) { std::fclose(f); return false; }
 
     // Its zones run to the next phdr's — read_hydra guaranteed the terminal.
     const int realPresets = static_cast<int>(h.phdr.size()) - 1;
@@ -331,7 +337,7 @@ bool sf_build_trimmed_font(const char* path, int bank, int preset, std::vector<u
             const size_t bytes = src.end - src.start;
             const size_t at    = smpl.size();
             smpl.resize(at + bytes);
-            if (std::fseek(f, h.smplOffset + static_cast<long>(src.start), SEEK_SET) != 0 ||
+            if (!pt_seek64(f, h.smplOffset + src.start) ||
                 std::fread(smpl.data() + at, 1, bytes, f) != bytes) { std::fclose(f); return false; }
 
             s.start = static_cast<uint32_t>(at);
@@ -349,7 +355,7 @@ bool sf_build_trimmed_font(const char* path, int bank, int preset, std::vector<u
             const size_t bytes = static_cast<size_t>(frames) * 2;
             // The all-PCM layout's silent tail; a compressed font gets its silence from the pad.
             smpl.resize(at + bytes + (anyCompressed ? 0u : PCM_GAP_FRAMES * 2), 0);
-            if (std::fseek(f, h.smplOffset + static_cast<long>(src.start) * 2, SEEK_SET) != 0 ||
+            if (!pt_seek64(f, h.smplOffset + static_cast<int64_t>(src.start) * 2) ||
                 std::fread(smpl.data() + at, 1, bytes, f) != bytes) { std::fclose(f); return false; }
 
             const uint32_t base = static_cast<uint32_t>(at / 2);

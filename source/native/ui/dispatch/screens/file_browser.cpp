@@ -473,7 +473,7 @@ void InputDispatcher::browser_confirm() {
             }
             // ⚠️ The whole document, returning early: load_project_file is parse, push, media and params.
             if (!host_.load_project_file(path, fs_.samples_directory())) {
-                set_status(b, "LOAD FAILED", false);
+                set_status(b, host_.last_project_damaged() ? "LOAD FAILED: FILE DAMAGED" : "LOAD FAILED", false);
                 return;
             }
             // ⚠️ A cancelled project load cannot stay half-done (later instruments would play silence):
@@ -596,7 +596,9 @@ void InputDispatcher::browser_confirm() {
            open_large_sample(path,stem,false))return;
         if(s_.browserPurpose==AppState::BrowserPurpose::LOAD_GRANULAR_SAMPLE){set_status(b,s_.studioMessage.empty()?"SOURCE LOAD FAILED / OLD SOUND KEPT":s_.studioMessage,false);return;}
         // ⚠️ A file too big for the device is not corrupt; say so.
-        set_status(b, host_.last_load_ran_out_of_memory() ? "FILE TOO BIG" : "LOAD FAILED", false);
+        const bool sampleFile = ext == "wav" || ext == "sf2" || ext == "sf3";   // the readers that refuse damage
+        set_status(b, host_.last_load_ran_out_of_memory() ? "FILE TOO BIG"
+                      : sampleFile ? "SAMPLE FAILED: FILE DAMAGED" : "LOAD FAILED", false);
         return;
     }
 

@@ -25,6 +25,8 @@ bool sf_read_preset_list(const char* path, std::vector<SfPreset>& out);
 // "load the whole bank instead", never "broken file".
 // ⚠️ Compressed and uncompressed fonts are laid out differently (argued in the .cpp); a mistake is
 // wrong sound, not an error.
-bool sf_build_trimmed_font(const char* path, int bank, int preset, std::vector<uint8_t>& out);
+// `*damaged`: refused because a chunk size runs past its LIST or the file; don't hand it to tsf either.
+bool sf_build_trimmed_font(const char* path, int bank, int preset, std::vector<uint8_t>& out,
+                           bool* damaged = nullptr);
 
 }  // namespace pt

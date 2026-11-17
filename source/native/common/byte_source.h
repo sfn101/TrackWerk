@@ -8,6 +8,7 @@
 // ⚠️ They live in the .cpp: on Android the engine and shell are separate libraries, and an inline
 // variable would give each its own copy.
 
+#include <cstdint>
 #include <cstdio>
 #include <string>
 
@@ -43,6 +44,11 @@ FILE* pt_fopen(const char* path, const char* mode);
 
 // The whole file into `out`. False if it cannot be opened or read to its end.
 bool pt_read_file(const char* path, std::string& out);
+
+// 64-bit seek from the start / file size (then positioned at the end; −1 on failure). `long` is
+// 32-bit on Windows, so plain fseek/ftell break past 2 GB and on a chunk size near 4 GB.
+bool pt_seek64(FILE* f, int64_t pos);
+int64_t pt_file_size64(FILE* f);
 
 // `std::remove`, or the host hook for a URI. 0 on success.
 int pt_remove(const char* path);

@@ -324,6 +324,9 @@ class SongcoreHost {
     // The user cancelled the last media load: not a failure.
     bool last_load_cancelled() const;
 
+    // The last push_project refused its blob as damaged (bad JSON or project_damage); the log says why.
+    bool last_project_damaged() const { return projectDamaged_; }
+
     // A .pti into instrument `id`. A parse/decode failure preserves its old instrument and table.
     bool load_instrument_preset(int id, const std::string& path);
     // Put a slot back as it was, field for field (the sound browser's B after a use). An empty
@@ -589,6 +592,7 @@ class SongcoreHost {
     std::function<void()> beforePlayHook_;
     int sampleRate_ = 44100;
     MediaLoadResult lastMediaLoad_{};   // see last_media_load()
+    bool projectDamaged_ = false;       // see last_project_damaged()
 
     std::string granularError_;
     Project project_ = make_default_project();

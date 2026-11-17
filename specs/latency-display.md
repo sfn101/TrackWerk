@@ -31,4 +31,4 @@ None. The value is not saved.
 
 ## Out of scope
 
-A real loopback "Test" button and a buffer-size setting; both are on the roadmap.
+A real loopback "Test" button and a buffer-size setting (both dropped from the roadmap: device- and driver-specific).

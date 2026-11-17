@@ -1,6 +1,8 @@
 # TrackWerk → native Windows `.exe` (MSVC) — Build Plan
 
-Static audit only; nothing has been compiled yet. Paths are relative to `source/`.
+> **Status: done.** The build needed 7 MSVC-only fixes (commit `390488d`, branch `windows-msvc-build`, upstream PR kidbee85-beep/TrackWerk#3). It was released as `v1.2.0-windows` on the fork. This file is kept as a record; for current build instructions, see `CLAUDE.md`.
+
+The audit below was done before anything was compiled. Paths are relative to `source/`.
 
 ## 0. Summary
 

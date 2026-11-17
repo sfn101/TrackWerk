@@ -54,6 +54,10 @@ Use the `win-build-loop` skill for the build → fix → run loop.
 - **Vendored code:** prefer a CMake flag or a shim (as `native/studio/msvc_compat.h` does). If a vendor file must change, guard the change and mark it with a `// TrackWerk:` comment so it survives a re-vendor.
 - **Licence notices:** a new third-party component needs its notice in `docs/licenses/THIRD-PARTY-NOTICES.md`. `build-windows.ps1` fails if it's missing.
 
+## Feature specs
+
+New features start with a `grill-me` session. Once the user confirms the design, write it to `specs/<feature-name>.md`: the goal, the controls and screens, file-format and platform effects, and what's out of scope. Then build from that spec. Bug fixes from `AUDIT.md` skip this step.
+
 ## Known bugs
 
 `AUDIT.md` (repo root) lists 20 audited findings with file:line and suggested fixes, starting with the song-file crashes and the lost-work paths in LOAD and SAVE. Work through it before adding risky features near those paths. Its findings 3–6 were reported upstream as kidbee85-beep/TrackWerk#2.

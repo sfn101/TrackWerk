@@ -216,6 +216,7 @@ struct AppState {
     uint64_t animationMs = 0;
     // The navigation map's arrival banner shows until this time (same clock); 0 = none.
     uint64_t navBannerUntilMs = 0;
+    uint64_t vizNameUntilMs   = 0;   // VI: the style's name fades in after A+LEFT/RIGHT, until then
 
     // The TABLE row a voice is on, per FX column (−1 = not running). Read off the voice: a table runs
     // on its own clock, each column separately (ui/engine_feed.h).

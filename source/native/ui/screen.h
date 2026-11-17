@@ -31,7 +31,8 @@ enum class ScreenType {
     // Appended; screens are named, never numbered.
     MIDI,       // reached from PROJECT > MIDI; not on the R+DPAD grid
     MIDI_MAP,   // …and from MIDI > MAPPING. Not on the grid either
-    PERFORM     // live controls and CPU per track (ui/perform.h); row 0 of the grid, columns 0, 1, 4
+    PERFORM,    // live controls and CPU per track (ui/perform.h); row 0 of the grid, columns 0, 1, 4
+    VISUALIZER  // the visualizer across the main area; left of SONG, off the grid (ui/navigation.h)
 };
 
 inline const char* screen_label(ScreenType s) {
@@ -54,6 +55,7 @@ inline const char* screen_label(ScreenType s) {
         case ScreenType::MIDI:          return "MIDI";
         case ScreenType::MIDI_MAP:      return "MIDI MAPPING";
         case ScreenType::PERFORM:       return "PERFORM";
+        case ScreenType::VISUALIZER:    return "VISUALIZER";
     }
     return "";
 }
@@ -82,6 +84,7 @@ inline const char* screen_long_label(ScreenType s) {
         case ScreenType::MIDI:          return "MIDI";
         case ScreenType::MIDI_MAP:      return "MIDI MAP";
         case ScreenType::PERFORM:       return "PERFORM";
+        case ScreenType::VISUALIZER:    return "VISUALIZER";
     }
     return "";
 }
@@ -124,6 +127,7 @@ inline const char* screen_short_label(ScreenType s) {
         case ScreenType::MIDI:          return "MI";
         case ScreenType::MIDI_MAP:      return "MM";
         case ScreenType::PERFORM:       return "PF";
+        case ScreenType::VISUALIZER:    return "V";   // MIXER's "V" is never drawn: off the main row it is MX
     }
     return "";
 }

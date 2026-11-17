@@ -59,6 +59,7 @@ const D::ScreenHandler D::SCREENS[] = {
     {ScreenType::MIXER,         &D::mixer_screen,         &D::mixer_context,         &D::mixer_edit,         &D::mixer_knob, nullptr},
     {ScreenType::EFFECTS,       &D::effects_screen,       &D::effects_context,       &D::effects_edit,       &D::effects_knob, nullptr},
     {ScreenType::PERFORM,       &D::perform_screen,       nullptr,                   nullptr,                nullptr, nullptr},
+    {ScreenType::VISUALIZER,    &D::visualizer_screen,    nullptr,                   nullptr,                nullptr, nullptr},
 };
 
 const InputDispatcher::ScreenHandler* InputDispatcher::screen() const {

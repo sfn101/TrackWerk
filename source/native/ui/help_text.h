@@ -361,6 +361,7 @@ enum class HelpTopic {
     OVERLAY_KEYBOARD,
     OVERLAY_CONFIRM,
     SCREEN_PERFORM,
+    SCREEN_VISUALIZER,
 
     COUNT
 };
@@ -2614,6 +2615,14 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
       "L+←/→, L+A: tracks or macro",
       "START plays the song from 00",
       "R+↓ goes to PROJECT"}},
+    /* SCREEN_VISUALIZER */
+    {"VISUALIZER: watch the music", "The visualizer across the", "whole main area.",
+     {"The same style as the SETTINGS",
+      "row VISUALIZER: change it here",
+      "and the bar changes too."},
+     {"A+←/→ picks the style",
+      "START plays the song",
+      "R+→ goes back to SONG"}},
 };
 
 // ─── Rules 2 and 3, as compile errors — at runtime they fail silently ────────────────────────────
@@ -2722,6 +2731,7 @@ inline HelpTopic help_screen_topic(ScreenType screen) {
         case ScreenType::MIDI:          return HelpTopic::SCREEN_MIDI;
         case ScreenType::MIDI_MAP:      return HelpTopic::SCREEN_MIDI_MAP;
         case ScreenType::PERFORM:       return HelpTopic::SCREEN_PERFORM;
+        case ScreenType::VISUALIZER:    return HelpTopic::SCREEN_VISUALIZER;
     }
     return HelpTopic::NONE;
 }

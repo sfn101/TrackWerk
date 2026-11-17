@@ -1,7 +1,8 @@
 #pragma once
 
-// The 620×70 visualizer strip, six modes chosen by the theme. Stateful (peak dots, bar decay), so
-// it lives in the layout across frames. Reads no engine: samples are handed in; null is silence.
+// The visualizer: the 620×70 strip, or any area (the VI screen) via `draw_sized`. Its modes are chosen
+// by the theme. Stateful (peak dots, bar decay), so each place keeps its own instance across frames.
+// Reads no engine: samples are handed in; null is silence.
 
 #include <cstdint>
 
@@ -72,7 +73,9 @@ public:
     static constexpr int SCOPE_TIME_ZOOM   = 2;  // Z
 
     // Non-const: peak-hold and decay advance one frame per call.
-    void draw(Canvas& c, int x, int y, const OscilloscopeState& s);
+    void draw(Canvas& c, int x, int y, const OscilloscopeState& s) { draw_sized(c, x, y, WIDTH, HEIGHT, s); }
+    // The same modes redrawn for a `w`×`h` area, not stretched. `w` is at most WIDTH.
+    void draw_sized(Canvas& c, int x, int y, int w, int h, const OscilloscopeState& s);
 
     // ⚠️ The idle gate must ask: the bars fall inside `draw`, so once it stops drawing they would
     // freeze. SPECTRUM modes only — the caller gates on the type.
@@ -98,6 +101,9 @@ private:
     int16_t phosphor_[2][SCOPE_BLOCKS] = {};   // dot rows relative to the strip's top
     int     phosphorFrames_ = 0;
     int     phosphorX_ = -1, phosphorY_ = -1;  // where the history was drawn; a move discards it
+
+    int w_ = WIDTH, h_ = HEIGHT;   // this call's area (draw_sized)
+    bool strip() const { return h_ == HEIGHT; }   // the strip: the status line sits on its top
 
     float peakValues_[NUM_BARS]        = {};
     int   peakDecayCounters_[NUM_BARS] = {};

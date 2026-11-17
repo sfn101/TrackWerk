@@ -96,3 +96,5 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           build/windows/native/Release/ptlatency-row-check.exe
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          build/windows/native/Release/ptvisualizer-check.exe "$env:RUNNER_TEMP/ptvisualizer-check"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }

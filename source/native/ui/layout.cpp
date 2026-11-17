@@ -200,9 +200,11 @@ void TrackerLayout::draw_frame(Canvas& c, const AppState& s) {
     draw_scope_strip(c, s, scopeY);
     draw_editor(c, s, editorX, editorY);
 
-    c.fill_rect(editorX, editorY + ROW_HEIGHT + 4, editorWidth, 1,
-                with_alpha(s.theme.textParam, .22f));
-    c.fill_rect(editorX, editorY + ROW_HEIGHT + 4, 36, 1, s.theme.rowCursor);
+    if (s.currentScreen != ScreenType::VISUALIZER) {   // VI has no title row to underline
+        c.fill_rect(editorX, editorY + ROW_HEIGHT + 4, editorWidth, 1,
+                    with_alpha(s.theme.textParam, .22f));
+        c.fill_rect(editorX, editorY + ROW_HEIGHT + 4, 36, 1, s.theme.rowCursor);
+    }
     c.stroke_rect(SIDE_SPACER, scopeY, OscilloscopeModule::WIDTH,
                   OscilloscopeModule::HEIGHT, with_alpha(s.theme.textParam, .18f));
 
@@ -250,6 +252,12 @@ void TrackerLayout::draw_scope_strip(Canvas& c, const AppState& s, int y) {
         return;
     }
 
+    oscilloscope_.draw(c, SIDE_SPACER, y, scope_state(s));
+}
+
+// What the visualizer is handed, the strip's and VI's alike.
+OscilloscopeState TrackerLayout::scope_state(const AppState& s) {
+    const Theme& t = s.theme;
     OscilloscopeState os;
     os.waveform = s.waveform;
     os.theme    = t;
@@ -276,8 +284,22 @@ void TrackerLayout::draw_scope_strip(Canvas& c, const AppState& s, int y) {
         t.visualizerType == VisualizerType::SPECTRUM_PEAKS) {
         os.spectrum = s.spectrum;
     }
+    return os;
+}
 
-    oscilloscope_.draw(c, SIDE_SPACER, y, os);
+// VI: the visualizer across the main area, redrawn for its size; the style's name fades in after a change.
+void TrackerLayout::draw_visualizer_screen(Canvas& c, const AppState& s, int x, int y) {
+    constexpr int w = EDITOR_CLIP_RIGHT - SIDE_SPACER;
+    constexpr int h = DESIGN_H - EDITOR_Y - SCREEN_SPACER;
+    visualizer_.draw_sized(c, x, y, w, h, scope_state(s));
+    if (s.vizNameUntilMs <= s.animationMs) return;
+    const float a = std::min(1.f, float(s.vizNameUntilMs - s.animationMs) / 250.f);   // fades over the last 250 ms
+    const auto& names = SettingsModule::visualizer_names();
+    const int i = std::clamp(static_cast<int>(s.theme.visualizerType), 0, static_cast<int>(names.size()) - 1);
+    const std::string& name = names[static_cast<size_t>(i)];
+    const int tw = Canvas::text_width(name, 2, 3);
+    c.fill_rect(x + (w - tw) / 2 - 10, y + 12, tw + 20, 27, with_alpha(s.theme.background, .85f * a));
+    c.draw_text(name, x + (w - tw) / 2, y + 18, with_alpha(s.theme.textTitle, a), 2, 3);
 }
 
 // ─── What each screen's module is handed ─────────────────────────────────────────────────────────
@@ -535,6 +557,7 @@ void TrackerLayout::draw_editor(Canvas& c, const AppState& s, int x, int y) {
         case ScreenType::MODS:       modulation_.draw(c, x, y, mods_state(s)); break;
         case ScreenType::MIXER:      mixer_.draw(c, x, y, mixer_state(s)); break;
         case ScreenType::PERFORM:    draw_perform(c, x, y, s); break;
+        case ScreenType::VISUALIZER: draw_visualizer_screen(c, s, x, y); break;
         case ScreenType::EFFECTS:    effects_.draw(c, x, y, effects_state(s)); break;
         case ScreenType::PROJECT:    project_.draw(c, x, y, project_state(s)); break;
         case ScreenType::SETTINGS:   settings_.draw(c, x, y, settings_state(s)); break;
@@ -577,7 +600,9 @@ bool TrackerLayout::has_falling_meters(const AppState& s) const {
     // The SPECTRUM bars, likewise only while drawn.
     const VisualizerType vt = s.theme.visualizerType;
     if (vt != VisualizerType::SPECTRUM && vt != VisualizerType::SPECTRUM_PEAKS) return false;
-    return !full_screen_module(s) && !s.helpOpen && !s.helpFull && !phrase_overview_visible(s) && !oscilloscope_.bars_at_rest();
+    if (full_screen_module(s) || s.helpOpen || s.helpFull) return false;
+    if (s.currentScreen == ScreenType::VISUALIZER && !editor_overlay_up(s) && !visualizer_.bars_at_rest()) return true;
+    return !phrase_overview_visible(s) && !oscilloscope_.bars_at_rest();
 }
 
 // ─── The status line, top-left of the scope strip ────────────────────────────────────────────────

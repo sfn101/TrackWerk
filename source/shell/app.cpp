@@ -1283,7 +1283,7 @@ void FrameLoop::draw_frame(Uint64 now) {
         if (drewOnce) state.navBannerUntilMs = now + 900;
         bannerScreen = state.currentScreen;
     }
-    const bool banner = state.navBannerUntilMs > now;
+    const bool banner = state.navBannerUntilMs > now || state.vizNameUntilMs > now;   // VI's style name too
     state.trackMask = host.track_mask();
 
     // Everything the UI reads back from the engine; after isPlaying, which the waveform's decay uses.

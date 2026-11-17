@@ -17,9 +17,18 @@ void NavigationMapModule::draw(Canvas& c, int x, int y, const NavigationMapState
     // The always-visible main row, plus this column's own screens.
     const int col = (currentCol < 0 || currentCol >= NAV_COLUMNS) ? 2 : currentCol;
     std::optional<ScreenType> grid[NAV_ROWS][NAV_COLUMNS] = {};
-    for (int gcol = 0; gcol < NAV_COLUMNS; ++gcol)
-        grid[NAV_MAIN_ROW][gcol] = SCREEN_GRID[NAV_MAIN_ROW][gcol];
-    for (int row = 0; row < NAV_ROWS; ++row) grid[row][col] = SCREEN_GRID[row][col];
+    // Five columns at a time. VI is one column left of the grid: on it the main row slides right one
+    // (V S C P I) and nothing sits above or below; elsewhere the usual S C P I T.
+    const bool onVisualizer = s.currentScreen == ScreenType::VISUALIZER;
+    if (onVisualizer) {
+        grid[NAV_MAIN_ROW][0] = ScreenType::VISUALIZER;
+        for (int gcol = 1; gcol < NAV_COLUMNS; ++gcol)
+            grid[NAV_MAIN_ROW][gcol] = SCREEN_GRID[NAV_MAIN_ROW][gcol - 1];
+    } else {
+        for (int gcol = 0; gcol < NAV_COLUMNS; ++gcol)
+            grid[NAV_MAIN_ROW][gcol] = SCREEN_GRID[NAV_MAIN_ROW][gcol];
+        for (int row = 0; row < NAV_ROWS; ++row) grid[row][col] = SCREEN_GRID[row][col];
+    }
 
     // The pool's INSTRUMENT cell (row 0 / col 4); on an INSTRUMENT reached from the pool it is the
     // current position.
@@ -54,6 +63,17 @@ void NavigationMapModule::draw(Canvas& c, int x, int y, const NavigationMapState
 
             c.draw_text(label, cellX + (CELL_WIDTH - labelW) / 2, cellY + (mainRow ? 3 : 6),
                         isCurrent ? cursor_mark_ink(t) : t.textParam, spacing, scale);
+        }
+    }
+
+    // A column beyond the edge (VI left of S, or T right of I while on VI): a small arrow on that side
+    // of the main row, so the map says there is more that way.
+    {
+        const int midY = y + NAV_MAIN_ROW * CELL_HEIGHT + CELL_HEIGHT / 2;
+        const Argb ink = with_alpha(t.textParam, .8f);
+        for (int i = 0; i < 3; ++i) {   // a 3-px chevron on the map's very edge, clear of the letter
+            const int ax = onVisualizer ? x + WIDTH - 1 - i : x + i;
+            c.fill_rect(ax, midY - i, 1, 2 * i + 1, ink);
         }
     }
 

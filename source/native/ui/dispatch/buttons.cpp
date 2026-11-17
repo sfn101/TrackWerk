@@ -69,6 +69,7 @@ void InputDispatcher::on_start() {
         case ScreenType::MIXER:
         case ScreenType::EFFECTS:
         case ScreenType::PERFORM:
+        case ScreenType::VISUALIZER:
         case ScreenType::PROJECT:
         case ScreenType::SETTINGS:
         case ScreenType::MIDI:

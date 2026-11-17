@@ -101,6 +101,8 @@ private:
 
     void draw_full_screen(Canvas& c, const AppState& s);   // the browser or the sample editor
     void draw_scope_strip(Canvas& c, const AppState& s, int y);
+    void draw_visualizer_screen(Canvas& c, const AppState& s, int x, int y);
+    static OscilloscopeState scope_state(const AppState& s);
     void draw_editor(Canvas& c, const AppState& s, int x, int y);        // or the EQ / theme editor in its place
     void draw_overlays(Canvas& c, const AppState& s);
     void draw_placeholder(Canvas& c, int x, int y, ScreenType screen, const Theme& t) const;
@@ -110,6 +112,7 @@ private:
     void draw_selection_clipboard(Canvas& c, const AppState& s, int scopeY) const;
 
     OscilloscopeModule    oscilloscope_;
+    OscilloscopeModule    visualizer_;   // VI's own: the bars and peak dots keep per-place state
     HelpPanelModule       helpPanel_;
     HelpOverlayModule     helpOverlay_;
     PhraseEditorModule    phraseEditor_;

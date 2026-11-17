@@ -523,6 +523,7 @@ add_library(pt-ui STATIC
         ui/dispatch/screens/midi.cpp
         ui/dispatch/screens/mixer.cpp
         ui/dispatch/screens/perform.cpp
+        ui/dispatch/screens/visualizer.cpp
         ui/perform.cpp
         ui/dispatch/screens/project.cpp
         ui/dispatch/screens/sample_editor.cpp
@@ -999,6 +1000,8 @@ if(PT_STUDIO_CHECK OR PT_SAFETY_CHECK)
  target_link_libraries(ptload-save-prompts-check PRIVATE pt-ui)
  add_executable(ptlatency-row-check ../tests/studio/latency_row.cpp)
  target_link_libraries(ptlatency-row-check PRIVATE pt-ui)
+ add_executable(ptvisualizer-check ../tests/studio/visualizer_screen.cpp)
+ target_link_libraries(ptvisualizer-check PRIVATE pt-ui)
 endif()
 
 # Reproducible public metadata; test fixture paths remain test-local.

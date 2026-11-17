@@ -990,6 +990,7 @@ class InputDispatcher {
 
     GestureResult mixer_screen(Gesture g);
     GestureResult perform_screen(Gesture g);
+    GestureResult visualizer_screen(Gesture g);
     GestureResult effects_screen(Gesture g);
     CursorContext mixer_context() const;
     bool          mixer_edit(const InputAction& action);

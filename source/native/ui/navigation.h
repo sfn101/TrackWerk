@@ -125,7 +125,12 @@ inline NavResult step_sideways(const NavState& s, int step) {
 }
 }  // namespace detail
 
+// VI is left of SONG but owns no grid column (the grid's columns are the five main screens'): only
+// R+LEFT on SONG reaches it and only R+RIGHT leaves it. Its remembered column is SONG's.
+inline bool on_visualizer(const NavState& s) { return s.currentScreen == ScreenType::VISUALIZER; }
+
 inline NavResult navigate_up(const NavState& s) {
+    if (on_visualizer(s)) return {ScreenType::VISUALIZER, 0};
     // INSTRUMENT entered from the pool sits on row 0: nothing above.
     if (s.currentScreen == ScreenType::INSTRUMENT && s.instrumentFromPool)
         return {ScreenType::INSTRUMENT, 3, true};
@@ -133,12 +138,15 @@ inline NavResult navigate_up(const NavState& s) {
 }
 
 inline NavResult navigate_down(const NavState& s) {
+    if (on_visualizer(s)) return {ScreenType::VISUALIZER, 0};
     if (s.currentScreen == ScreenType::INSTRUMENT && s.instrumentFromPool)
         return {ScreenType::MODS, 3};
     return detail::step_in_column(s, +1);
 }
 
 inline NavResult navigate_left(const NavState& s) {
+    if (on_visualizer(s)) return {ScreenType::VISUALIZER, 0};
+    if (s.currentScreen == ScreenType::SONG) return {ScreenType::VISUALIZER, 0};
     if (detail::is_popup(s.currentScreen)) return {s.currentScreen, s.previousColumn};
 
     // The pool exits to PHRASE; INSTRUMENT entered from the pool returns to it.
@@ -149,6 +157,7 @@ inline NavResult navigate_left(const NavState& s) {
 }
 
 inline NavResult navigate_right(const NavState& s) {
+    if (on_visualizer(s)) return {ScreenType::SONG, 0};
     if (detail::is_popup(s.currentScreen)) return {s.currentScreen, s.previousColumn};
 
     // Out of the pool to INSTRUMENT, marked so R+LEFT comes back; nothing to its right.

@@ -83,7 +83,7 @@ jobs:
       - name: Build the app and the portable checks with MSVC
         working-directory: ${{ steps.app_source.outputs.directory }}
         run: |
-          cmake -S shell -B build/windows -G "Visual Studio 17 2022" -A x64 -DPT_SAFETY_CHECK=ON
+          cmake -S shell -B build/windows -A x64 -DPT_SAFETY_CHECK=ON   # the runner's own Visual Studio
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           cmake --build build/windows --config Release -- /m
           if ($LASTEXITCODE) { exit $LASTEXITCODE }

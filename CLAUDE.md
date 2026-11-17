@@ -68,5 +68,18 @@ New features start with a `grill-me` session. Once the user confirms the design,
 
 - **Remotes:** `fork` is `sfn101/TrackWerk`, where all work is pushed; local `main` tracks `fork/main`. `origin` is upstream, `kidbee85-beep/TrackWerk`.
 - **Day-to-day work:** branch from `main`, commit and push to `fork`.
-- **Contributions to upstream:** branch from `origin/main` with only that change, push to `fork` and open a PR to `kidbee85-beep/TrackWerk`. The Windows build fix is PR #3, from branch `windows-msvc-build`.
+- **Pull requests:** never open one, on the fork or upstream, unless the user asks for that PR. To run CI on a branch without a PR: `gh workflow run build.yml -R sfn101/TrackWerk --ref <branch>`.
 - **Releases:** publish Windows releases on the fork as unofficial builds, tagged at the exact commit the exe was built from.
+
+## Sending a change upstream
+
+When the user asks for a PR to upstream (`kidbee85-beep/TrackWerk`):
+
+1. **One change per PR.** Bug fixes go one at a time. A new feature goes only after the user confirms the maintainer wants it (ask in an issue first). Don't open a second PR while one is still waiting for review unless the user says so.
+2. **Fresh branch from their code:** `git fetch origin`, then `git switch -c upstream/<name> origin/main`. Never branch from our `main`.
+3. **Copy only that change:** `git cherry-pick` its commits from our branch. Never bring along `CLAUDE.md`, `AUDIT.md`, `specs/`, `.claude/`, roadmap commits or anything else that only matters to this fork. If a commit mixes the change with fork-only edits, rebuild it on this branch without them.
+4. **Check it stands alone:** run `git diff origin/main --stat` and read the list. Every file must belong to the change. Then build and test that branch on Windows. If it needs another of our unsent changes to build, stop and tell the user which one.
+5. **Push and open the PR:** push the branch to `fork` and open the PR to `kidbee85-beep/TrackWerk` `main` with a short plain description: what was wrong, what changed, how it was tested. Write the description from the change itself, not from fork-only notes.
+6. **Keep the branch:** later review fixes are pushed to that same branch. Don't rebase or force-push it unless the maintainer asks.
+
+Open upstream PRs: #3, Windows build fix (branch `windows-msvc-build`, one commit, 8 files). Batch 1's fixes (`audit-fixes-batch1`) are not sent yet. They touch `source/native/CMakeLists.txt` as #3 does, so build their upstream branch after #3 is merged or closed.

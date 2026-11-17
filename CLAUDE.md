@@ -2,7 +2,7 @@
 
 A music tracker (8 tracks, phrases → chains → song) for Android, Linux handhelds (TrimUI Brick, Miyoo, RGB20S, PortMaster), Linux desktop and Windows. GPL-3.0-or-later. This repo is the fork `sfn101/TrackWerk` of `kidbee85-beep/TrackWerk`, which is itself a fork of PocketTracker.
 
-The work here is bug fixes, new features and improvements, **for every platform**. The user tests on Windows first and on the other platforms afterwards. They have no C++ background: explain changes in plain words, and keep diffs small and reviewable.
+The work here is bug fixes, new features and improvements, **for every platform**. Changes are tested on Windows first and on the other platforms afterwards. Keep diffs small and reviewable.
 
 ## Layout (all under `source/`)
 
@@ -54,7 +54,9 @@ Use the `win-build-loop` skill for the build → fix → run loop.
 - **Vendored code:** prefer a CMake flag or a shim (as `native/studio/msvc_compat.h` does). If a vendor file must change, guard the change and mark it with a `// TrackWerk:` comment so it survives a re-vendor.
 - **Licence notices:** a new third-party component needs its notice in `docs/licenses/THIRD-PARTY-NOTICES.md`. `build-windows.ps1` fails if it's missing.
 
-## Feature specs
+## Roadmap and specs
+
+`specs/ROADMAP.md` is the order of work. When asked to "start" or "continue" without a named task, take the first item not marked Done, read its spec, and build from it. When an item is finished (built, tested on Windows, CI green), mark it Done in the roadmap in the same branch.
 
 New features start with a `grill-me` session. Once the user confirms the design, write it to `specs/<feature-name>.md`: the goal, the controls and screens, file-format and platform effects, and what's out of scope. Then build from that spec. Bug fixes from `AUDIT.md` skip this step.
 

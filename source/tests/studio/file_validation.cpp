@@ -141,6 +141,19 @@ void media_checks(AudioEngine& engine,const std::filesystem::path& root) {
     std::vector<uint8_t> trimmed;
     assert(pt::sf_build_trimmed_font(tone.string().c_str(),0,0,trimmed));
     assert(engine.loadSoundfont(1,tone.string().c_str(),0,0)>=0);
+    const auto expectedTrim=trimmed;
+    for(int tail=0;tail<3;++tail) {
+        std::ifstream input(tone,std::ios::binary);
+        Bytes b((std::istreambuf_iterator<char>(input)),{});
+        tag(b,"JUNK");u32(b,tail==0?100:3);
+        b.insert(b.end(),tail==0?10:3,0);
+        if(tail==2)b.push_back(0);
+        const auto path=root/("tag-tail-"+std::to_string(tail)+".sf2");write(path,b);
+        std::vector<pt::SfPreset> presets;
+        assert(pt::sf_read_preset_list(path.string().c_str(),presets) && !presets.empty());
+        assert(pt::sf_build_trimmed_font(path.string().c_str(),0,0,trimmed));
+        assert(trimmed==expectedTrim);
+    }
 }
 void offset_checks(){
     long next=-1;

@@ -87,7 +87,12 @@ inline bool settings_row_visible(SettingsRow row, const PlatformCaps& caps) {
     }
 }
 
-// The next visible row in display order, `delta` ±1, wrapping; `from` if nothing else is visible.
+// Can the cursor stop here? LATENCY is shown, never selected: the walk steps over it.
+inline bool settings_row_selectable(SettingsRow row, const PlatformCaps& caps) {
+    return row != SettingsRow::LATENCY && settings_row_visible(row, caps);
+}
+
+// The next selectable row in display order, `delta` ±1, wrapping; `from` if there is no other.
 inline int settings_next_visible_row(int from, int delta, const PlatformCaps& caps) {
     int idx = settings_display_index(static_cast<SettingsRow>(from));
     for (int guard = 0; guard < SETTINGS_ROW_COUNT; ++guard) {
@@ -95,7 +100,7 @@ inline int settings_next_visible_row(int from, int delta, const PlatformCaps& ca
         if (idx < 0)                    idx = SETTINGS_ROW_COUNT - 1;
         if (idx >= SETTINGS_ROW_COUNT)  idx = 0;
         const SettingsRow row = SETTINGS_DISPLAY_ORDER[idx];
-        if (settings_row_visible(row, caps)) return static_cast<int>(row);
+        if (settings_row_selectable(row, caps)) return static_cast<int>(row);
     }
     return from;
 }
@@ -103,7 +108,7 @@ inline int settings_next_visible_row(int from, int delta, const PlatformCaps& ca
 // Where the cursor lands on entry, and the fallback for a stale one.
 inline int settings_first_visible_row(const PlatformCaps& caps) {
     for (int i = 0; i < SETTINGS_ROW_COUNT; ++i)
-        if (settings_row_visible(SETTINGS_DISPLAY_ORDER[i], caps))
+        if (settings_row_selectable(SETTINGS_DISPLAY_ORDER[i], caps))
             return static_cast<int>(SETTINGS_DISPLAY_ORDER[i]);
     return 0;
 }

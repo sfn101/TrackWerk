@@ -12,7 +12,7 @@ Show the audio output latency of the current audio output in Settings, so you ca
 - Value in milliseconds with one decimal: `10.7 MS`.
 - When the backend only knows its buffer size, not the real latency, the value starts with `>=`: `>= 10.7 MS` (the pixel font has no `≥` glyph). This is honest about SYSTEM on Windows, where the real latency is at least the buffer.
 - The value updates on its own when the audio output changes; no button.
-- The cursor can't edit the row (A+d-pad does nothing on it).
+- The row is information only: drawn faded (the theme's placeholder grey), and the cursor never stops on it. UP/DOWN step over it, so it has no help entry.
 
 ## Where the number comes from
 

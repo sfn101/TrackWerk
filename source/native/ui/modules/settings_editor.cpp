@@ -105,7 +105,12 @@ void SettingsModule::draw(Canvas& c, int x, int y, const SettingsState& s) const
     // An OS driver name: 18 characters to the panel edge.
     param_row(SettingsRow::AUDIO_OUT, "AUDIO OUT",
               Canvas::clip_text(s.audioOutText, (WIDTH - VAL1_X - NAME_X) / CHAR_W));
-    param_row(SettingsRow::LATENCY, "LATENCY", s.latencyText);
+    // Information only: faded, and the cursor steps over it.
+    if (settings_row_visible(SettingsRow::LATENCY, s.caps)) {
+        const int ry = rowY(SettingsRow::LATENCY);
+        c.draw_text("LATENCY", labelX, ry + TEXT_PADDING, t.textEmpty, CHAR_SPACING, FONT_SCALE);
+        c.draw_text(s.latencyText, val1X, ry + TEXT_PADDING, t.textEmpty, CHAR_SPACING, FONT_SCALE);
+    }
 
     dual_row(SettingsRow::BTN_SOUND, "BTN SOUND", on_off(v.buttonSoundEnabled),
              "VOL", hex2(v.buttonSoundVolume));

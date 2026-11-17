@@ -1,6 +1,8 @@
 # TrackWerk 1.2.0
 
-**Small machine. Serious music.** An eight-track music studio for Android and selected Linux handhelds, by **Kid Bunka**.
+**Small machine. Serious music.** An eight-track music studio for Android, selected Linux handhelds and Windows, by **Kid Bunka**.
+
+> **This fork adds a native Windows build.** TrackWerk 1.2.0 for Windows 10/11 x64: one self-contained `TrackWerk.exe`, nothing to install. [Download for Windows](https://github.com/sfn101/TrackWerk/releases/tag/v1.2.0-windows). It's an unofficial community build from this fork's source, not an official Kid Bunka release; see [Windows build](#windows-build-this-fork).
 
 [Website](https://kidbee85-beep.github.io/TrackWerk/) · [Illustrated English guide](https://kidbee85-beep.github.io/TrackWerk/guide.html) · [Download 1.2.0](https://github.com/kidbee85-beep/TrackWerk/releases/tag/v1.2.0) · [New 1.2 update film](https://youtu.be/8DiovzmRM6w) · [YouTube Short](https://www.youtube.com/shorts/w2DIKKX_xjc) · [Instagram Reel](https://www.instagram.com/reel/Df0bTJlR86j/) · [Optional support](https://www.paypal.com/donate/?business=kidbee85%40gmail.com&currency_code=CHF)
 
@@ -35,12 +37,29 @@ Write sixteen steps, join phrases into chains, then arrange them over eight trac
 | Powkiddy RGB20S | AmberELEC | Games-card package, preserving projects and settings |
 | Linux desktop | Debian 13 .deb / SDL 2.32.4+ | ARM64 and x86-64; final desktop UI acceptance remains open |
 | Android | Signed APK / Android 8+ | ARM64, ARMv7 and x86_64; versionCode 102000; same app ID and signer as 1.0 |
+| Windows | 10/11 x64, portable ZIP | [Unofficial build from this fork](https://github.com/sfn101/TrackWerk/releases/tag/v1.2.0-windows); keyboard, gamepad, WASAPI or ASIO audio |
 
 Use First Install for a new card and Program Update for an existing installation. Back up the data folder and follow START-HERE inside the matching ZIP. The Miyoo updater recognises the previous public and known development binaries, using canonical or legacy folders without a rename. Complete the metadata step in START-HERE-1.2.0 so the menu/version labels match. Install the Android APK over the existing app to retain its data. Do not uninstall just to update.
 
 The factory library remains the same 2,432-preset collection; its unchanged 1.0 archive is included in the 1.2 release. Five public demo projects use internal synth engines. Sample-based soundtrack compositions are mixed audio; commercial raw sample-library files are excluded.
 
 Networking, MIDI and external audio inputs depend on the platform and hardware. YouTube is off by default and requires an explicit opt-in. Check the actual recording's reuse terms before releasing sampled music. There is no universal polyphony or CPU claim: the workload depends on the project and device.
+
+## Windows build (this fork)
+
+Download `TrackWerk-1.2.0-windows-x64.zip` from the [Windows release](https://github.com/sfn101/TrackWerk/releases/tag/v1.2.0-windows), unzip it anywhere and run `TrackWerk.exe`. Songs, samples and settings live in `Documents\TrackWerk`, and the session log is written to `Documents\TrackWerk\trackwerk-log.txt`.
+
+- **Controls:** the arrows or WASD act as the D-pad, K/Enter is A, J/Escape is B, U/I are L/R, Space is START and F10 quits. A gamepad works too.
+- **Audio:** SETTINGS > AUDIO OUT offers SYSTEM (WASAPI shared mode) or any installed ASIO driver.
+- **Build from source:** use Visual Studio 2022 Build Tools (Desktop development with C++) and CMake, from `source/`:
+
+  ```
+  cmake -S shell -B shell/build -G "Visual Studio 17 2022" -A x64 -DCMAKE_DISABLE_FIND_PACKAGE_SDL2=ON
+  cmake --build shell/build --config Release
+  powershell -ExecutionPolicy Bypass -File shell/build-windows.ps1
+  ```
+
+The MSVC build fixes are on the [`windows-msvc-build`](https://github.com/sfn101/TrackWerk/tree/windows-msvc-build) branch and were proposed upstream in [kidbee85-beep/TrackWerk#1](https://github.com/kidbee85-beep/TrackWerk/issues/1). The build has been launched and checked for audio and gamepad input; not every feature has been tested on Windows. Linux-only features (archive/radio sources, iPhone and sample recorders) aren't available.
 
 ## Source, builds and credits
 

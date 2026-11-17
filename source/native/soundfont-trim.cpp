@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "common/byte_source.h"
+#include "common/riff_bounds.h"
 
 namespace pt {
 namespace {
@@ -93,12 +94,15 @@ bool read_hydra(FILE* f, Hydra& h, bool* damaged = nullptr) {
     if (!pt_seek64(f, 0) || std::fread(hdr, 1, 12, f) != 12) return false;
     if (!fourcc_is(hdr, "RIFF") || !fourcc_is(hdr + 8, "sfbk")) return false;
 
+    bool cutShort = false;   // a top-level chunk ran past the end of the file
     for (int64_t pos = 12; pos + 8 <= fileEnd; ) {
         uint8_t ch[8];
         if (!pt_seek64(f, pos) || std::fread(ch, 1, 8, f) != 8) break;
         const uint32_t size = rd_u32(ch + 4);
         const int64_t listEnd = pos + 8 + size;
-        if (listEnd > fileEnd) { bad = true; return false; }
+        // An unfinished tag or download tail AFTER complete tables still loads, as the old reader did
+        // (upstream 46421d0). Never read into it; the table check below refuses an incomplete font.
+        if (listEnd > fileEnd) { cutShort = true; break; }
         pos = listEnd + (size & 1);
 
         uint8_t listType[4];
@@ -179,9 +183,11 @@ bool read_hydra(FILE* f, Hydra& h, bool* damaged = nullptr) {
         }
     }
     // What tsf accepts: all nine tables, and phdr/inst/shdr with a real record plus the terminal.
-    return h.phdr.size() >= 2 && h.inst.size() >= 2 && h.shdr.size() >= 2 &&
-           !h.pbag.empty() && !h.pgen.empty() && !h.pmod.empty() &&
-           !h.ibag.empty() && !h.igen.empty() && !h.imod.empty();
+    const bool complete = h.phdr.size() >= 2 && h.inst.size() >= 2 && h.shdr.size() >= 2 &&
+                          !h.pbag.empty() && !h.pgen.empty() && !h.pmod.empty() &&
+                          !h.ibag.empty() && !h.igen.empty() && !h.imod.empty();
+    if (!complete && cutShort) bad = true;   // forged or truncated before its tables: keep it from tsf
+    return complete;
 }
 
 // A name field is 20 bytes, not always terminated.

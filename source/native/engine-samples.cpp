@@ -4,6 +4,7 @@
 #include "vendor/tsf/tsf.h"    // tsf_get_fontsamplecount, for the memory count
 #include "audio-decoders.h"
 #include "common/byte_source.h"       // pt_fopen
+#include "common/riff_bounds.h"
 #include "common/platform_memory.h"
 #include <memory>
 #include <new>   // load_budget_bytes
@@ -115,6 +116,7 @@ int AudioEngine::loadSampleFromWavFile(int id, const char* path) {
                              ((uint32_t)ch[6] << 16) | ((uint32_t)ch[7] << 24);
         const int64_t next = pos + 8 + chunkSize + (chunkSize & 1);   // padded to even; always forward
         if (std::memcmp(ch, "fmt ", 4) == 0) {
+            if (chunkSize < 16) { fclose(f); return 0; }
             uint8_t fmt[40] = {0};
             uint32_t toRead = chunkSize < sizeof(fmt) ? chunkSize : (uint32_t)sizeof(fmt);
             if (fread(fmt, 1, toRead, f) != toRead) break;

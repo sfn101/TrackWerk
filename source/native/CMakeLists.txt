@@ -1010,6 +1010,9 @@ pt_public_library_prefixes("${CMAKE_CURRENT_SOURCE_DIR}")
 
 # Independent sample-granular vertical path; no UI required by this check.
 if(PT_STUDIO_CHECK)
+ add_executable(ptfile-validation-check ../tests/studio/file_validation.cpp)
+ target_link_libraries(ptfile-validation-check PRIVATE songcore)
+ target_compile_options(ptfile-validation-check PRIVATE $<IF:$<BOOL:${MSVC}>,/UNDEBUG,-UNDEBUG>)
  add_executable(ptsample-granular-check ../tests/studio/sample_granular_engine.cpp)
  target_link_libraries(ptsample-granular-check PRIVATE songcore)
  target_compile_options(ptsample-granular-check PRIVATE -UNDEBUG)

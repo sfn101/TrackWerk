@@ -14,7 +14,9 @@ namespace songcore {
 // Frames per phrase step (a 16th) at `tempo` BPM and `sample_rate` Hz. ⚠️ Keep the evaluation order
 // and the truncating cast exactly.
 inline int64_t frames_per_step(int tempo, int sample_rate) {
-    return static_cast<int64_t>(60000.0 / tempo / 4.0 * sample_rate / 1000.0);
+    const int rate = sample_rate > 0 ? sample_rate : 1;
+    const auto frames = static_cast<int64_t>(60000.0 / bounded_tempo(tempo) / 4.0 * rate / 1000.0);
+    return frames > 0 ? frames : 1;
 }
 
 // Frames per tic — `framesPerStep / TICS_PER_STEP`, integer division.
@@ -66,7 +68,9 @@ inline int groove_ticks_per_step(const Groove& g) {
 inline int groove_ticks_for_step(const Groove& g, int groove_step) {
     int len = groove_active_length(g);
     if (len == 0) return groove_ticks_per_step(g);
-    return g.steps[groove_step % len];
+    const int index = ((groove_step % len) + len) % len;
+    const int ticks = g.steps[static_cast<size_t>(index)];
+    return ticks < 0 ? 0 : ticks > 255 ? 255 : ticks;
 }
 
 // A groove's steps in another ruler, playing the same; halving rounds. ⚠️ A step never rounds to 0

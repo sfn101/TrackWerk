@@ -842,8 +842,9 @@ int64_t Sequencer::walk_phrase_row(int trackId, int64_t framesPerStep) {
         const int stepIndex = w.row;
         // A row its NTH holds back this pass is walked as an empty one: it takes its time, and its
         // note, its commands, its GRV and its HOP are not there.
-        const PhraseStep& step = step_plays_on_pass(phrase.steps[stepIndex], w.pass)
-                               ? phrase.steps[stepIndex] : emptyStep;
+        const PhraseStep& candidate = stepIndex >= 0 && stepIndex < static_cast<int>(phrase.steps.size())
+                                      ? phrase.steps[stepIndex] : emptyStep;
+        const PhraseStep& step = step_plays_on_pass(candidate, w.pass) ? candidate : emptyStep;
 
         // Pre-scan GRV so a new groove takes effect on its own step; the last GRV wins.
         for (int fxSlot = 1; fxSlot <= 3; ++fxSlot) {

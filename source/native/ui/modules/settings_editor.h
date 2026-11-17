@@ -17,6 +17,15 @@
 
 namespace pt::ui {
 
+// SETTINGS > LATENCY: "10.7 MS", or ">= 10.7 MS" when the backend knows only its buffer (the real
+// delay is at least that); "-" before the output has opened. Integer math: the same text everywhere.
+inline std::string latency_text(int frames, int sampleRate, bool measured) {
+    if (frames <= 0 || sampleRate <= 0) return "-";
+    const long long tenths = (static_cast<long long>(frames) * 10000 + sampleRate / 2) / sampleRate;
+    return std::string(measured ? "" : ">= ") + std::to_string(tenths / 10) + "." +
+           std::to_string(tenths % 10) + " MS";
+}
+
 // SETTINGS > HELP. ⚠️ The value is what settings.json stores — append, never reorder.
 enum class HelpMode { OFF = 0, SHORT = 1, FULL = 2 };
 
@@ -157,6 +166,7 @@ struct SettingsState {
     std::string skinText{};
     std::string overlayText = "OFF";
     std::string audioOutText = "SYSTEM";
+    std::string latencyText  = "-";
     std::string appVersion{};
     std::string themeName   = "CLASSIC";
 

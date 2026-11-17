@@ -105,6 +105,7 @@ void SettingsModule::draw(Canvas& c, int x, int y, const SettingsState& s) const
     // An OS driver name: 18 characters to the panel edge.
     param_row(SettingsRow::AUDIO_OUT, "AUDIO OUT",
               Canvas::clip_text(s.audioOutText, (WIDTH - VAL1_X - NAME_X) / CHAR_W));
+    param_row(SettingsRow::LATENCY, "LATENCY", s.latencyText);
 
     dual_row(SettingsRow::BTN_SOUND, "BTN SOUND", on_off(v.buttonSoundEnabled),
              "VOL", hex2(v.buttonSoundVolume));
@@ -224,6 +225,7 @@ CursorContext SettingsModule::cursor_context(const SettingsState& s) const {
         case SettingsRow::THEME:      return cc::read_only();
         // A triggers SAVE or CLEAR.
         case SettingsRow::TEMPLATE:   return cc::read_only();
+        case SettingsRow::LATENCY:    return cc::read_only();   // shown, never edited
 
         case SettingsRow::RESUME:     return cc::toggle_binary(v.autosaveResumeAuto);
 
@@ -299,6 +301,7 @@ SettingsInputResult SettingsModule::handle_input(SettingsValues& v, Theme& theme
         case SettingsRow::APPEARANCE:
         case SettingsRow::THEME:
         case SettingsRow::TEMPLATE:
+        case SettingsRow::LATENCY:   // read-only
             break;
     }
     return done;

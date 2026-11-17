@@ -10,7 +10,7 @@ Show the audio output latency of the current audio output in Settings, so you ca
 
 - A new read-only row `LATENCY` directly under `AUDIO OUT` in Settings, shown on **every** platform (Android and Linux under Pulse/PipeWire have no AUDIO OUT row, but still get LATENCY).
 - Value in milliseconds with one decimal: `10.7 MS`.
-- When the backend only knows its buffer size, not the real latency, the value starts with `≥`: `≥ 10.7 MS`. This is honest about SYSTEM on Windows, where the real latency is at least the buffer.
+- When the backend only knows its buffer size, not the real latency, the value starts with `>=`: `>= 10.7 MS` (the pixel font has no `≥` glyph). This is honest about SYSTEM on Windows, where the real latency is at least the buffer.
 - The value updates on its own when the audio output changes; no button.
 - The cursor can't edit the row (A+d-pad does nothing on it).
 
@@ -21,9 +21,9 @@ Nothing new is measured. `AudioBackend::outputLatency()` (`native/audio-backend.
 | Backend | What it reports | Shown as |
 |---|---|---|
 | ASIO (Windows) | Driver's real output latency (`ASIOGetLatencies`) | `10.7 MS` |
-| SDL: Windows SYSTEM, Linux | Buffer size only | `≥ 10.7 MS` |
+| SDL: Windows SYSTEM, Linux | Buffer size only | `>= 10.7 MS` |
 | Oboe AAudio (Android) | Real latency | `10.7 MS` |
-| Oboe OpenSL ES (older Android) | Buffer size only | `≥ 10.7 MS` |
+| Oboe OpenSL ES (older Android) | Buffer size only | `>= 10.7 MS` |
 
 ## File format
 

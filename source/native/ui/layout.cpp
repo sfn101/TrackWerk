@@ -453,6 +453,7 @@ SettingsState settings_state(const AppState& s) {
     ss.skinText     = s.skinText;
     ss.overlayText  = s.overlayText;
     ss.audioOutText = s.audioOutText;
+    ss.latencyText  = s.latencyText;
     ss.appVersion   = s.appVersion;
     ss.themeName    = s.theme.name;
     ss.caps         = s.caps;

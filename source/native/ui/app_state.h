@@ -386,6 +386,7 @@ struct AppState {
     std::string skinText{};
     std::string overlayText = "OFF";
     std::string audioOutText = "SYSTEM";   // the output playing now (SETTINGS > AUDIO OUT)
+    std::string latencyText = "-";         // SETTINGS > LATENCY, from latency_text()
     std::string appVersion{};              // empty in the tools
 
     // Sample + SoundFont PCM the engine holds (USED RAM).

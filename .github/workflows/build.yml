@@ -94,3 +94,5 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           build/windows/native/Release/ptload-save-prompts-check.exe "$env:RUNNER_TEMP/ptload-save-prompts-check"
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          build/windows/native/Release/ptlatency-row-check.exe
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }

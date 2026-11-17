@@ -997,6 +997,8 @@ if(PT_STUDIO_CHECK OR PT_SAFETY_CHECK)
  target_link_libraries(ptcorrupt-files-check PRIVATE pt-ui)
  add_executable(ptload-save-prompts-check ../tests/studio/load_save_prompts.cpp)
  target_link_libraries(ptload-save-prompts-check PRIVATE pt-ui)
+ add_executable(ptlatency-row-check ../tests/studio/latency_row.cpp)
+ target_link_libraries(ptlatency-row-check PRIVATE pt-ui)
 endif()
 
 # Reproducible public metadata; test fixture paths remain test-local.

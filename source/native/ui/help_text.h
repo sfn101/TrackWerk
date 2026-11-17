@@ -361,6 +361,7 @@ enum class HelpTopic {
     OVERLAY_KEYBOARD,
     OVERLAY_CONFIRM,
     SCREEN_PERFORM,
+    SET_LATENCY,
 
     COUNT
 };
@@ -2614,6 +2615,13 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
       "L+←/→, L+A: tracks or macro",
       "START plays the song from 00",
       "R+↓ goes to PROJECT"}},
+    /* SET_LATENCY */
+    {"LATENCY: delay to the speaker", "How long a note takes to reach", "the output, in milliseconds.",
+     {"Switch AUDIO OUT to compare.",
+      "A number after = is only the",
+      "buffer: the real delay is at",
+      "least that long."},
+     {"Read only: nothing to edit"}},
 };
 
 // ─── Rules 2 and 3, as compile errors — at runtime they fail silently ────────────────────────────
@@ -2956,6 +2964,7 @@ inline HelpTopic settings_cell_topic(int row, int column) {
             return second ? HelpTopic::SET_TEMPLATE_CLEAR : HelpTopic::SET_TEMPLATE_SAVE;
         case SettingsRow::RESUME:     return HelpTopic::SET_RESUME;
         case SettingsRow::TRACE:      return HelpTopic::SET_TRACE;
+        case SettingsRow::LATENCY:    return HelpTopic::SET_LATENCY;
     }
     return HelpTopic::NONE;
 }

@@ -32,14 +32,15 @@ enum class SettingsRow {
     HELP       = 17,   // OFF / SHORT / FULL
     AUDIO_OUT  = 18,   // the output device (Windows)
     APPEARANCE = 19,   // global palette/material/typeface; stable previous IDs retained
+    LATENCY    = 20,   // read-only: the output's latency in ms (every platform)
 };
 
-inline constexpr int SETTINGS_ROW_COUNT = 20;
+inline constexpr int SETTINGS_ROW_COUNT = 21;
 
 // The order rows are drawn and walked; every SettingsRow exactly once.
 inline constexpr SettingsRow SETTINGS_DISPLAY_ORDER[SETTINGS_ROW_COUNT] = {
     SettingsRow::LAYOUT,   SettingsRow::SCALING,   SettingsRow::OVERLAY,
-    SettingsRow::AUDIO_OUT,
+    SettingsRow::AUDIO_OUT, SettingsRow::LATENCY,
     SettingsRow::BTN_SOUND, SettingsRow::BTN_VIBRO, SettingsRow::ABXY,
     SettingsRow::METRONOME,
     SettingsRow::KB_INSERT, SettingsRow::CURSOR,    SettingsRow::NAV,

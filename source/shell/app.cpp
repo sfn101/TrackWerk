@@ -15,6 +15,7 @@
 #include "ui/buttons.h"
 #include "ui/navigation.h"
 #include "ui/canvas.h"
+#include "ui/modules/settings_editor.h"   // latency_text
 #include "ui/engine_feed.h"
 #include "ui/input_dispatcher.h"
 #include "ui/layout.h"
@@ -364,11 +365,21 @@ void apply_midi_overrides(const AppConfig& cfg, ui::AppState& state) {
 // The OFFSET row's AUTO: how long a frame takes from the device to the ear. ASIO and Oboe measure it;
 // elsewhere only the app's own buffer is known, so the portion the device really takes at once stands
 // in when it is bigger — a sound server can take sound in bigger portions than the app asked for.
+int output_latency_frames(AudioBackend& audio, const AudioEngine& engine) {
+    const AudioBackend::OutputLatency lat = audio.outputLatency();
+    return lat.measured ? lat.frames : std::max(lat.frames, engine.getDeviceBlockFrames());
+}
+
+// SETTINGS > LATENCY: the same frames AUTO uses, as text.
+void refresh_latency_text(AudioBackend& audio, const AudioEngine& engine, ui::AppState& state) {
+    state.latencyText = ui::latency_text(output_latency_frames(audio, engine), audio.sampleRate(),
+                                         audio.outputLatency().measured);
+}
+
 // True if the value changed.
 bool derive_midi_auto_offset(AudioBackend& audio, const AudioEngine& engine, ui::AppState& state) {
     const int rate = audio.sampleRate();
-    const AudioBackend::OutputLatency lat = audio.outputLatency();
-    const int frames = lat.measured ? lat.frames : std::max(lat.frames, engine.getDeviceBlockFrames());
+    const int frames = output_latency_frames(audio, engine);
     if (rate <= 0 || frames <= 0) return false;
     const int ms = (frames * 1000 + rate / 2) / rate;
     if (ms == state.midiAutoOffsetMs) return false;
@@ -1207,6 +1218,7 @@ void FrameLoop::pump_midi_and_sequencer(Uint64 now) {
     // sound server). A measured figure is left as the device opened with.
     if (now - autoOffsetCheckMs >= 1000) {
         autoOffsetCheckMs = now;
+        refresh_latency_text(audio, engineRef, state);   // follows an AUDIO OUT switch within a second
         if (!audio.outputLatency().measured && derive_midi_auto_offset(audio, engineRef, state)) {
             host.set_midi_offset_ms(ui::midi_offset_in_force(state.settings, state.midiAutoOffsetMs));
             std::printf("midi:    OFFSET AUTO now %+d ms (the device takes %d frames at a time)\n",

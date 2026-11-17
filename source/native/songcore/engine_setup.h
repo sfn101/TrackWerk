@@ -452,6 +452,7 @@ void release_unreferenced_soundfonts(Engine& engine, const Routing& routing) {
 template <typename Engine>
 bool sync_instrument_soundfont(Engine& engine, const Instrument& ins, Routing& routing,
                                const MediaRoots& roots) {
+    if (ins.id < 0 || ins.id >= POOL_INSTRUMENTS) return false;
     if (ins.instrumentType != InstrumentType::SOUNDFONT) return false;
     const std::string resolved = instrument_soundfont_path(ins, roots);
     if (resolved.empty()) return false;
@@ -470,6 +471,7 @@ bool sync_instrument_soundfont(Engine& engine, const Instrument& ins, Routing& r
 template <typename Engine>
 bool request_instrument_soundfont(Engine& engine, const Instrument& ins, Routing& routing,
                                   const MediaRoots& roots) {
+    if (ins.id < 0 || ins.id >= POOL_INSTRUMENTS) return false;
     if (ins.instrumentType != InstrumentType::SOUNDFONT) return true;
     const std::string resolved = instrument_soundfont_path(ins, roots);
     if (resolved.empty()) return true;

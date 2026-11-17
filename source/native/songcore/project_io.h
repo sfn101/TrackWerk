@@ -30,9 +30,29 @@ using nlohmann::json;
 
 namespace detail {
 
+inline int checked_int(const json& value, int def) {
+    if (value.is_number_unsigned()) {
+        const auto n = value.get<uint64_t>();
+        return n <= uint64_t(std::numeric_limits<int>::max()) ? static_cast<int>(n) : def;
+    }
+    if (value.is_number_integer()) {
+        const auto n = value.get<int64_t>();
+        return n >= std::numeric_limits<int>::min() && n <= std::numeric_limits<int>::max()
+                   ? static_cast<int>(n) : def;
+    }
+    if (value.is_number_float()) {
+        const double n = value.get<double>();
+        uint64_t bits;
+        std::memcpy(&bits, &n, sizeof(bits));
+        if ((bits & UINT64_C(0x7ff0000000000000)) == UINT64_C(0x7ff0000000000000)) return def;
+        if (n >= std::numeric_limits<int>::min() && n <= std::numeric_limits<int>::max())
+            return static_cast<int>(n);  // retain the legacy truncation of ordinary floats
+    }
+    return def;
+}
 inline int get_int(const json& j, const char* k, int def) {
     auto it = j.find(k);
-    return (it != j.end() && it->is_number()) ? it->get<int>() : def;
+    return it != j.end() ? checked_int(*it, def) : def;
 }
 
 inline bool get_bool(const json& j, const char* k, bool def) {
@@ -131,6 +151,7 @@ inline Phrase parse_phrase(const json& j, int index) {
         p.steps.clear();
         for (const auto& e : *it) p.steps.push_back(parse_phrase_step(e));
     }
+    p.steps.resize(PHRASE_ROWS);
     return p;
 }
 
@@ -139,7 +160,7 @@ inline std::vector<int> parse_int_array(const json& j, const char* k, const std:
     if (it == j.end() || !it->is_array()) return def;
     std::vector<int> v;
     v.reserve(it->size());
-    for (const auto& e : *it) v.push_back(e.is_number() ? e.get<int>() : 0);
+    for (const auto& e : *it) v.push_back(checked_int(e, 0));
     return v;
 }
 
@@ -197,6 +218,7 @@ inline Groove parse_groove(const json& j, int index) {
     g.ticksPerStep = get_int(j, "ticksPerStep", g.ticksPerStep);
     // The GROOVE screen indexes all sixteen by cursor row; same repair as `parse_chain`.
     g.steps.resize(16, -1);
+    for (int& ticks : g.steps) ticks = std::clamp(ticks, -1, 255);  // -1 ends, 0 skips
     return g;
 }
 
@@ -397,7 +419,7 @@ inline Project parse_project(const json& j) {
     Project p;  // scalar members hold their field defaults; pools start EMPTY
     p.version         = get_int(j, "version", p.version);
     p.name            = get_str(j, "name", p.name);
-    p.tempo           = get_int(j, "tempo", p.tempo);
+    p.tempo           = bounded_tempo(get_int(j, "tempo", p.tempo));
     p.swing           = std::clamp(get_int(j, "swing", p.swing), 50, 75);
     p.transpose       = get_int(j, "transpose", p.transpose);
     p.masterVolume    = get_int(j, "masterVolume", p.masterVolume);
@@ -497,11 +519,21 @@ inline InstrumentPreset parse_instrument_preset(const json& j) {
 
 // Repair, don't reject: truncate over-long pools, pad short ones. True if anything changed.
 inline bool normalize_project(Project& p) {
+    // A pooled instrument is addressed by its position everywhere in the UI and
+    // scheduler. A file's stray id must not route it to another instrument (or
+    // outside the routing arrays). sampleId is a separate source reference.
+    bool repairedIds = false;
+    for (size_t i = 0; i < p.instruments.size() && i < POOL_INSTRUMENTS; ++i) {
+        if (p.instruments[i].id != static_cast<int>(i)) {
+            p.instruments[i].id = static_cast<int>(i);
+            repairedIds = true;
+        }
+    }
     if ((int)p.phrases.size() == POOL_PHRASES && (int)p.chains.size() == POOL_CHAINS &&
         (int)p.tracks.size() == POOL_TRACKS && (int)p.instruments.size() == POOL_INSTRUMENTS &&
         (int)p.tables.size() == POOL_TABLES && (int)p.grooves.size() == POOL_GROOVES &&
         (int)p.eqPresets.size() == POOL_EQPRESETS && (int)p.scales.size() == POOL_SCALES) {
-        return false;
+        return repairedIds;
     }
     Project d = make_default_project();
     auto fix = [](auto& pool, auto& def, int n) {

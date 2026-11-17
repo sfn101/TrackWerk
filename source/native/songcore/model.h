@@ -526,7 +526,10 @@ struct Project {
 };
 
 // The tempo the app plays at: a leading clock's, else the song's TEMPO.
-inline int tempo_in_force(const Project& p) { return p.clockTempo > 0 ? p.clockTempo : p.tempo; }
+inline int bounded_tempo(int tempo) { return tempo < 20 ? 20 : tempo > 999 ? 999 : tempo; }
+inline int tempo_in_force(const Project& p) {
+    return bounded_tempo(p.clockTempo > 0 ? p.clockTempo : p.tempo);
+}
 
 // Which tracks sound. ⚠️ DERIVED, never stored: solo is a property of the set. Mute wins over solo.
 inline bool any_solo(const Project& p) {

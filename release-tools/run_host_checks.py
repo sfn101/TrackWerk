@@ -14,6 +14,7 @@ for name in re.findall(r'add_executable\((pt[a-z0-9-]+)',(source/'native/CMakeLi
  folder.mkdir(exist_ok=True);args=[str(folder/'out')]
  if name=='ptpresetpack-check':args=[str(manifest),str(folder/'out')]
  elif name=='pteffect-collection-check':args=[str(source/'factory/Presets'),str(folder/'out')]
+ elif name=='ptcorrupt-files-check':args=[str(source/'tests/corrupt-files')]
  elif name in ('ptcapture-input-policy-check','ptfft-roundtrip-check'):args=[]
  start=time.monotonic()
  with (out/(name+'.log')).open('w') as log:r=subprocess.run([str(exe),*args],cwd=folder,stdout=log,stderr=subprocess.STDOUT)

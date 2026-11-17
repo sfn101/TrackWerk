@@ -69,3 +69,28 @@ jobs:
           python3 tests/brick-launcher/check_program_updater.py
           python3 tests/brick-launcher/check_preset_preparer.py
           python3 tests/r36s-launcher/check_launcher.py
+
+  windows:
+    name: Windows build and damaged-file checks
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Locate the application source
+        id: app_source
+        shell: bash
+        run: |
+          if test -f source/gradlew; then echo "directory=source" >> "$GITHUB_OUTPUT"; else echo "directory=." >> "$GITHUB_OUTPUT"; fi
+      - name: Build the app and the portable checks with MSVC
+        working-directory: ${{ steps.app_source.outputs.directory }}
+        run: |
+          cmake -S shell -B build/windows -G "Visual Studio 17 2022" -A x64 -DPT_SAFETY_CHECK=ON
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          cmake --build build/windows --config Release -- /m
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Damaged files are refused; LOAD and SAVE ask first
+        working-directory: ${{ steps.app_source.outputs.directory }}
+        run: |
+          build/windows/native/Release/ptcorrupt-files-check.exe tests/corrupt-files
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          build/windows/native/Release/ptload-save-prompts-check.exe "$env:RUNNER_TEMP/ptload-save-prompts-check"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }

@@ -96,7 +96,8 @@ void insert_current_key(QwertyKeyboardState& s) {
     const int insertAt = s.insertBefore ? std::min(std::max(s.textCursor, 0), len)
                                         : std::min(s.textCursor + 1, len);
     s.text.insert(static_cast<size_t>(insertAt), 1, ch);
-    s.textCursor = insertAt + 1;
+    s.textCursor    = insertAt + 1;
+    s.clearOnFirstB = false;   // the suggested name is being edited, not replaced
 }
 
 void delete_char(QwertyKeyboardState& s) {
@@ -120,10 +121,12 @@ void delete_char(QwertyKeyboardState& s) {
 
 void move_text_cursor_left(QwertyKeyboardState& s) {
     if (s.textCursor > 0) s.textCursor -= 1;
+    s.clearOnFirstB = false;
 }
 
 void move_text_cursor_right(QwertyKeyboardState& s) {
     if (s.textCursor < static_cast<int>(s.text.size())) s.textCursor += 1;
+    s.clearOnFirstB = false;
 }
 
 QwertyTextWindow qwerty_text_window(int textLen, int textCursor, int windowCols) {

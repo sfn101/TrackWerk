@@ -64,7 +64,8 @@ struct QwertyKeyboardState {
     // INSERT MODE. True: A inserts before the cursor, B backspaces. False: after, and B deletes forward.
     bool insertBefore = true;
 
-    // The first B clears the whole field (a suggested SAVE AS name). Consumed on that press.
+    // The first B clears the whole field (a suggested SAVE AS name), unless a letter was typed or the
+    // text cursor moved first. Consumed on that press.
     bool clearOnFirstB = false;
 
     QwertyContext context      = QwertyContext::FILE_RENAME;

@@ -60,6 +60,10 @@ Use the `win-build-loop` skill for the build → fix → run loop.
 
 New features start with a `grill-me` session. Once the user confirms the design, write it to `specs/<feature-name>.md`: the goal, the controls and screens, file-format and platform effects, and what's out of scope. Then build from that spec. Bug fixes from `AUDIT.md` skip this step.
 
+## Help and info text
+
+Every new feature ships with its help in the same branch: its SELECT help entry in `native/ui/help_text.h` (or `fx_helper.h` for an effect command, `studio_help.cpp` for Studio), its info text in any box it adds, and its section in `source/docs/manual-en.md`. A change that alters existing behaviour corrects the help that describes it. Each spec has a **Help** section listing the entries it adds or changes; a feature isn't Done until they are written.
+
 ## Known bugs
 
 `AUDIT.md` (repo root) lists 20 audited findings with file:line and suggested fixes, starting with the song-file crashes and the lost-work paths in LOAD and SAVE. Work through it before adding risky features near those paths. Its findings 3–6 were reported upstream as kidbee85-beep/TrackWerk#2.

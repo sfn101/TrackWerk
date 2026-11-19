@@ -97,6 +97,7 @@ public:
             dup2(stdoutPipe[1], STDOUT_FILENO); dup2(stderrPipe[1], STDERR_FILENO);
             const int devnull = open("/dev/null", O_RDONLY); if (devnull >= 0) dup2(devnull, STDIN_FILENO);
             for (int fd = 3; fd < maxFd; ++fd) close(fd);
+            signal(SIGPIPE, SIG_DFL);   // the app ignores it; the child gets the default back
             execv(program.c_str(), argv.data()); _exit(127);
         }
         close(stdoutPipe[1]); close(stderrPipe[1]); out = stdoutPipe[0]; err = stderrPipe[0];

@@ -132,7 +132,7 @@ public:
     bool cancelled(uint32_t gen, int trackId, int64_t targetFrame) const {
         const int l = lane(trackId);
         const uint32_t now = gen_[l].load(std::memory_order_acquire);
-        if (now - gen > (uint32_t)HISTORY) return true;
+        if (now - gen >= (uint32_t)HISTORY) return true;   // its slot may be being rewritten
         for (uint32_t g = gen; g != now; ++g)
             if (from_[l][g & (HISTORY - 1)].load(std::memory_order_relaxed) <= targetFrame) return true;
         return false;
@@ -189,7 +189,7 @@ public:
 private:
     static std::vector<T> reserved() {
         std::vector<T> v;
-        v.reserve(64);
+        v.reserve(1024);   // never grows on the audio thread in a busy moment (AUDIT 20)
         return v;
     }
     std::priority_queue<T, std::vector<T>, std::greater<T>> queue;

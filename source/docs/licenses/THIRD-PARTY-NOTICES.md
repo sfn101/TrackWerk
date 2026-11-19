@@ -814,3 +814,15 @@ Protobuf Java Lite 4.36.2 (BSD-3-Clause), Rhino and Rhino Engine 1.8.1
 
 The `NewPipe-*.txt` files beside this notice contain the corresponding full
 license notices and source links. They are also staged into the Android APK.
+
+## Studio SOURCE on Windows: libcurl, yt-dlp, QuickJS, FFmpeg (**Windows zip only**)
+
+| component | licence | how it ships | source |
+|---|---|---|---|
+| **libcurl** 8.11.1 (HTTP/HTTPS only, Schannel TLS) | curl licence (MIT/X-style) | **statically, inside `TrackWerk.exe`**; `licenses/curl-COPYING.txt` | fetched at configure time by `shell/CMakeLists.txt` (tag `curl-8_11_1`) |
+| **yt-dlp** 2026.10.26, official `yt-dlp.exe` | the combined PyInstaller executable is GPL-3.0-or-later; yt-dlp's own code is the Unlicense | unmodified, as `tools/yt-dlp.exe`; `licenses/yt-dlp-LICENSE.txt`, `licenses/yt-dlp-THIRD_PARTY_LICENSES.txt` | `external/yt-dlp-2026.10.26.tar.gz` and `external/yt-dlp-bundle-sources/` |
+| **QuickJS** 2026-06-04 (Fabrice Bellard, Charlie Gordon) | MIT | built unmodified as `tools/qjs.exe`; `licenses/QuickJS-LICENSE.txt` | `external/quickjs-2026-06-04.tar.xz` |
+| **FFmpeg** 7.1 | LGPL-2.1-or-later (no GPL or non-free parts enabled) | a minimal unmodified build (MOV demuxer, MP4 muxer, file/pipe only) as `tools/ffmpeg.exe`; `licenses/FFmpeg-COPYING.LGPLv2.1.txt`, `licenses/FFmpeg-LICENSE.md` | `external/ffmpeg-7.1.tar.xz` (signed upstream release, `.asc` beside it) |
+
+The three helpers are separate programs that TrackWerk starts; none is linked into the exe.
+`shell/windows/fetch-helpers.ps1` and `build-helpers.sh` record the exact hashes and build flags.

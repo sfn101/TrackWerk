@@ -22,6 +22,16 @@ An isolated ARM64 runtime probe recorded CPython3.14.10, OpenSSL3.5.9, Cryptodom
 
 These tools remain experimental. A software protocol check does not establish compatibility with an actual iPhone, its trust/pairing state or the device's USB role. Pairing records must remain local and are excluded from releases.
 
+## Windows (Studio SOURCE)
+
+The Windows zip ships three helpers in `tools/`, made by `shell/windows/fetch-helpers.ps1`:
+
+- `yt-dlp.exe`: the **unmodified official yt-dlp 2026.10.26 Windows build**, SHA256 `f5389d3698ecde4ef06f4e6b1ce0294fe9ac1396228c8990b8d3416d6d177a7d`, with the same source archive and licences as the Linux build above.
+- `qjs.exe`: QuickJS built unmodified from `external/quickjs-2026-06-04.tar.xz` with MSYS2 UCRT64 gcc (`shell/windows/build-helpers.sh`), statically linked.
+- `ffmpeg.exe`: FFmpeg 7.1 (LGPL-2.1-or-later) built unmodified from `external/ffmpeg-7.1.tar.xz`, the signed upstream release (`.asc` beside it, key `FCF9 86EA 15E6 E293 A564 4F10 B432 2F04 D676 58D8`). Only the MOV demuxer, the MP4 muxers, the AAC decoder and parser and the file and pipe protocols are enabled; `build-helpers.sh` holds the exact configure line.
+
+libcurl 8.11.1 is linked into `TrackWerk.exe` itself (HTTP/HTTPS only, Windows' own Schannel TLS and certificate store).
+
 ## Android Java runtime sources
 
 Frozen NewPipe extraction sources and generated Protobuf inputs are in `vendor/newpipe-extractor`. `PROVENANCE.json`, the pinned Gradle dependencies and `docs/licenses/NewPipe-PROVENANCE.txt` identify their exact revisions. Additional Rhino1.8.1/RhinoEngine source JARs and the desugared JDK source revision used for version2.1.5 are supplied in `external/android-dependency-sources`, with a source manifest. The desugared JDK source revision is the official change preparing version2.1.5; its original Git history and files retain their license notices. The Android SDK, NDK and build tools are separately obtained general development tools, not part of the APK release.

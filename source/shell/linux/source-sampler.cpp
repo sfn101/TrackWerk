@@ -40,17 +40,51 @@ extern "C" {
 #include <string_view>
 #include <thread>
 #include <vector>
+#ifdef _WIN32
+// Windows (specs/windows-sources.md): libcurl is built into the exe; helpers start with CreateProcess.
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <windows.h>
+#include <fcntl.h>
+#include <io.h>
+#include <process.h>
+#include <sys/stat.h>
+#include <curl/curl.h>
+#else
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#endif
 
 namespace pt::platform {
 namespace {
 using json = songcore::json;
 namespace fs = std::filesystem;
 using Clock = std::chrono::steady_clock;
+#ifdef _WIN32
+constexpr int kNewFileFlags = _O_WRONLY|_O_CREAT|_O_EXCL|_O_BINARY;   // no symlink flag; binary, or WAVs get CRLFs
+inline int fsync(int fd) { return _commit(fd); }
+inline int fseeko(FILE* f, int64_t offset, int whence) { return _fseeki64(f, offset, whence); }
+inline int64_t ftello(FILE* f) { return _ftelli64(f); }
+inline int truncate_file(FILE* f) { return _chsize_s(_fileno(f), 0); }
+inline bool executable(const fs::path& p) { std::error_code e; return fs::is_regular_file(p, e); }
+using SourceSocket = curl_socket_t;
+constexpr SourceSocket kNoSocket = CURL_SOCKET_BAD;
+#else
+constexpr int kNewFileFlags = O_WRONLY|O_CREAT|O_EXCL|O_NOFOLLOW;
+inline int truncate_file(FILE* f) { return ftruncate(fileno(f), 0); }
+inline bool executable(const fs::path& p) { return access(p.c_str(), X_OK) == 0; }
+using SourceSocket = int;
+constexpr SourceSocket kNoSocket = -1;
+#endif
 constexpr size_t META_LIMIT = 4 * 1024 * 1024;
 constexpr size_t MEDIA_LIMIT = 96 * 1024 * 1024;
 constexpr int64_t PCM_LIMIT = 512LL * 1024 * 1024;
@@ -116,6 +150,23 @@ struct CurlApi {
     int(*perform)(void*)=nullptr;void(*cleanup)(void*)=nullptr;
     int(*getinfo)(void*,int,...)=nullptr;const char*(*error)(int)=nullptr;
     std::string path,version,tls,failure="HTTPS library unavailable. Update the device network runtime; offline music remains usable.";
+#ifdef _WIN32
+    // Linked in statically (Schannel TLS, the Windows certificate store): always present.
+    CurlApi(){
+        init=reinterpret_cast<decltype(init)>(&curl_easy_init);
+        setopt=reinterpret_cast<decltype(setopt)>(&curl_easy_setopt);
+        perform=reinterpret_cast<decltype(perform)>(&curl_easy_perform);
+        cleanup=reinterpret_cast<decltype(cleanup)>(&curl_easy_cleanup);
+        getinfo=reinterpret_cast<decltype(getinfo)>(&curl_easy_getinfo);
+        error=reinterpret_cast<decltype(error)>(&curl_easy_strerror);
+        const curl_version_info_data* detail=curl_version_info(CURLVERSION_NOW);
+        if(curl_global_init(CURL_GLOBAL_ALL)!=CURLE_OK){failure="Network library could not start.";return;}
+        lib=reinterpret_cast<void*>(1);   // "loaded"; never closed
+        path="built-in";version=detail&&detail->version?detail->version:"unknown";tls=detail&&detail->ssl_version?detail->ssl_version:"unknown";
+        std::fprintf(stderr,"sources: curl built-in version=%s TLS=%s\n",version.c_str(),tls.c_str());
+        failure.clear();
+    }
+#else
     CurlApi(){
         // Onion also ships a smaller parasyte libcurl without HTTPS. MainUI can inherit
         // that directory before the normal library. Prefer the installed Onion TLS build,
@@ -148,6 +199,7 @@ struct CurlApi {
             failure.clear();return;
         }
     }
+#endif
 };
 CurlApi& curl(){static CurlApi api;return api;}
 struct Transfer {
@@ -156,13 +208,13 @@ struct Transfer {
     std::exception_ptr failure;int response=0;std::string contentType;int64_t icyInterval=0;
 };
 struct SourceSocketAddress {int family,socktype,protocol;unsigned int addrlen;sockaddr addr;};
-int sourceSocket(void* fixture,int purpose,SourceSocketAddress* address){
-    if(!address||purpose!=0)return -1;
+SourceSocket sourceSocket(void* fixture,int purpose,SourceSocketAddress* address){
+    if(!address||purpose!=0)return kNoSocket;
     const bool local=*static_cast<const bool*>(fixture);
     bool permitted=source_live::public_address(&address->addr,socklen_t(address->addrlen));
     if(local&&address->family==AF_INET&&address->addrlen>=sizeof(sockaddr_in))
         permitted=ntohl(reinterpret_cast<const sockaddr_in*>(&address->addr)->sin_addr.s_addr)==0x7f000001;
-    if(!permitted)return -1;
+    if(!permitted)return kNoSocket;
     return socket(address->family,address->socktype,address->protocol);
 }
 size_t receiveHeaders(char* data,size_t size,size_t count,void* context){
@@ -230,7 +282,7 @@ void http(const std::string& url,Transfer& transfer,const Cancel& cancel,const s
         if(status==301||status==302||status==303||status==307||status==308){
             char* redirected=nullptr;a.getinfo(easy,0x10001F,&redirected);
             if(!redirected)throw std::runtime_error("Source returned an empty redirect");next=redirected;
-            transfer.data.clear();transfer.count=0;if(transfer.file){std::rewind(transfer.file);if(ftruncate(fileno(transfer.file),0)!=0)throw std::runtime_error("Cannot reset source cache");}continue;
+            transfer.data.clear();transfer.count=0;if(transfer.file){std::rewind(transfer.file);if(truncate_file(transfer.file)!=0)throw std::runtime_error("Cannot reset source cache");}continue;
         }
         if(transfer.overflow)throw std::runtime_error("Source exceeds the bounded download size (96 MiB audio / 4 MiB metadata)");
         if(code){
@@ -443,11 +495,64 @@ struct LiveStream {
     std::string failure(){std::lock_guard<std::mutex> lock(errorMutex);return error;}
 };
 std::string runProcess(const std::string& program,const std::vector<std::string>& args,const Cancel& cancel,int timeoutSeconds=90,const std::string& boundedOutput={},bool youtube=true){
-    auto actual=args;const auto qjs=(fs::path(program).parent_path()/"qjs").string();
+    auto actual=args;
+#ifdef _WIN32
+    const auto qjs=(fs::path(program).parent_path()/"qjs.exe").string();
+#else
+    const auto qjs=(fs::path(program).parent_path()/"qjs").string();
+#endif
     // The release bundles EJS and QuickJS; source extraction must not download
     // executable helper code or select an arbitrary installed JS interpreter.
     if(youtube){actual.insert(actual.begin(),{"--no-remote-components","--no-cache-dir"});
-        if(access(qjs.c_str(),X_OK)==0)actual.insert(actual.begin(),{"--js-runtimes","quickjs:"+qjs});}
+        if(executable(qjs))actual.insert(actual.begin(),{"--js-runtimes","quickjs:"+qjs});}
+#ifdef _WIN32
+    const auto fail=[&](const char* what){return std::runtime_error(youtube?what:"Audio container helper failed to start");};
+    // One command line, quoted the way the MSVC runtime splits it back into argv.
+    const auto quote=[](const std::string& a){
+        if(!a.empty()&&a.find_first_of(" \t\"")==std::string::npos)return a;
+        std::string q="\"";size_t slashes=0;
+        const char slash='\\';
+        for(char c:a){if(c==slash){++slashes;continue;}
+            if(c=='"'){q.append(slashes*2+1,slash);q+='"';}else{q.append(slashes,slash);q+=c;}slashes=0;}
+        q.append(slashes*2,slash);q+='"';return q;};
+    std::string line=quote(program);for(const auto& a:actual){line+=' ';line+=quote(a);}
+    SECURITY_ATTRIBUTES inherit{sizeof(inherit),nullptr,TRUE};
+    HANDLE readEnd=nullptr,writeEnd=nullptr;
+    if(!CreatePipe(&readEnd,&writeEnd,&inherit,0))throw fail("Cannot start YouTube helper");
+    SetHandleInformation(readEnd,HANDLE_FLAG_INHERIT,0);
+    HANDLE null=CreateFileA("NUL",GENERIC_WRITE,FILE_SHARE_READ|FILE_SHARE_WRITE,&inherit,OPEN_EXISTING,0,nullptr);
+    // A job kills the helper's own children too (yt-dlp.exe unpacks and runs a second process).
+    HANDLE job=CreateJobObjectA(nullptr,nullptr);
+    JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits{};limits.BasicLimitInformation.LimitFlags=JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+    if(job)SetInformationJobObject(job,JobObjectExtendedLimitInformation,&limits,sizeof(limits));
+    STARTUPINFOA si{};si.cb=sizeof(si);si.dwFlags=STARTF_USESTDHANDLES;
+    si.hStdInput=null;si.hStdOutput=writeEnd;si.hStdError=null;
+    PROCESS_INFORMATION pi{};std::vector<char> cmd(line.begin(),line.end());cmd.push_back('\0');
+    const BOOL started=CreateProcessA(program.c_str(),cmd.data(),nullptr,nullptr,TRUE,CREATE_NO_WINDOW|CREATE_SUSPENDED,nullptr,nullptr,&si,&pi);
+    CloseHandle(writeEnd);if(null!=INVALID_HANDLE_VALUE)CloseHandle(null);
+    if(!started){CloseHandle(readEnd);if(job)CloseHandle(job);throw fail("Cannot start YouTube helper");}
+    if(job)AssignProcessToJobObject(job,pi.hProcess);
+    ResumeThread(pi.hThread);CloseHandle(pi.hThread);
+    struct Handles{HANDLE p,r,j;~Handles(){CloseHandle(p);CloseHandle(r);if(j)CloseHandle(j);}}handles{pi.hProcess,readEnd,job};
+    const auto terminate=[&]{if(job)TerminateJobObject(job,1);else TerminateProcess(pi.hProcess,1);WaitForSingleObject(pi.hProcess,5000);};
+    std::string out;const auto deadline=Clock::now()+std::chrono::seconds(timeoutSeconds);
+    const auto drain=[&](bool bounded){DWORD avail=0;char block[8192];
+        while(PeekNamedPipe(readEnd,nullptr,0,nullptr,&avail,nullptr)&&avail>0){DWORD n=0;
+            if(!ReadFile(readEnd,block,DWORD(std::min<size_t>(avail,sizeof block)),&n,nullptr)||n==0)break;
+            if(out.size()+n>8*META_LIMIT){if(bounded){terminate();throw std::runtime_error("YouTube metadata is too large");}break;}
+            out.append(block,n);}};
+    bool done=false;
+    while(!done){
+        drain(true);
+        if(cancel()||Clock::now()>deadline){terminate();check(cancel);throw std::runtime_error(youtube?"YouTube helper timed out":"Audio container helper timed out");}
+        if(!boundedOutput.empty()){std::error_code error;const auto size=fs::file_size(boundedOutput,error);if(!error&&size>MEDIA_LIMIT){terminate();throw std::runtime_error(youtube?"YouTube audio exceeds the 96 MiB download limit":"Audio container exceeds the 96 MiB limit");}}
+        done=WaitForSingleObject(pi.hProcess,10)==WAIT_OBJECT_0;
+    }
+    drain(false);
+    DWORD code=1;GetExitCodeProcess(pi.hProcess,&code);
+    if(code!=0)throw std::runtime_error(youtube?"YouTube helper could not read this public source; access may have changed":"FFmpeg could not prepare this audio container");
+    if(!boundedOutput.empty()){std::error_code error;const auto size=fs::file_size(boundedOutput,error);if(error||size==0||size>MEDIA_LIMIT)throw std::runtime_error(youtube?"YouTube did not provide bounded, readable audio":"Audio container helper did not provide bounded, readable audio");}return out;
+#else
     std::vector<char*> argv;argv.push_back(const_cast<char*>(program.c_str()));for(const auto& a:actual)argv.push_back(const_cast<char*>(a.c_str()));argv.push_back(nullptr);
     int pipes[2];if(pipe(pipes)!=0)throw std::runtime_error("Cannot start YouTube helper");
     const pid_t child=fork();if(child<0){close(pipes[0]);close(pipes[1]);throw std::runtime_error("Cannot start YouTube helper");}
@@ -465,6 +570,8 @@ std::string runProcess(const std::string& program,const std::vector<std::string>
     char block[8192];ssize_t n;while((n=read(pipes[0],block,sizeof block))>0&&out.size()+size_t(n)<=8*META_LIMIT)out.append(block,size_t(n));close(pipes[0]);
     if(!WIFEXITED(status)||WEXITSTATUS(status)!=0)throw std::runtime_error(youtube?"YouTube helper could not read this public source; access may have changed":"FFmpeg could not prepare this audio container");
     if(!boundedOutput.empty()){std::error_code error;const auto size=fs::file_size(boundedOutput,error);if(error||size==0||size>MEDIA_LIMIT)throw std::runtime_error(youtube?"YouTube did not provide bounded, readable audio":"Audio container helper did not provide bounded, readable audio");}return out;
+
+#endif
 }
 std::vector<Track> youtubeSearch(const std::string& tool,const std::string& query,const std::string& genre,bool random,const Cancel& cancel){
     std::string q=clean(query+" "+genre);if(q.find_first_not_of(' ')==std::string::npos)q="music";
@@ -487,7 +594,9 @@ struct File {FILE* f=nullptr;explicit File(const std::string& path,const char* m
 // The preview cache holds PCM16, the format every render writes: half the card writes of float,
 // twice the length within PCM_LIMIT, and a render copies its frames unchanged. The conversion is the
 // one render used to apply at the end, so rendered WAVs stay bit-identical.
+#ifndef _WIN32   // every Windows target is little-endian
 static_assert(__BYTE_ORDER__==__ORDER_LITTLE_ENDIAN__,"the PCM16 preview cache is copied into WAVs unchanged");
+#endif
 int16_t cachePcm16(float value){
     value=std::isfinite(value)?std::clamp(value,-1.f,1.f):0.f;
     return int16_t(std::clamp<long>(std::lrint(double(value)*32768.),-32768,32767));
@@ -671,7 +780,16 @@ struct SourceSampler::Impl {
         for(const char* stale:{"preview.f32","preview.f32.tmp"}){std::error_code ignored;fs::remove(fs::path(cacheDir)/stale,ignored);}
         if(const char* overrideCA=std::getenv("POCKETTRACKER_CACERT")){if(fs::is_regular_file(overrideCA))ca=overrideCA;}
         if(ca.empty())for(const auto& p:{fs::path(r)/"../tools/cacert.pem",fs::path(r)/"tools/cacert.pem",fs::path(r)/"../certs/cacert.pem"})if(fs::is_regular_file(p)){ca=p.lexically_normal().string();break;}
-#ifndef PT_MIYOO_PLUS_ARCHIVE
+#if defined(_WIN32)
+        // Shipped beside the exe in tools\ (specs/windows-sources.md); PT_YTDLP / PT_FFMPEG still win.
+        {char exe[MAX_PATH]{};const DWORD n=GetModuleFileNameA(nullptr,exe,MAX_PATH);
+         const fs::path tools=(n>0&&n<MAX_PATH)?fs::path(exe).parent_path()/"tools":fs::path();
+         if(const char* t=std::getenv("PT_YTDLP")){if(executable(t))tool=t;}
+         if(tool.empty()&&!tools.empty()&&executable(tools/"yt-dlp.exe"))tool=(tools/"yt-dlp.exe").string();
+         if(const char* f=std::getenv("PT_FFMPEG")){if(executable(f))ffmpeg=f;}
+         if(ffmpeg.empty()&&!tools.empty()&&executable(tools/"ffmpeg.exe"))ffmpeg=(tools/"ffmpeg.exe").string();
+         std::fprintf(stderr,"sources: yt-dlp=%s ffmpeg=%s\n",tool.empty()?"none":tool.c_str(),ffmpeg.empty()?"none":ffmpeg.c_str());}
+#elif !defined(PT_MIYOO_PLUS_ARCHIVE)
         if(const char* t=std::getenv("PT_YTDLP")){if(access(t,X_OK)==0)tool=t;}
         if(tool.empty())for(const auto& p:{fs::path(r)/"../tools/yt-dlp",fs::path(r)/"tools/yt-dlp",fs::path(r)/"../tools/yt-dlp_linux_aarch64"})if(access(p.c_str(),X_OK)==0){tool=p.lexically_normal().string();break;}
         if(const char* f=std::getenv("PT_FFMPEG")){if(access(f,X_OK)==0)ffmpeg=f;}
@@ -748,10 +866,10 @@ struct SourceSampler::Impl {
         for(const auto& f:favoriteStations){if(f.is_object()&&text(f,"id")==track.id){found=true;continue;}next.push_back(f);}
         if(!found){if(next.size()>=128)throw std::runtime_error("Station favorites are full (128)");next.push_back({{"id",track.id},{"title",track.title},{"creator",track.creator},{"page",track.page},{"tags",track.tags},{"description",track.description}});}
         fs::create_directories(path.parent_path());const auto temporary=path.string()+".tmp-"+std::to_string(getpid());
-        const int fd=open(temporary.c_str(),O_WRONLY|O_CREAT|O_EXCL|O_NOFOLLOW,0600);if(fd<0)throw std::runtime_error("Cannot create station favorites; previous file kept");
+        const int fd=open(temporary.c_str(),kNewFileFlags,0600);if(fd<0)throw std::runtime_error("Cannot create station favorites; previous file kept");
         FILE* file=fdopen(fd,"wb");if(!file){close(fd);std::remove(temporary.c_str());throw std::runtime_error("Cannot write station favorites");}
         const auto raw=next.dump(2);const bool wrote=std::fwrite(raw.data(),1,raw.size(),file)==raw.size();const bool flushed=std::fflush(file)==0;const bool synced=fsync(fd)==0;const bool closed=std::fclose(file)==0;
-        if(!wrote||!flushed||!synced||!closed||std::rename(temporary.c_str(),path.c_str())!=0){std::remove(temporary.c_str());throw std::runtime_error("Cannot finish station favorites; previous file kept");}
+        if(!wrote||!flushed||!synced||!closed||std::rename(temporary.c_str(),path.string().c_str())!=0){std::remove(temporary.c_str());throw std::runtime_error("Cannot finish station favorites; previous file kept");}
         favoriteStations=std::move(next);message("ready",found?"Station removed from Favorites.":"Station saved. Discover > Favorites opens your stations.");
     }
     void discardLiveTake(){
@@ -874,7 +992,7 @@ struct SourceSampler::Impl {
         next.last = last;
         next.request = request;
         next.epoch = epoch;
-        const int fd = open(next.temporary.c_str(), O_WRONLY|O_CREAT|O_EXCL|O_NOFOLLOW, 0600);
+        const int fd = open(next.temporary.c_str(), kNewFileFlags, 0600);
         if (fd < 0) throw std::runtime_error("Cannot create radio rewind WAV");
         next.file = fdopen(fd, "wb");
         if (!next.file) {

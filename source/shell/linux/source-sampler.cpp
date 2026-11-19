@@ -576,12 +576,45 @@ std::string runProcess(const std::string& program,const std::vector<std::string>
 
 #endif
 }
+// specs/youtube-picker.md: a sample source, not albums or streams. 15 minutes fits the preview cache
+// with room to spare; most of YouTube's top hits for a broad word are hour-long compilations.
+constexpr int64_t YOUTUBE_MAX_SECONDS=15*60;
+std::string minutes(int64_t seconds){char text[32];std::snprintf(text,sizeof text,"%lld:%02lld",static_cast<long long>(seconds/60),static_cast<long long>(seconds%60));return text;}
+// The video ID of a pasted or shared YouTube link (watch, youtu.be, shorts, music, mobile); empty otherwise.
+std::string youtubeVideoId(const std::string& query){
+    const auto first=query.find_first_not_of(" \t\r\n");if(first==std::string::npos)return {};
+    const auto link=query.substr(first,query.find_last_not_of(" \t\r\n")-first+1);
+    static const std::regex pattern(R"(^(?:https?://)?(?:(?:www|m|music)\.)?(?:youtube\.com/(?:watch\?(?:[^#]*&)?v=|shorts/|live/|embed/)|youtu\.be/)([A-Za-z0-9_-]{11})(?:[?&#/].*)?$)",std::regex::icase);
+    std::smatch m;return std::regex_match(link,m,pattern)?m[1].str():std::string();
+}
+// A pasted link: one result, refused with the reason when SOURCE cannot use it.
+Track youtubeVideo(const std::string& tool,const std::string& id,const Cancel& cancel){
+    // --ignore-no-formats-error: a stream still returns its details, so the refusal can say why.
+    auto raw=runProcess(tool,{"--ignore-config","--no-warnings","--no-playlist","--skip-download","--ignore-no-formats-error","--dump-single-json","--socket-timeout","15","--","https://www.youtube.com/watch?v="+id},cancel);
+    auto j=json::parse(raw,nullptr,false);if(j.is_discarded()||!j.is_object())throw std::runtime_error("Invalid YouTube metadata");
+    const auto status=text(j,"live_status");
+    if(status=="is_live"||status=="is_upcoming"||status=="post_live"||j.value("is_live",false))throw std::runtime_error("That link is a live stream; SOURCE takes recorded videos only");
+    const auto seconds=static_cast<int64_t>(number(j,"duration"));
+    if(seconds<=0)throw std::runtime_error("YouTube gives no length for that link; try another video");
+    if(seconds>YOUTUBE_MAX_SECONDS)throw std::runtime_error("That video is "+minutes(seconds)+"; SOURCE takes YouTube videos up to "+minutes(YOUTUBE_MAX_SECONDS));
+    Track t;t.id=id;t.title=clean(text(j,"title",id));t.creator=clean(text(j,"channel",text(j,"uploader")));t.page="https://www.youtube.com/watch?v="+id;
+    t.description=clean(text(j,"description"));t.duration=seconds*1000;t.kind="audio";return t;
+}
 std::vector<Track> youtubeSearch(const std::string& tool,const std::string& query,const std::string& genre,bool random,const Cancel& cancel){
-    std::string q=clean(query+" "+genre);if(q.find_first_not_of(' ')==std::string::npos)q="music";
-    if(random){const char* extra[]={"live music","instrumental","vintage music","jazz session","library music"};std::mt19937 rng(std::random_device{}());q+=" "+std::string(extra[rng()%5]);}
-    auto raw=runProcess(tool,{"--ignore-config","--no-warnings","--skip-download","--flat-playlist","--dump-single-json","--socket-timeout","15","--", "ytsearch20:"+q},cancel);
+    if(!random)if(const auto id=youtubeVideoId(query);!id.empty())return {youtubeVideo(tool,id,cancel)};
+    // A typed search is the musician's own words, so the genre is not added; Random adds a sampling term.
+    std::string q=clean(random?genre:query);
+    if(random||q.find_first_not_of(' ')==std::string::npos){
+        const char* extra[]={"instrumental","drum break","rare groove","loop","vintage"};std::mt19937 rng(std::random_device{}());
+        q=clean(genre.empty()?"music":genre)+" "+extra[rng()%5];
+    }
+    auto raw=runProcess(tool,{"--ignore-config","--no-warnings","--skip-download","--flat-playlist","--dump-single-json","--socket-timeout","15","--", "ytsearch30:"+q},cancel);
     auto j=json::parse(raw,nullptr,false);if(j.is_discarded())throw std::runtime_error("Invalid YouTube metadata");std::vector<Track> out;auto entries=j.value("entries",json::array());if(!entries.is_array())return out;
-    for(const auto& e:entries){if(!e.is_object()||text(e,"live_status")=="is_live")continue;Track t;t.id=text(e,"id");if(!std::regex_match(t.id,std::regex("[A-Za-z0-9_-]{6,20}")))continue;t.title=clean(text(e,"title",t.id));t.creator=clean(text(e,"channel",text(e,"uploader")));t.page="https://www.youtube.com/watch?v="+t.id;t.description=clean(text(e,"description"));t.duration=number(e,"duration")*1000;t.kind="audio";out.push_back(std::move(t));}
+    for(const auto& e:entries){
+        if(!e.is_object()||text(e,"ie_key","Youtube")!="Youtube")continue;   // channels and playlists
+        const auto status=text(e,"live_status");if(status=="is_live"||status=="is_upcoming")continue;
+        const auto seconds=static_cast<int64_t>(number(e,"duration"));if(seconds<=0||seconds>YOUTUBE_MAX_SECONDS)continue;
+        Track t;t.id=text(e,"id");if(!std::regex_match(t.id,std::regex("[A-Za-z0-9_-]{6,20}")))continue;t.title=clean(text(e,"title",t.id));t.creator=clean(text(e,"channel",text(e,"uploader")));t.page="https://www.youtube.com/watch?v="+t.id;t.description=clean(text(e,"description"));t.duration=seconds*1000;t.kind="audio";out.push_back(std::move(t));}
     if(random){std::mt19937 rng(std::random_device{}());std::shuffle(out.begin(),out.end(),rng);}return out;
 }
 Track youtubeResolve(const std::string& tool,Track t,const Cancel& cancel){
@@ -793,8 +826,10 @@ struct SourceSampler::Impl {
          if(ffmpeg.empty()&&!tools.empty()&&executable(tools/"ffmpeg.exe"))ffmpeg=(tools/"ffmpeg.exe").string();
          std::fprintf(stderr,"sources: yt-dlp=%s ffmpeg=%s\n",tool.empty()?"none":tool.c_str(),ffmpeg.empty()?"none":ffmpeg.c_str());}
 #elif !defined(PT_MIYOO_PLUS_ARCHIVE)
+#ifndef PT_HANDHELD   // YouTube is for Android and desktops only (specs/youtube-picker.md)
         if(const char* t=std::getenv("PT_YTDLP")){if(access(t,X_OK)==0)tool=t;}
         if(tool.empty())for(const auto& p:{fs::path(r)/"../tools/yt-dlp",fs::path(r)/"tools/yt-dlp",fs::path(r)/"../tools/yt-dlp_linux_aarch64"})if(access(p.c_str(),X_OK)==0){tool=p.lexically_normal().string();break;}
+#endif
         if(const char* f=std::getenv("PT_FFMPEG")){if(access(f,X_OK)==0)ffmpeg=f;}
         if(ffmpeg.empty())for(const char* p:{"/usr/bin/ffmpeg","/bin/ffmpeg","/usr/local/bin/ffmpeg"})if(access(p,X_OK)==0){ffmpeg=p;break;}
         if(ffmpeg.empty())if(const char* paths=std::getenv("PATH")){std::string path=paths;size_t start=0;while(start<path.size()){const auto end=path.find(':',start);const auto directory=path.substr(start,end-start);if(!directory.empty()&&directory.front()=='/'){const auto candidate=(fs::path(directory)/"ffmpeg").string();if(access(candidate.c_str(),X_OK)==0){ffmpeg=candidate;break;}}if(end==std::string::npos)break;start=end+1;}}
@@ -1378,7 +1413,7 @@ struct SourceSampler::Impl {
             else if(provider=="radio_browser")results=collection=="stations"?curated_search(query,genre,false,a=="discover"):radioSearch(query,genre,a=="discover",cancel,ca);
             else if(provider=="somafm")results=curated_search(query,genre,true,a=="discover");
             else if(provider=="youtube"&&!tool.empty())results=youtubeSearch(tool,query,genre,a=="discover",cancel);else throw std::runtime_error("This source is unavailable on this device; use an available provider");
-            sourceResults=results;selected=results.empty()?-1:0;sortTitle=false;message("results",results.empty()?"No matching audio found. Try another genre or query.":"Choose an album or track. Right enters the list; A opens it.");state["busy"]=false;
+            sourceResults=results;selected=results.empty()?-1:0;sortTitle=false;message("results",results.empty()?(provider=="youtube"?"No YouTube video up to 15:00 matched; try other words or paste a link.":"No matching audio found. Try another genre or query."):"Choose an album or track. Right enters the list; A opens it.");state["busy"]=false;
         }else if(a=="open"){
             const int index=int(number(args,"index",selected));if(index<0||index>=int(results.size()))throw std::runtime_error("Choose a valid result");dropTrack();tracks.clear();sourceTracks.clear();selected=index;state["busy"]=true;message("loading","Reading available audio tracks...");publish();if(provider=="archive")tracks=archiveOpen(results[index],cancel,ca);else tracks={results[index]};sourceTracks=tracks;trackIndex=tracks.empty()?-1:0;sortTitle=false;state["busy"]=false;message("tracks","Choose a track and press A to listen.");
             if(tracks.size()==1&&args.value("auto_listen",false))prepareTrack(0,true,cancel);

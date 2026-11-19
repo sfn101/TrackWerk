@@ -9,7 +9,6 @@ import org.schabi.newpipe.extractor.downloader.Request
 import org.schabi.newpipe.extractor.downloader.Response
 import org.schabi.newpipe.extractor.localization.Localization
 import org.schabi.newpipe.extractor.playlist.PlaylistInfo
-import org.schabi.newpipe.extractor.playlist.PlaylistInfoItem
 import org.schabi.newpipe.extractor.search.SearchInfo
 import org.schabi.newpipe.extractor.stream.ContentAvailability
 import org.schabi.newpipe.extractor.stream.DeliveryMethod
@@ -29,6 +28,14 @@ import java.util.zip.GZIPInputStream
  */
 internal object YouTubeFacade {
     private val service get() = ServiceList.YouTube
+    /** specs/youtube-picker.md: a sample source, not albums or streams; the same limit as the desktop. */
+    const val MAX_SECONDS = 15 * 60L
+    private val LINK = Regex("""^(?:https?://)?(?:(?:www|m|music)\.)?(?:youtube\.com/(?:watch\?(?:[^#]*&)?v=|shorts/|live/|embed/)|youtu\.be/)([A-Za-z0-9_-]{11})(?:[?&#/].*)?$""", RegexOption.IGNORE_CASE)
+
+    /** The video ID of a pasted or shared YouTube link, or null. */
+    fun videoId(text: String): String? = LINK.matchEntire(text.trim())?.groupValues?.get(1)
+
+    private fun minutes(seconds: Long) = "%d:%02d".format(seconds / 60, seconds % 60)
     private var initialized = false
 
     private fun initialize() {
@@ -43,20 +50,33 @@ internal object YouTubeFacade {
         val text = query.trim().take(180)
         require(text.isNotEmpty()) { "Enter a genre, artist or playlist." }
         val handler = service.searchQHFactory.fromQuery(text, emptyList(), "")
+        // Videos up to MAX_SECONDS only: no playlists, channels, live or hour-long compilations.
         return SearchInfo.getInfo(service, handler).relatedItems.mapNotNull { item ->
-            when (item) {
-                is PlaylistInfoItem -> SourceItem(item.url, item.name, item.uploaderName.orEmpty(), "playlist", item.url)
-                is StreamInfoItem -> if (item.streamType == StreamType.VIDEO_STREAM || item.streamType == StreamType.AUDIO_STREAM)
-                    SourceItem(item.url, item.name, item.uploaderName.orEmpty(), "stream", item.url) else null
-                else -> null
-            }
+            if (item is StreamInfoItem && (item.streamType == StreamType.VIDEO_STREAM || item.streamType == StreamType.AUDIO_STREAM) &&
+                item.duration in 1..MAX_SECONDS)
+                SourceItem(item.url, item.name, item.uploaderName.orEmpty(), "stream", item.url, durationMs = item.duration * 1000)
+            else null
         }.distinctBy { it.itemUrl }.take(48)
+    }
+
+    /** A pasted or shared link: one result, or the reason SOURCE cannot use it. */
+    @Synchronized fun link(id: String): List<SourceItem> {
+        initialize()
+        val url = "https://www.youtube.com/watch?v=$id"
+        val extractor = service.getStreamExtractor(url)
+        extractor.fetchPage()
+        if (extractor.streamType != StreamType.VIDEO_STREAM && extractor.streamType != StreamType.AUDIO_STREAM)
+            throw IOException("That link is a live stream; SOURCE takes recorded videos only")
+        val seconds = extractor.length
+        if (seconds <= 0) throw IOException("YouTube gives no length for that link; try another video")
+        if (seconds > MAX_SECONDS) throw IOException("That video is ${minutes(seconds)}; SOURCE takes YouTube videos up to ${minutes(MAX_SECONDS)}")
+        return listOf(SourceItem(url, extractor.name, extractor.uploaderName.orEmpty(), "stream", url, durationMs = seconds * 1000))
     }
 
     @Synchronized fun open(item: SourceItem): List<SourceTrack> {
         initialize()
         checkYouTubeUrl(item.itemUrl)
-        if (item.kind != "playlist") return listOf(SourceTrack(item.id, item.title, item.creator, itemUrl = item.itemUrl))
+        if (item.kind != "playlist") return listOf(SourceTrack(item.id, item.title, item.creator, itemUrl = item.itemUrl, durationMs = item.durationMs))
         val info = PlaylistInfo.getInfo(service, item.itemUrl)
         val tracks = info.relatedItems.toMutableList()
         var next = info.nextPage

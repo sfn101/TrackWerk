@@ -128,6 +128,7 @@ class MainActivity : SDLActivity() {
         midiIn = MidiInManager(this)
         sampleRecorder = SampleRecorder(applicationContext)
         sourceSampler = SourceSampler(this) { sampleRecorder?.stop() }
+        takeSharedLink(intent)
 
         super.onCreate(savedInstanceState)
         hideSystemBars()
@@ -149,6 +150,17 @@ class MainActivity : SDLActivity() {
     // ⚠️ The service starts here, before `super.onPause()`: Android refuses one started from the
     // background, and the native loop asks at `super.onPause()` whether it came up. If not, the
     // song stops.
+    // Share > TrackWerk from the YouTube app or a browser (specs/youtube-picker.md). singleTask:
+    // a share reaches the running app here instead of starting a second native instance.
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        takeSharedLink(intent)
+    }
+    private fun takeSharedLink(intent: Intent?) {
+        if (intent?.action != Intent.ACTION_SEND) return
+        sourceSampler?.share(intent.getStringExtra(Intent.EXTRA_TEXT) ?: return)
+    }
+
     override fun onPause() {
         captureForeground = false
         sampleRecorder?.stop()

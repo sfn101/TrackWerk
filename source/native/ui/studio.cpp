@@ -202,7 +202,11 @@ static bool studio_source_button(const ButtonEvent& e,AppState& s,songcore::Song
  return handled;
 }
 
+bool source_sampler_link_open(const AppState& s){return s.studioOpen&&s.studioTab==7&&s.sourceSampler.linkOpen;}
+
 bool studio_button(const ButtonEvent& e,AppState& s,songcore::SongcoreHost& host,AudioEngine& engine,FileSystem& fs){
+ // The YouTube link field holds the controller: help, tabs and chords wait until A or B closes it.
+ if(source_sampler_link_open(s))return studio_source_button(e,s,host,engine);
  // A replace question on Sources belongs to that screen: elsewhere, or after Studio closed, it is gone.
  if(!s.studioOpen||s.studioTab!=7||e.cancelled)source_sampler_disarm(s.sourceSampler);
  const uint16_t modalReturnBit=e.button==Button::A?1u:e.button==Button::B?2u:0u;

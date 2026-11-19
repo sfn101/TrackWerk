@@ -17,12 +17,13 @@ bool autosave_clear(FileSystem& fs) {
     return fs.file_exists(path) ? fs.delete_path(path) : true;
 }
 
-bool autosave_load(songcore::SongcoreHost& host, FileSystem& fs, const std::string& mediaBaseDir) {
+bool autosave_load(songcore::SongcoreHost& host, FileSystem& fs, const std::string& mediaBaseDir,
+                   bool repair) {
     const std::string path = fs.autosave_file_path();
     if (!fs.file_exists(path)) return false;
 
     // A mangled autosave fails the parse with the previous project intact.
-    return host.load_project_file(path, mediaBaseDir);
+    return host.load_project_file(path, mediaBaseDir, repair);
 }
 
 }  // namespace pt::ui

@@ -58,18 +58,25 @@ void SongcoreHost::reset_midi_in() {
     if (!engine_) midiIn_.service_requests();
 }
 
-bool SongcoreHost::push_project(const std::string& blob) {
+bool SongcoreHost::push_project(const std::string& blob, bool repair) {
     // allow_exceptions=false: a malformed blob leaves the previous project intact.
     json j = json::parse(blob, /*cb=*/nullptr, /*allow_exceptions=*/false);
-    projectDamaged_ = true;
+    projectDamaged_    = true;
+    projectRepairable_ = false;
+    repairCount_       = 0;
     if (j.is_discarded() || !j.is_object()) {
         std::fprintf(stderr, "project refused: not a JSON object\n");
         return false;
     }
-    if (const char* why = project_damage(j)) {
-        std::fprintf(stderr, "project refused: %s\n", why);
+    const std::vector<std::string> damages = project_damages(j);
+    if (!damages.empty() && !repair) {
+        for (const std::string& why : damages) std::fprintf(stderr, "project refused: %s\n", why.c_str());
+        projectRepairable_ = true;
         return false;
     }
+    // parse_project and normalize_and_migrate below fix each one.
+    for (const std::string& why : damages) std::fprintf(stderr, "repaired: %s\n", why.c_str());
+    repairCount_    = static_cast<int>(damages.size());
     projectDamaged_ = false;
 
     Project parsed = parse_project(j);
@@ -376,23 +383,26 @@ void SongcoreHost::poll_sf_load() {
     songcore::collect_instrument_soundfont(*engine_, project_, routing_, mediaRoots_);
 }
 
-bool SongcoreHost::load_project_file(const std::string& path, const std::string& baseDir) {
+bool SongcoreHost::load_project_file(const std::string& path, const std::string& baseDir, bool repair) {
     std::string blob;
-    projectDamaged_ = false;   // an unreadable file is not a damaged one
+    projectDamaged_    = false;   // an unreadable file is not a damaged one
+    projectRepairable_ = false;
+    repairCount_       = 0;
     if (!pt_read_file(path.c_str(), blob)) return false;
-    if (!load_project_blob(blob,path,baseDir)) {
+    if (!load_project_blob(blob,path,baseDir,repair)) {
         if (projectDamaged_) std::fprintf(stderr, "  in %s\n", path.c_str());
         return false;
     }
     return true;
 }
 
-bool SongcoreHost::load_project_blob(const std::string& blob,const std::string& path,const std::string& baseDir){
+bool SongcoreHost::load_project_blob(const std::string& blob,const std::string& path,const std::string& baseDir,
+                                     bool repair){
     // ⚠️ Stop BEFORE the document is replaced, or the walk runs the old position through new data.
     const bool wasPlaying = seq_.is_playing();
     stop();
 
-    if (!push_project(blob)) return false;
+    if (!push_project(blob, repair)) return false;
 
     const size_t slash = path.find_last_of("/\\");
     mediaRoots_.projectDir = (slash == std::string::npos) ? std::string() : path.substr(0, slash);

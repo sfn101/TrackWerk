@@ -73,6 +73,12 @@ Everything wrong is fixed in one go, with no partial repair. The rules are upstr
 - Load a damaged song and try A, then B.
 - Put a damaged file in place of the recovery file to act as a crash, launch, and try A and B.
 
+## Help
+
+- PROJECT's LOAD help (`native/ui/help_text.h`, `PROJECT_LOAD`) says unsaved changes are asked about first, that a damaged song offers a repair, and what A and B do on that box.
+- The manual (`source/docs/manual-en.md`, PROJECT screen) gains a **Damaged songs** paragraph: what counts as damage, A and B, the fix count and log, the first SAVE asking, RESUME's case, and what is never repaired; the RESUME setting row mentions the repair box.
+- `source/tests/corrupt-files/README.md` lists the new test file and the repair box.
+
 ## Out of scope
 
 - Repairing samples, SoundFonts or M8 files.

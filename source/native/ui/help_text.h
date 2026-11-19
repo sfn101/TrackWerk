@@ -1095,11 +1095,13 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
     /* PROJECT_LOAD */
     {"LOAD: open another song", "Opens the file browser to", "pick one.",
      {"Opens the file browser on your",
-      "songs. Loading one replaces the",
-      "song that is open, so save it",
-      "first if it has changes."},
+      "songs. Unsaved changes are",
+      "asked about first. A damaged",
+      "song offers a repair first."},
      {"A opens the file browser",
-      "A there loads it, B goes back"}},
+      "A there loads it, B goes back",
+      "REPAIR: A fixes, loads unsaved",
+      "REPAIR: B keeps the open song"}},
     /* PROJECT_NEW */
     {"NEW: start an empty song", "Asks first. Starts from your", "template if you saved one.",
      {"If you saved a TEMPLATE in",

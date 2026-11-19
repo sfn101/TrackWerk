@@ -97,6 +97,13 @@ void InputDispatcher::confirm_accept() {
             if (!recover_from_autosave()) autosave_clear(fs_);
             break;
 
+        case ConfirmDialogState::Kind::REPAIR_SONG:
+            if (argv == ConfirmDialogState::REPAIR_FROM_LOAD)
+                repair_pending_song();
+            else if (!recover_from_autosave(/*repair=*/true))
+                autosave_clear(fs_);
+            break;
+
         case ConfirmDialogState::Kind::COLLECT_EXISTS: {
             const std::string folder = collect_folder_name(host_);
             if (argv == ConfirmDialogState::COLLECT_REPLACE)
@@ -113,7 +120,19 @@ void InputDispatcher::confirm_accept() {
 
 void InputDispatcher::confirm_cancel() {
     const ConfirmDialogState::Kind kind = s_.confirm.kind;
+    const int argv = s_.confirm.arg;
     s_.confirm.close();
+
+    // B on a damaged song: from LOAD the open song stays as it was; from RESUME an empty song starts
+    // and the autosave goes (start_new_project), or the question would return every launch.
+    if (kind == ConfirmDialogState::Kind::REPAIR_SONG) {
+        s_.repairPendingPath.clear();
+        if (argv == ConfirmDialogState::REPAIR_FROM_LOAD)
+            set_status(s_.fileBrowser, "LOAD FAILED: FILE DAMAGED", false);
+        else
+            start_new_project();
+        return;
+    }
 
     if (kind == ConfirmDialogState::Kind::M8_IMPORT) {
         s_.m8PendingJson.clear();s_.m8PendingPath.clear();s_.m8PendingReport.clear();

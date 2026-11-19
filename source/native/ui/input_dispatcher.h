@@ -419,7 +419,9 @@ class InputDispatcher {
 
     // Load the autosave into the document and leave it dirty — recovered work is not saved work.
     // ⚠️ The autosave is not cleared: it is still the only copy.
-    bool recover_from_autosave();
+    // A damaged but readable autosave opens the REPAIR_SONG box and returns true (the file stays);
+    // `repair` loads it with the damage fixed.
+    bool recover_from_autosave(bool repair = false);
 
     Clipboard clip_{};
 
@@ -761,6 +763,9 @@ class InputDispatcher {
 
     // A .ptp replaced the document: clean, no selection, browser closed.
     void load_project_done(const std::string& path);
+
+    // A on REPAIR_SONG from LOAD: load `repairPendingPath` with its damage fixed, unsaved.
+    void repair_pending_song();
 
     // EXPORT, synchronously; the render hook repaints the progress from inside it.
     void export_song(bool stems);

@@ -142,6 +142,8 @@ bool copy_in_pieces(const std::string& from, const std::string& to,
 bool save_would_replace_other_song(const songcore::SongcoreHost& host, FileSystem& fs, const AppState& s) {
     const std::string target = project_save_path(host, fs);
     if (!fs.file_exists(target)) return false;
+    // A repaired song not saved yet: its own file is the damaged one, so the first SAVE asks too.
+    if (s.repairedUnsaved) return true;
 #ifdef _WIN32
     return comparable_path(target) != comparable_path(s.projectPath);   // the file system ignores case
 #else

@@ -380,36 +380,52 @@ inline std::vector<T> parse_pool(const json& j, const char* k, F&& parse_elem) {
 
 }  // namespace detail
 
-// Values the engine indexes or divides by, checked on the raw JSON before parse_project: a file that
-// fails is refused whole, never repaired. nullptr = fine, else what is wrong (for the log).
+// Values the engine indexes or divides by, checked on the raw JSON before parse_project. Every bad
+// value is one entry, worded for the log; empty = fine. A damaged song is refused unless the user asks
+// for a repair, and then parse_project / normalize_project fix each one (tempo and groove steps to the
+// nearest limit, short phrases padded, instrument ids from their position).
 // Doubles, so a huge number can't wrap into range on its way to int.
-inline const char* project_damage(const json& j) {
-    const auto outside = [](const json& o, const char* k, double lo, double hi) {
+inline std::vector<std::string> project_damages(const json& j) {
+    std::vector<std::string> out;
+    const auto bad = [](const json& o, const char* k, double lo, double hi) {
         auto it = o.find(k);
         return it != o.end() && it->is_number() && !(it->get<double>() >= lo && it->get<double>() <= hi);
     };
-    const auto each = [&j](const char* pool, auto&& bad) -> bool {
-        auto it = j.find(pool);
-        if (it == j.end() || !it->is_array()) return false;
-        for (const auto& e : *it) if (e.is_object() && bad(e)) return true;
-        return false;
+    const auto label = [](const json& e, size_t pos) {
+        auto id = e.find("id");
+        return std::to_string(id != e.end() && id->is_number_integer() ? id->get<long long>()
+                                                                       : static_cast<long long>(pos));
     };
-    if (outside(j, "tempo", 20, 999)) return "tempo outside 20..999";
-    if (each("instruments", [&](const json& e) { return outside(e, "id", 0, POOL_INSTRUMENTS - 1); }))
-        return "instrument id outside 0..127";
-    if (each("phrases", [](const json& e) {
-            auto s = e.find("steps");
-            return s != e.end() && s->is_array() && s->size() < 16;
-        }))
-        return "phrase with fewer than 16 steps";
-    if (each("grooves", [](const json& e) {
-            auto s = e.find("steps");
-            if (s == e.end() || !s->is_array()) return false;
-            for (const auto& v : *s) if (v.is_number() && !(v.get<double>() >= -1 && v.get<double>() <= 255)) return true;
-            return false;
-        }))
-        return "groove step outside -1..255";
-    return nullptr;
+    const auto pool = [&j](const char* key) -> const json* {
+        auto it = j.find(key);
+        return it != j.end() && it->is_array() ? &*it : nullptr;
+    };
+    if (bad(j, "tempo", 20, 999)) out.push_back("tempo " + j["tempo"].dump() + " outside 20..999");
+    if (const json* a = pool("instruments"))
+        for (size_t i = 0; i < a->size(); ++i)
+            if ((*a)[i].is_object() && bad((*a)[i], "id", 0, POOL_INSTRUMENTS - 1))
+                out.push_back("instrument at position " + std::to_string(i) + " had id " + (*a)[i]["id"].dump());
+    if (const json* a = pool("phrases"))
+        for (size_t i = 0; i < a->size(); ++i) {
+            const json& e = (*a)[i];
+            if (!e.is_object()) continue;
+            auto st = e.find("steps");
+            if (st != e.end() && st->is_array() && st->size() < 16)
+                out.push_back("phrase " + label(e, i) + " had " + std::to_string(st->size()) + " steps");
+        }
+    if (const json* a = pool("grooves"))
+        for (size_t i = 0; i < a->size(); ++i) {
+            const json& e = (*a)[i];
+            if (!e.is_object()) continue;
+            auto st = e.find("steps");
+            if (st == e.end() || !st->is_array()) continue;
+            for (size_t k = 0; k < st->size(); ++k) {
+                const json& v = (*st)[k];
+                if (v.is_number() && !(v.get<double>() >= -1 && v.get<double>() <= 255))
+                    out.push_back("groove " + label(e, i) + " step " + std::to_string(k) + " was " + v.dump());
+            }
+        }
+    return out;
 }
 
 // Parse a decoded .ptp object into a Project (field defaults for anything missing). Pools are taken

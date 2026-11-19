@@ -40,6 +40,7 @@ std::string confirm_dialog_title(ConfirmDialogState::Kind kind) {
         case ConfirmDialogState::Kind::FIRST_BEAT:  return "DISCARD WORK?";
         case ConfirmDialogState::Kind::LOAD_DISCARD:   return "UNSAVED CHANGES - LOAD ANYWAY?";
         case ConfirmDialogState::Kind::SAVE_OVERWRITE: return "SONG EXISTS - OVERWRITE?";
+        case ConfirmDialogState::Kind::REPAIR_SONG:    return "FILE DAMAGED - REPAIR?";
         case ConfirmDialogState::Kind::NONE:        break;
     }
     return "";

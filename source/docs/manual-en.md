@@ -779,7 +779,7 @@ own.
 |---|---|
 | D-pad UP/DOWN | Move through files / folders |
 | A | Load file or enter folder |
-| A on `..` | Go up one directory level |
+| A on `..` | Go up one directory level (on Windows, `..` at a drive's root lists the drives) |
 | R + LEFT | Go up one directory level |
 | B | Close the browser |
 | START | Preview highlighted audio (WAV / MP3 / FLAC / OGG / OPUS / M4A) or video file |
@@ -1518,8 +1518,8 @@ Navigate here: **R+UP** from SONG or CHAIN.
 
 | Row | Action |
 |---|---|
-| SAVE | Save project to `.ptp` file (press A to confirm). |
-| LOAD | Open file browser to load a project. |
+| SAVE | Save the song as `<NAME>.ptp`. A song opened from a file saves back into that file's folder; a new, recovered or imported song goes to `Projects/`. If that folder can't be written (read-only, or no permission on Android) it saves in `Projects/` and says `FOLDER READ-ONLY: SAVED IN PROJECTS`. A different song already under that name asks `SONG EXISTS - OVERWRITE?` first. |
+| LOAD | Open file browser to load a project. With unsaved changes it asks `UNSAVED CHANGES - LOAD ANYWAY?` first. A damaged song asks `FILE DAMAGED - REPAIR?` (see below). |
 | COLLECT | Copy the song and every sample and SoundFont it plays into `<home>/Songs/ProjectName/`. Move or share that folder and the song opens anywhere. If the folder is already there, choose REPLACE, NEW COPY (`ProjectName_2`) or CANCEL. |
 | EXPORT — MIX | Open the RENDER panel, set to a stereo WAV (offline, faster than real-time). |
 | EXPORT — STEMS | Open the RENDER panel, set to one stereo WAV stem per active track, plus reverb and delay send returns. |
@@ -1529,6 +1529,13 @@ Navigate here: **R+UP** from SONG or CHAIN.
 | MIDI | Open the MIDI screen (press A) — see [section 22](#22-midi-screen). |
 
 A song whose files have gone missing from their own folders plays the copies in its `Songs/` folder, and a collected song whose copies are gone plays the originals.
+
+**Damaged songs.** A song file with values the app cannot use (a tempo outside 20..999, an instrument number outside 00..7F, a phrase shorter than 16 steps, a groove step outside -1..255) is not loaded straight away: the box `FILE DAMAGED - REPAIR?` opens.
+
+- **A** repairs it and loads it: each bad value is set to the nearest allowed value (short phrases get empty steps, instrument numbers follow their position). The status shows how many values were fixed (`REPAIRED: 1 FIX`, `REPAIRED: 4 FIXES`), and `trackwerk-log.txt` lists each one. The song comes in **unsaved**: the file on the card is still the damaged one, and the first SAVE asks `SONG EXISTS - OVERWRITE?` before writing over it.
+- **B** leaves it alone: `LOAD FAILED: FILE DAMAGED`, and the song that was open stays exactly as it was, unsaved changes included.
+
+A file that is not a readable song at all (not valid JSON) can't be repaired and only shows `LOAD FAILED: FILE DAMAGED`. The same box appears when RESUME finds a damaged recovery file (see SETTINGS → RESUME): A brings the work back repaired and unsaved; B starts a new empty song and deletes the recovery file, so the question doesn't come back at every launch. Samples, SoundFonts and M8 songs are never repaired.
 
 WAV exports are saved to `<home>/Renders/` — `<home>` being PocketTracker's home folder (section 2) — with auto-incremented filenames (`ProjectName_0001.wav`). Stems are written to a per-project subfolder — `Renders/ProjectName/ProjectName_1.wav`, `_2.wav`, … — plus `_reverb.wav` / `_delay.wav` when those sends are in use.
 
@@ -1592,7 +1599,7 @@ All value rows are edited with **A + D-pad**. A single **A** press is reserved f
 | THEME | theme name > | Shows the current theme name. Press A to open the THEME EDITOR. |
 | TEMPLATE | SAVE / CLEAR | SAVE stores the current project as a template for new projects. CLEAR removes the saved template. |
 | ABXY | AUTO / XBOX / NINTENDO | Which face button your controller has **printed** A. Appears only while a controller is attached. **AUTO** trusts the controller and is right for a handheld's built-in pad and for a real Switch pad. Use **NINTENDO** if A is the right-hand button but the app reads it as B - common with 8BitDo pads in XInput mode, which report themselves as Xbox controllers. **XBOX** = A is the bottom button. Keyboard keys are never affected. |
-| RESUME | ASK / AUTO | What happens to unsaved work after the app is killed in the background. **ASK** shows a "RECOVER WORK?" prompt on the next launch; **AUTO** silently restores the autosave (use on ROMs that kill the app when backgrounded, e.g. Miyoo Flip / Ayaneo). |
+| RESUME | ASK / AUTO | What happens to unsaved work after the app is killed in the background. **ASK** shows a "RECOVER WORK?" prompt on the next launch; **AUTO** silently restores the autosave (a damaged recovery file asks `FILE DAMAGED - REPAIR?` in both cases) (use on ROMs that kill the app when backgrounded, e.g. Miyoo Flip / Ayaneo). |
 
 Layout and scaling mode are persisted across app restarts. The auto-detected layout on startup depends on whether physical gamepad buttons are detected.
 
@@ -3103,7 +3110,7 @@ exports and sample-editor saves keep their own folders.
 |---|---|
 | D-pad UP / DOWN | Move through files / folders |
 | A | Load file / enter folder |
-| A on `..`, or R + LEFT | Go up one directory level |
+| A on `..`, or R + LEFT | Go up one directory level (on Windows, above a drive's root: the list of drives) |
 | B | Close the browser |
 | START | Preview highlighted WAV |
 | SELECT + A | Rename |

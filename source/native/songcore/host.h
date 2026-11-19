@@ -119,8 +119,9 @@ class SongcoreHost {
 
     // ── data ──
     // Replace the project from .ptp JSON, in place: `project_` never moves, so the Sequencer's pointer
-    // stays valid. A full parse; the app edits through edit_project() instead.
-    bool push_project(const std::string& blob);
+    // stays valid. A full parse; the app edits through edit_project() instead. A damaged song
+    // (project_damages) is refused unless `repair`: then each bad value is fixed and logged.
+    bool push_project(const std::string& blob, bool repair = false);
 
     // ── transport: each returns the frame it latched (the trace's session base) ──
     // CHAIN and PHRASE take the mixer track they play on.
@@ -279,8 +280,9 @@ class SongcoreHost {
     // ── files: paths, opened through byte_source.h ──
 
     // Replace the project from a .ptp: stop → parse → push → load its media → push its params.
-    bool load_project_blob(const std::string& blob,const std::string& path,const std::string& baseDir);
-    bool load_project_file(const std::string& path, const std::string& baseDir);
+    bool load_project_blob(const std::string& blob,const std::string& path,const std::string& baseDir,
+                           bool repair = false);
+    bool load_project_file(const std::string& path, const std::string& baseDir, bool repair = false);
 
     // ⚠️ songcore writes no user file: every save goes through `ui::FileSystem::write_file` (temp +
     // rename + checked close). A truncating `ofstream` here would destroy the old file at open.
@@ -326,6 +328,10 @@ class SongcoreHost {
 
     // The last push_project refused its blob as damaged (bad JSON or project_damage); the log says why.
     bool last_project_damaged() const { return projectDamaged_; }
+    // …and it can be repaired: valid JSON with values project_damages() lists (not unreadable JSON).
+    bool last_project_repairable() const { return projectDamaged_ && projectRepairable_; }
+    // How many values the last repairing push_project fixed (0 when nothing was wrong).
+    int last_repair_count() const { return repairCount_; }
 
     // A .pti into instrument `id`. A parse/decode failure preserves its old instrument and table.
     bool load_instrument_preset(int id, const std::string& path);
@@ -593,6 +599,8 @@ class SongcoreHost {
     int sampleRate_ = 44100;
     MediaLoadResult lastMediaLoad_{};   // see last_media_load()
     bool projectDamaged_ = false;       // see last_project_damaged()
+    bool projectRepairable_ = false;    // see last_project_repairable()
+    int repairCount_ = 0;               // see last_repair_count()
 
     std::string granularError_;
     Project project_ = make_default_project();

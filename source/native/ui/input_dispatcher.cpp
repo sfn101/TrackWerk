@@ -237,11 +237,16 @@ void InputDispatcher::run_due_status_dismiss() {
                          STATUS_DISMISS_MS);
 }
 
-bool InputDispatcher::recover_from_autosave() {
+bool InputDispatcher::recover_from_autosave(bool repair) {
     // A full project load, so the same strip and the same cancel.
     const LoadScope recoverScope(*this, now_ms_, "RECOVERED WORK");
 
-    if (!autosave_load(host_, fs_, mediaBaseDir_)) {
+    if (!autosave_load(host_, fs_, mediaBaseDir_, repair)) {
+        // Damaged but readable: ask. True keeps the file for the answer.
+        if (!repair && host_.last_project_repairable()) {
+            s_.confirm.open(ConfirmDialogState::Kind::REPAIR_SONG, ConfirmDialogState::REPAIR_FROM_RESUME);
+            return true;
+        }
         set_status(s_, "RECOVER FAILED", false);
         return false;
     }
@@ -266,8 +271,9 @@ bool InputDispatcher::recover_from_autosave() {
     s_.projectVersion      = 1;
     s_.savedProjectVersion = 0;
     s_.projectPath.clear();
+    s_.repairedUnsaved     = false;   // no path: SAVE asks as for any recovered song
 
-    set_status(s_, "RECOVERED", true);
+    set_status(s_, repair ? repaired_status(host_.last_repair_count()) : std::string("RECOVERED"), true);
     return true;
 }
 
@@ -280,8 +286,11 @@ InputDispatcher::BootRecovery InputDispatcher::boot_recovery() {
         return BootRecovery::ASKED;
     }
 
-    // AUTO restores in silence. A corrupt autosave is dropped, or every launch would retry it.
-    if (recover_from_autosave()) return BootRecovery::RESTORED;
+    // AUTO restores in silence; a damaged one asks for a repair. An unreadable one is dropped, or
+    // every launch would retry it.
+    if (recover_from_autosave())
+        return s_.confirm.kind == ConfirmDialogState::Kind::REPAIR_SONG ? BootRecovery::ASKED
+                                                                         : BootRecovery::RESTORED;
 
     autosave_clear(fs_);
     return BootRecovery::DROPPED;

@@ -473,6 +473,12 @@ void InputDispatcher::browser_confirm() {
             }
             // ⚠️ The whole document, returning early: load_project_file is parse, push, media and params.
             if (!host_.load_project_file(path, fs_.samples_directory())) {
+                // Readable but damaged: offer the repair. The open song is untouched until A.
+                if (host_.last_project_repairable()) {
+                    s_.repairPendingPath = path;
+                    s_.confirm.open(ConfirmDialogState::Kind::REPAIR_SONG, ConfirmDialogState::REPAIR_FROM_LOAD);
+                    return;
+                }
                 set_status(b, host_.last_project_damaged() ? "LOAD FAILED: FILE DAMAGED" : "LOAD FAILED", false);
                 return;
             }

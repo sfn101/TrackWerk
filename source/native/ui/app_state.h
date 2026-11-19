@@ -88,6 +88,11 @@ struct AppState {
     bool showActive=false;
     uint64_t attractStarted=0;
     std::string m8PendingJson,m8PendingPath,m8PendingReport;
+    // The damaged song the REPAIR_SONG box asks about (LOAD only; RESUME reads the autosave).
+    std::string repairPendingPath;
+    // A repaired song from LOAD that has not been saved yet: its file on disk is still the damaged
+    // one, so the first SAVE asks before writing over it.
+    bool repairedUnsaved = false;
     std::string studioMessage;
     bool studioOpen=false, studioHelp=false;
     int studioHelpTopic=0, studioHelpPage=0;

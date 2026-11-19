@@ -38,6 +38,11 @@ template <class S> void set_status(S& s, std::string message, bool ok) {
 }
 
 /** B+LEFT/RIGHT through a pool of `count` items, wrapping at both ends. */
+// The status after a damaged song was repaired: `REPAIRED: 1 FIX`, `REPAIRED: 4 FIXES`.
+inline std::string repaired_status(int fixes) {
+    return "REPAIRED: " + std::to_string(fixes) + (fixes == 1 ? " FIX" : " FIXES");
+}
+
 inline int step_wrapping(int value, int delta, int count) {
     return ((value + delta) % count + count) % count;
 }

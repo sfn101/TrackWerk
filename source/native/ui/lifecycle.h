@@ -22,6 +22,8 @@ bool autosave_clear(FileSystem& fs);
 
 // Into the live document, media and all. ⚠️ `mediaBaseDir` is the session's, never the autosave's own
 // folder: relative sample paths resolved there come back silent.
-bool autosave_load(songcore::SongcoreHost& host, FileSystem& fs, const std::string& mediaBaseDir);
+// `repair` fixes a damaged but readable autosave instead of refusing it.
+bool autosave_load(songcore::SongcoreHost& host, FileSystem& fs, const std::string& mediaBaseDir,
+                   bool repair = false);
 
 }  // namespace pt::ui

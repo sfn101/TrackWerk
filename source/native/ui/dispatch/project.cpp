@@ -8,6 +8,7 @@
 #include "ui/sample_granular_ui.h"
 
 #include "songcore/render.h"   // project_file_name
+#include "common/load_progress.h"   // load_cancelled
 #include "ui/navigation.h"      // go_to_screen
 
 #include <algorithm>
@@ -77,6 +78,7 @@ void InputDispatcher::start_new_project() {
     s_.projectVersion      = 0;
     s_.savedProjectVersion = 0;
     s_.projectPath.clear();
+    s_.repairedUnsaved     = false;
 
     // …and nothing to recover: the autosave and its pending deadline go too.
     autosavePending_ = false;
@@ -152,6 +154,7 @@ void InputDispatcher::load_project_done(const std::string& path) {
     s_.projectVersion      = 0;
     s_.savedProjectVersion = 0;
     s_.projectPath         = path;
+    s_.repairedUnsaved     = false;   // repair_pending_song sets it again after this
     ++s_.projectLoads;
     cancel_midi_test();
     // A running First beat stays only when its own saved file came back (its RELOAD step); any
@@ -170,6 +173,33 @@ void InputDispatcher::load_project_done(const std::string& path) {
     // ⚠️ The only report of a sample that did not load (no console on the devices), out of memory too.
     const int failed = host_.last_media_load().failed;
     set_status(s_, failed > 0 ? "LOADED: " + std::to_string(failed) + " MISSING" : "LOADED", (failed == 0));
+}
+
+void InputDispatcher::repair_pending_song() {
+    const std::string path = s_.repairPendingPath;
+    s_.repairPendingPath.clear();
+    if (path.empty()) return;
+
+    // The same strip and cancel as a browser load.
+    const LoadScope loadScope(*this, now_ms_, path_stem(path));
+    if (!host_.load_project_file(path, fs_.samples_directory(), /*repair=*/true)) {
+        set_status(s_.fileBrowser, "LOAD FAILED", false);
+        return;
+    }
+    // ⚠️ As in the browser: a cancelled load cannot stay half-done.
+    if (pt::load_cancelled()) {
+        host_.new_project();
+        host_.push_params();
+        load_project_done("");
+        set_status(s_, "LOAD CANCELLED", true);
+        return;
+    }
+    const int fixes = host_.last_repair_count();
+    load_project_done(path);
+    // Unsaved on purpose: the file on disk is still the damaged one, and the first SAVE asks.
+    mark_modified();
+    s_.repairedUnsaved = true;
+    set_status(s_, repaired_status(fixes), true);
 }
 
 // ─── EXPORT ──────────────────────────────────────────────────────────────────────────────────────

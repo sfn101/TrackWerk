@@ -30,7 +30,14 @@ struct ConfirmDialogState {
         FIRST_BEAT,       // help → START (First beat), when DIRTY: the tutorial starts a new project
         LOAD_DISCARD,     // PROJECT → LOAD, when DIRTY: YES opens the browser
         SAVE_OVERWRITE,   // PROJECT → SAVE onto Projects/<name>.ptp that holds a different song
+        // A song refused as damaged but readable: A repairs and loads it. `arg` says where it came
+        // from; B differs (LOAD keeps the open song, RESUME starts an empty one).
+        REPAIR_SONG,
     };
+
+    // REPAIR_SONG's way in.
+    static constexpr int REPAIR_FROM_LOAD   = 0;
+    static constexpr int REPAIR_FROM_RESUME = 1;
 
     // COLLECT_EXISTS's answers, left to right; `arg` is the one under the cursor.
     static constexpr int COLLECT_REPLACE  = 0;

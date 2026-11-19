@@ -50,6 +50,7 @@ void InputDispatcher::leave_to(ScreenType back) {
 void InputDispatcher::save_project_now() {
     before_save();
     const ActionResult r = save_project(host_, fs_, s_);
+    if (r.ok) s_.repairedUnsaved = false;   // the damaged file is gone; later saves don't ask
     set_status(s_, r.message, r.ok);
 }
 

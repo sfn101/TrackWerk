@@ -17,7 +17,7 @@ internal object CommonsSource {
         val connection = URL("https://commons.wikimedia.org/w/api.php?format=json&formatversion=2&$params")
             .openConnection() as HttpURLConnection
         connection.connectTimeout = 15_000; connection.readTimeout = 20_000
-        connection.setRequestProperty("User-Agent", "TrackWerk/0.9 private audio research")
+        connection.setRequestProperty("User-Agent", SourceNet.USER_AGENT)
         try {
             check(connection.responseCode == 200) { "Commons returned HTTP ${connection.responseCode}" }
             val output = ByteArrayOutputStream()

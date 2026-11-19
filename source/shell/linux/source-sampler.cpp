@@ -260,7 +260,7 @@ void http(const std::string& url,Transfer& transfer,const Cancel& cancel,const s
         option(10010,errorBuffer.data()); // CURLOPT_ERRORBUFFER; keeps diagnostics even when strerror is stripped.
         option(10002,next.c_str()); // CURLOPT_URL
         option(10001,&transfer);option(20011,&receive);
-        option(10018,"TrackWerk/0.9.5 (private audio source browser)");
+        option(10018,"TrackWerk/0.9.5 (https://github.com/sfn101/TrackWerk; private audio source browser)"); // Wikimedia answers 429 without a contact link
         option(52,0L);option(78,live?5L:std::min(15L,metadataSeconds));// No total limit on a live stream or a download (AUDIT 13, 14): only the low-speed checks end them.
         const bool download=transfer.file||transfer.stream;option(13,live||download?0L:metadataSeconds);
         if(live){

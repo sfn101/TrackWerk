@@ -162,6 +162,19 @@ int main(int argc, char** argv) {
     s.hasPolled = false;
     pt::ui::source_sampler_poll(s, 8000);
     assert(!s.linkOpen);
+    // The search keyboard applies on the START press; the release then reaches Studio and must not
+    // send Stop, which cancelled every typed search.
+    {
+        backend.commands.clear();
+        pt::ui::ButtonEvent release;
+        release.button = pt::ui::Button::START;
+        release.action = pt::ui::ButtonAction::RELEASED;
+        pt::ui::studio_button(release, st, sample.host, *sample.engine, sample.fs);
+        for (const auto& c : backend.commands) assert(c.find("stop") != 0);
+        release.action = pt::ui::ButtonAction::PRESSED;   // a real START press still stops
+        pt::ui::studio_button(release, st, sample.host, *sample.engine, sample.fs);
+        assert(!backend.commands.empty() && backend.commands.back().find("stop") == 0);
+    }
     s.backend = nullptr;
     std::cout << "ptsource-youtube-check: off by default, A A opts in, A opts out, saved only when on; old YouTube results and the search callback refused while off; the link field holds the controller, A sends, B closes, a share opens it once\n";
     return 0;

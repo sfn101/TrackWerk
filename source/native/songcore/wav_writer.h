@@ -24,7 +24,6 @@
 #include <io.h>        // _commit
 #include <process.h>   // _getpid
 #else
-#include <signal.h>    // kill (orphan temps)
 #include <unistd.h>    // getpid
 #endif
 #include "../common/byte_source.h"   // pt_fopen / pt_remove / pt_rename
@@ -138,7 +137,6 @@ inline bool parse_temp_tag(const std::string& tag, long& pid) {
 // Temps a crashed earlier save left beside `path` ("<path>.<pid>-<n>.tmp" of a process that no longer
 // runs) are removed; a live writer's temp — another instance saving right now — is never touched.
 inline void remove_orphan_temps(const std::string& path) {
-#if !defined(_WIN32)
     if (pt_path_is_uri(path.c_str())) return;
     std::error_code ec;
     const std::filesystem::path folder = std::filesystem::path(path).parent_path();
@@ -149,13 +147,14 @@ inline void remove_orphan_temps(const std::string& path) {
             name.compare(name.size() - 4, 4, ".tmp") != 0) continue;
         long pid = 0;
         if (!parse_temp_tag(name.substr(prefix.size(), name.size() - prefix.size() - 4), pid)) continue;
+#if defined(_WIN32)
+        if (pid == static_cast<long>(_getpid())) continue;
+#else
         if (pid == static_cast<long>(::getpid())) continue;
-        if (::kill(static_cast<pid_t>(pid), 0) == 0 || errno != ESRCH) continue;   // alive, or unsure
+#endif
+        if (!pt_process_gone(pid)) continue;   // alive, or unsure
         if (entry.is_regular_file(ec) && !entry.is_symlink(ec)) std::filesystem::remove(entry.path(), ec);
     }
-#else
-    (void)path;
-#endif
 }
 
 inline std::FILE* open_fresh_temp(const char* tmp, const std::string& path) {

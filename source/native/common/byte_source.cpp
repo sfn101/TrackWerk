@@ -7,8 +7,12 @@
 #include <cstring>
 
 #if defined(_WIN32)
+#define NOMINMAX
+#include <windows.h>  // OpenProcess
 #include <io.h>       // _fdopen, _close
 #else
+#include <cerrno>
+#include <signal.h>   // kill
 #include <unistd.h>   // close
 #endif
 
@@ -110,6 +114,16 @@ bool pt_seek64(FILE* f, int64_t pos) {
     return _fseeki64(f, pos, SEEK_SET) == 0;
 #else
     return fseeko(f, static_cast<off_t>(pos), SEEK_SET) == 0;
+#endif
+}
+
+bool pt_process_gone(long pid) {
+#if defined(_WIN32)
+    HANDLE h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, static_cast<DWORD>(pid));
+    if (h) { CloseHandle(h); return false; }                  // alive (or its exit not yet reaped)
+    return GetLastError() == ERROR_INVALID_PARAMETER;          // no such process; access denied = alive
+#else
+    return ::kill(static_cast<pid_t>(pid), 0) != 0 && errno == ESRCH;
 #endif
 }
 

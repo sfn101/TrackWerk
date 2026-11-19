@@ -50,6 +50,9 @@ bool pt_read_file(const char* path, std::string& out);
 bool pt_seek64(FILE* f, int64_t pos);
 int64_t pt_file_size64(FILE* f);
 
+// True only when no process `pid` runs (a crashed writer's temp may go); unsure counts as running.
+bool pt_process_gone(long pid);
+
 // `std::remove`, or the host hook for a URI. 0 on success.
 int pt_remove(const char* path);
 

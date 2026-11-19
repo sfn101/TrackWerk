@@ -328,7 +328,11 @@ inline Instrument parse_instrument(const json& j, int index) {
     i.transposeEnabled = get_bool(j, "transposeEnabled", i.transposeEnabled);
     { auto it = j.find("sliceMarkers");
       if (it != j.end() && it->is_array())
-          for (const auto& e : *it) i.sliceMarkers.push_back(e.is_number() ? e.get<int64_t>() : 0); }
+          // Via double and clamped: a huge marker is undefined as int64 and overflows `× 255` in
+          // program.h. project_damages refuses it first unless a repair was asked for.
+          for (const auto& e : *it)
+              i.sliceMarkers.push_back(e.is_number()
+                  ? static_cast<int64_t>(std::clamp(e.get<double>(), 0.0, 2147483647.0)) : 0); }
     i.midiChannel = get_int(j, "midiChannel", i.midiChannel);
     i.midiBank    = get_int(j, "midiBank", i.midiBank);
     i.midiProgram = get_int(j, "midiProgram", i.midiProgram);
@@ -402,9 +406,19 @@ inline std::vector<std::string> project_damages(const json& j) {
     };
     if (bad(j, "tempo", 20, 999)) out.push_back("tempo " + j["tempo"].dump() + " outside 20..999");
     if (const json* a = pool("instruments"))
-        for (size_t i = 0; i < a->size(); ++i)
-            if ((*a)[i].is_object() && bad((*a)[i], "id", 0, POOL_INSTRUMENTS - 1))
-                out.push_back("instrument at position " + std::to_string(i) + " had id " + (*a)[i]["id"].dump());
+        for (size_t i = 0; i < a->size(); ++i) {
+            const json& e = (*a)[i];
+            if (!e.is_object()) continue;
+            if (bad(e, "id", 0, POOL_INSTRUMENTS - 1))
+                out.push_back("instrument at position " + std::to_string(i) + " had id " + e["id"].dump());
+            auto sm = e.find("sliceMarkers");
+            if (sm == e.end() || !sm->is_array()) continue;
+            for (size_t k = 0; k < sm->size(); ++k) {
+                const json& v = (*sm)[k];
+                if (v.is_number() && !(v.get<double>() >= 0 && v.get<double>() <= 2147483647.0))
+                    out.push_back("instrument " + label(e, i) + " slice marker " + std::to_string(k) + " was " + v.dump());
+            }
+        }
     if (const json* a = pool("phrases"))
         for (size_t i = 0; i < a->size(); ++i) {
             const json& e = (*a)[i];

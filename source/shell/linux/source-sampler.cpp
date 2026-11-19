@@ -209,7 +209,8 @@ void http(const std::string& url,Transfer& transfer,const Cancel& cancel,const s
         option(10002,next.c_str()); // CURLOPT_URL
         option(10001,&transfer);option(20011,&receive);
         option(10018,"TrackWerk/0.9.5 (private audio source browser)");
-        option(52,0L);option(78,live?5L:std::min(15L,metadataSeconds));option(13,live?600L:transfer.file?180L:metadataSeconds);
+        option(52,0L);option(78,live?5L:std::min(15L,metadataSeconds));// No total limit on a live stream or a download (AUDIT 13, 14): only the low-speed checks end them.
+        const bool download=transfer.file||transfer.stream;option(13,live||download?0L:metadataSeconds);
         if(live){
             option(10004,""); // No environment proxy: validate the actual station socket.
             option(20163,&sourceSocket);option(10164,&fixture);
@@ -219,6 +220,7 @@ void http(const std::string& url,Transfer& transfer,const Cancel& cancel,const s
             // A progressive archive MP3 (1.2): the stream needs the status line and type too.
             option(20079,&receiveHeaders);option(10029,&transfer);
         }
+        if(!live&&download){option(19,1L);option(20,30L);} // a download ends after 30 s under 1 byte/s
         option(99,1L);option(43,0L);option(20219,&progress);option(10057,&cancel);
         option(181,testBase().empty()?2L:3L); // HTTPS; HTTP only for explicit local fixture server.
         option(182,testBase().empty()?2L:3L);
@@ -449,7 +451,7 @@ std::string runProcess(const std::string& program,const std::vector<std::string>
     std::vector<char*> argv;argv.push_back(const_cast<char*>(program.c_str()));for(const auto& a:actual)argv.push_back(const_cast<char*>(a.c_str()));argv.push_back(nullptr);
     int pipes[2];if(pipe(pipes)!=0)throw std::runtime_error("Cannot start YouTube helper");
     const pid_t child=fork();if(child<0){close(pipes[0]);close(pipes[1]);throw std::runtime_error("Cannot start YouTube helper");}
-    if(child==0){setpgid(0,0);dup2(pipes[1],STDOUT_FILENO);close(pipes[0]);close(pipes[1]);const int null=open("/dev/null",O_WRONLY);if(null>=0){dup2(null,STDERR_FILENO);close(null);}execv(program.c_str(),argv.data());_exit(127);}
+    if(child==0){signal(SIGPIPE,SIG_DFL);setpgid(0,0);dup2(pipes[1],STDOUT_FILENO);close(pipes[0]);close(pipes[1]);const int null=open("/dev/null",O_WRONLY);if(null>=0){dup2(null,STDERR_FILENO);close(null);}execv(program.c_str(),argv.data());_exit(127);}
     setpgid(child,child); // Race-safe with the identical child-side operation.
     int status=0;
     auto terminate=[&]{if(kill(-child,SIGKILL)!=0)kill(child,SIGKILL);while(waitpid(child,&status,0)<0&&errno==EINTR){};};

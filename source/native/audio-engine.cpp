@@ -34,9 +34,9 @@ AudioEngine::AudioEngine() {
 
     // 64 covers a dense AUS/AUF ramp on all eight tracks. ⚠️ Not a hard bound: after a stall the
     // drain takes everything overdue and may allocate once in the callback.
-    noteBatch.reserve(64);
-    killBatch.reserve(64);
-    paramBatch.reserve(64);
+    noteBatch.reserve(1024);   // the audio thread's drain must not allocate (AUDIT 20)
+    killBatch.reserve(1024);
+    paramBatch.reserve(1024);
 
     // Built at the fallback rate; setDeviceSampleRate rebuilds them at the device's.
     const float defaultRate = static_cast<float>(effectsSampleRate);

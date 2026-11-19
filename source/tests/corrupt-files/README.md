@@ -13,6 +13,7 @@ Each file is damaged on purpose. Numbers are findings in `AUDIT.md`. The app mus
 | `07-huge-size.sf2` | a 70-byte font whose table claims 3.8 GB | `SAMPLE FAILED: FILE DAMAGED` |
 | `16-negative-rate.wav` | negative sample rate | `SAMPLE FAILED: FILE DAMAGED` |
 | `17-negative-groove.ptp` | groove step -6 | `LOAD FAILED: FILE DAMAGED` |
+| `21-huge-slice-marker.ptp` | a slice marker of 1e30 | `LOAD FAILED: FILE DAMAGED` |
 | `18-several-damages.ptp` | tempo 5000 and three short phrases | asks to repair; A gives `REPAIRED: 4 FIXES` |
 
 The reason for each refusal goes to `trackwerk-log.txt`.

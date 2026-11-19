@@ -146,6 +146,11 @@ int main(int argc, char** argv) {
     // start-up finds ours rather than abort().
     std::signal(SIGTERM, on_terminate_signal);
     std::signal(SIGINT, on_terminate_signal);
+#ifndef _WIN32
+    // A dropped network connection must fail its write, not kill the app (AUDIT 15). Child processes
+    // set it back to the default before execv.
+    std::signal(SIGPIPE, SIG_IGN);
+#endif
 
 #ifndef _WIN32
     // The window's app id (Wayland app_id, X11 WM_CLASS), matched to `trackwerk.desktop` for the

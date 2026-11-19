@@ -234,6 +234,9 @@ void TrackerLayout::draw_full_screen(Canvas& c, const AppState& s) {
         if (s.project) draw_stretch_editor(c, s.sampleEditor, s.project->tempo, t);
     }
     if (s.qwerty.isOpen) qwerty_.draw(c, s.qwerty, t);
+    // A question asked from the browser (REPAIR_SONG, M8_IMPORT) is drawn over it, or it would be
+    // answered blind.
+    draw_confirm_dialog(c, s.confirm, t);
 }
 
 // ─── The oscilloscope or Phrase overview ──────────────────────────────────────────────────────────

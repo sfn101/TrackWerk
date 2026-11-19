@@ -138,7 +138,7 @@ int main(int argc, char** argv) {
     backend.commands.clear();
     press(pt::ui::Button::A);
     assert(s.linkOpen && pt::ui::source_sampler_link_open(st) && s.link == "https://youtu.be/dQw4w9WgXcQ?si=x" && backend.commands.empty());
-    for (auto b : {pt::ui::Button::DPAD_UP, pt::ui::Button::DPAD_LEFT, pt::ui::Button::L, pt::ui::Button::R,
+    for (auto b : {pt::ui::Button::DPAD_UP, pt::ui::Button::DPAD_LEFT, pt::ui::Button::L_SHIFT, pt::ui::Button::R_SHIFT,
                    pt::ui::Button::START, pt::ui::Button::SELECT})
         press(b);
     assert(s.linkOpen && s.row == 2 && s.col == 2 && !s.showHelp && !st.studioHelp && st.studioOpen && st.studioTab == 7 &&

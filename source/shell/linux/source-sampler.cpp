@@ -76,12 +76,15 @@ inline int fseeko(FILE* f, int64_t offset, int whence) { return _fseeki64(f, off
 inline int64_t ftello(FILE* f) { return _ftelli64(f); }
 inline int truncate_file(FILE* f) { return _chsize_s(_fileno(f), 0); }
 inline bool executable(const fs::path& p) { std::error_code e; return fs::is_regular_file(p, e); }
+// rename() on Windows refuses to replace an existing file; POSIX rename replaces it.
+inline int replace_file(const char* from, const char* to) { return MoveFileExA(from, to, MOVEFILE_REPLACE_EXISTING) ? 0 : -1; }
 using SourceSocket = curl_socket_t;
 constexpr SourceSocket kNoSocket = CURL_SOCKET_BAD;
 #else
 constexpr int kNewFileFlags = O_WRONLY|O_CREAT|O_EXCL|O_NOFOLLOW;
 inline int truncate_file(FILE* f) { return ftruncate(fileno(f), 0); }
 inline bool executable(const fs::path& p) { return access(p.c_str(), X_OK) == 0; }
+inline int replace_file(const char* from, const char* to) { return std::rename(from, to); }
 using SourceSocket = int;
 constexpr SourceSocket kNoSocket = -1;
 #endif
@@ -869,7 +872,7 @@ struct SourceSampler::Impl {
         const int fd=open(temporary.c_str(),kNewFileFlags,0600);if(fd<0)throw std::runtime_error("Cannot create station favorites; previous file kept");
         FILE* file=fdopen(fd,"wb");if(!file){close(fd);std::remove(temporary.c_str());throw std::runtime_error("Cannot write station favorites");}
         const auto raw=next.dump(2);const bool wrote=std::fwrite(raw.data(),1,raw.size(),file)==raw.size();const bool flushed=std::fflush(file)==0;const bool synced=fsync(fd)==0;const bool closed=std::fclose(file)==0;
-        if(!wrote||!flushed||!synced||!closed||std::rename(temporary.c_str(),path.string().c_str())!=0){std::remove(temporary.c_str());throw std::runtime_error("Cannot finish station favorites; previous file kept");}
+        if(!wrote||!flushed||!synced||!closed||replace_file(temporary.c_str(),path.string().c_str())!=0){std::remove(temporary.c_str());throw std::runtime_error("Cannot finish station favorites; previous file kept");}
         favoriteStations=std::move(next);message("ready",found?"Station removed from Favorites.":"Station saved. Discover > Favorites opens your stations.");
     }
     void discardLiveTake(){
@@ -1336,7 +1339,7 @@ struct SourceSampler::Impl {
             }
             check(cancel);
         }catch(...){std::remove(media.c_str());std::remove(normalized.c_str());std::remove(cache.c_str());throw;}
-        std::remove(media.c_str());dropTrack();const auto finalCache=(fs::path(cacheDir)/"preview.s16").string();if(std::rename(cache.c_str(),finalCache.c_str())!=0)throw std::runtime_error("Cannot finish audio cache");
+        std::remove(media.c_str());dropTrack();const auto finalCache=(fs::path(cacheDir)/"preview.s16").string();if(replace_file(cache.c_str(),finalCache.c_str())!=0)throw std::runtime_error("Cannot finish audio cache");
         pcmPath=finalCache;pcm=next;pcmFile=std::fopen(pcmPath.c_str(),"rb");if(!pcmFile){pcm={};throw std::runtime_error("Cannot reopen audio cache");}prepared=true;active=std::move(t);trackIndex=index;sourceRate=pcm.rate;length=pcm.frames;outMs=std::min<int64_t>(30000,pcm.frames*1000/pcm.rate);state["busy"]=false;
         seek(0,autoPlay);message("ready",autoPlay?"Playing. A toggles pause; IN/OUT select your sample.":"Audio ready. Play to listen, then set IN/OUT.");
     }

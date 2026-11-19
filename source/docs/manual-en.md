@@ -1518,9 +1518,9 @@ Navigate here: **R+UP** from SONG or CHAIN.
 
 | Row | Action |
 |---|---|
-| SAVE | Save the song as `<NAME>.ptp`. A song opened from a file saves back into that file's folder; a new, recovered or imported song goes to `Projects/`. If that folder can't be written (read-only, or no permission on Android) it saves in `Projects/` and says `FOLDER READ-ONLY: SAVED IN PROJECTS`. A different song already under that name asks `SONG EXISTS - OVERWRITE?` first. |
+| SAVE | Save the song as `<NAME>.ptp`. A song opened from a file saves back into that file's folder; a new, recovered or imported song goes to `Projects/`. If that folder can't be written (read-only, or no permission on Android) it saves in `Projects/` and says `FOLDER READ-ONLY: SAVED IN PROJECTS`. A different song already under that name asks `SONG EXISTS - OVERWRITE?` first. If the song's file is held by another program (OneDrive or a virus scanner on Windows), the file is left untouched and the song is saved beside it as `<NAME>-backup.ptp`, with `FILE LOCKED: SAVED AS <NAME>-backup.ptp`; load it from LOAD like any song. |
 | LOAD | Open file browser to load a project. With unsaved changes it asks `UNSAVED CHANGES - LOAD ANYWAY?` first. A damaged song asks `FILE DAMAGED - REPAIR?` (see below). |
-| COLLECT | Copy the song and every sample and SoundFont it plays into `<home>/Songs/ProjectName/`. Move or share that folder and the song opens anywhere. If the folder is already there, choose REPLACE, NEW COPY (`ProjectName_2`) or CANCEL. |
+| COLLECT | Copy the song and every sample and SoundFont it plays into `<home>/Songs/ProjectName/`. Move or share that folder and the song opens anywhere. If the folder is already there, choose REPLACE, NEW COPY (`ProjectName_2`) or CANCEL. Two different samples with the same file name are both kept, the second as `kick_2.wav`. |
 | EXPORT — MIX | Open the RENDER panel, set to a stereo WAV (offline, faster than real-time). |
 | EXPORT — STEMS | Open the RENDER panel, set to one stereo WAV stem per active track, plus reverb and delay send returns. |
 | CLEAN SEQ | Remove unused chains and phrases (with confirmation dialog). |

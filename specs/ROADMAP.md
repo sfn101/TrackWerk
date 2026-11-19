@@ -8,10 +8,10 @@ Work top to bottom. Each item has its own spec; finish (build, test on Windows, 
 | 2 | Latency display in Settings | [latency-display.md](latency-display.md) | Done |
 | 3 | Full-screen visualizer (VI screen) | [fullscreen-visualizer.md](fullscreen-visualizer.md) | Done |
 | 4 | Repair a damaged song on request | [repair-damaged-song.md](repair-damaged-song.md) | Done |
+| 5 | Audit fixes, batch 2 (save safety) | [audit-fixes-batch2.md](audit-fixes-batch2.md) | Done |
 
 ## Later (no spec yet)
 
-- **Audit fixes, batch 2 (save safety):** AUDIT.md findings 8, 10, 11, 12, 19. Finding 8 as agreed 2026-11-17: no copy fallback; retry the rename for about a second; if still stuck, save the song as `<name>-backup.ptp` beside it (loadable from LOAD), keep the original untouched, and say so on the status line.
 - **Audit fixes, batch 3 (the rest):** findings 13, 14, 15 (Linux streaming), 18 (Windows README), 20 (note queue on the audio thread: reserve 1024, as the audit says). Also the audit's three "left out (smaller)" findings: the note-queue cancel-ledger off-by-one (`note-queue.h`, `>` → `>=`), the slice-marker overflow (`project_io.h`), and orphan WAV temp files never cleaned up on Windows (`wav_writer.h`). (The two help-text gaps listed here before moved to the help pass below.)
 - **Refuse songs from a newer TrackWerk (agreed 2026-11-19):** today the loader reads a song's `version` but never refuses a newer one (`songcore/project_io.h`), so an older app would open a newer song, silently drop what it doesn't know, and a SAVE would lose it. Add the check now: a song whose `version` is newer than this app understands is refused with `MADE WITH A NEWER TRACKWERK` and the open song stays as it was. Every later change to the song format raises `version`. Small, and worth doing early so as many released versions as possible carry it; `.pt16` covers the 16-track change on its own.
 - **Tempo-change command `TPO` (agreed 2026-11-19):** a phrase command that sets the song tempo from that step (for ritardandos, section changes, half-time drops); the MOD, XM and IT importers need it for their speed and tempo commands. None of our 53 commands changes tempo today (grooves only change swing), and ChooChooTracker (MIT, read 2026-11-19) has none either. Small. Help: its SELECT and FX help entries and the manual.

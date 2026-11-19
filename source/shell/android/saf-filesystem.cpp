@@ -681,7 +681,15 @@ bool SafFileSystem::write_bytes(const std::string& path, const void* data, size_
                                             "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
                                             tmpUri, &name);
     forget(tmpPath);
-    if (renamed.empty()) return false;
+    if (renamed.empty()) {
+        // ⚠️ The old file is already gone (AUDIT 11): write the data straight to the real path, so
+        // the save still leaves one whole file there, then drop the temp.
+        const std::string directUri = ensure_file(path);
+        const bool ok = !directUri.empty() && write_uri(directUri, data, len);
+        delete_uri(tmpUri);
+        invalidate(parent_path(path));
+        return ok;
+    }
     uriCache_[path] = renamed;
     invalidate(parent_path(path));
     return true;

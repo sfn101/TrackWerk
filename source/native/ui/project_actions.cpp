@@ -57,9 +57,25 @@ static std::string project_save_path(const songcore::SongcoreHost& host, FileSys
 
 ActionResult save_project(songcore::SongcoreHost& host, FileSystem& fs, AppState& s) {
     std::string path = project_save_path(host, fs, s);
-    const char* message = "SAVED";
+    std::string message = "SAVED";
+
+    const bool existed = fs.file_exists(path);
 
     if (!write_project(host, fs, path)) {
+        // The song's own file exists but can't be replaced (on Windows: OneDrive or a virus scanner
+        // holds it): keep it untouched and save beside it (AUDIT 8). The path stays the original, so
+        // the next SAVE tries it again without asking.
+        if (existed) {
+            const std::string backupName = songcore::project_file_name(host.project().name) + "-backup.ptp";
+            if (write_project(host, fs, fs.parent_path(path) + "/" + backupName)) {
+                s.savedProjectVersion = s.projectVersion;
+                s.projectPath         = path;
+                autosave_clear(fs);
+                fs.forget_listing(fs.parent_path(path));
+                return ActionResult{true, "FILE LOCKED: SAVED AS " + backupName};
+            }
+            // The backup failed too: the folder itself refuses writes.
+        }
         // Its own folder refused the write (read-only, or no permission on Android): Projects instead.
         const std::string fallback = fs.projects_directory() + "/" + project_file(host);
         if (fallback == path) return ActionResult{false, "SAVE FAILED"};
@@ -214,10 +230,17 @@ ActionResult collect_project(const songcore::SongcoreHost& host, FileSystem& fs,
             continue;
         }
 
-        const std::string rel = songcore::collected_media_path(*stored);
         auto it = std::find_if(copies.begin(), copies.end(),
-                               [&rel](const Copy& c) { return c.rel == rel; });
+                               [&](const Copy& c) { return comparable_path(c.source) == sourceKey; });
         if (it == copies.end()) {
+            // A different sample with the same name gets its own copy: kick.wav, kick_2.wav (AUDIT 12).
+            const std::string base = songcore::collected_media_path(*stored);
+            const size_t dot = base.find_last_of('.');
+            const size_t cut = (dot == std::string::npos || dot < base.find_last_of('/') + 1) ? base.size() : dot;
+            std::string rel = base;
+            for (int n = 2; std::any_of(copies.begin(), copies.end(), [&](const Copy& c) {
+                     return comparable_path(c.rel) == comparable_path(rel); }); ++n)
+                rel = base.substr(0, cut) + "_" + std::to_string(n) + base.substr(cut);
             Copy c;
             c.source = source;
             c.rel    = rel;

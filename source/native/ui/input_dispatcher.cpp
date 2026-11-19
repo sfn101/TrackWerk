@@ -191,8 +191,8 @@ void InputDispatcher::run_due_autosave() {
     autosavePending_ = false;
 
     // ⚠️ A save inside the window does not cancel the deadline; firing anyway would bring the file
-    // back and a false RECOVER WORK? with it.
-    if (!s_.project_dirty()) return;
+    // back and a false RECOVER WORK? with it. Never mid-load: the song is half-built (AUDIT 19).
+    if (!s_.project_dirty() || s_.loading.running) return;
 
     before_save();
     autosave_write(host_, fs_);   // a failure is silent
@@ -200,7 +200,7 @@ void InputDispatcher::run_due_autosave() {
 
 void InputDispatcher::flush_autosave() {
     autosavePending_ = false;
-    if (!s_.project_dirty()) return;
+    if (!s_.project_dirty() || s_.loading.running) return;   // half-loaded (AUDIT 19)
     before_save();
     autosave_write(host_, fs_);
 }

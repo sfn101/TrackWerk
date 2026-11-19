@@ -8,12 +8,17 @@
 #include <filesystem>
 #include <fstream>
 #include <system_error>
+#include <thread>
 
 #if defined(_WIN32)
 // The only platform header in pt-ui: "where is Documents" has no portable answer.
 #define NOMINMAX
 #include <windows.h>
 #include <shlobj.h>
+#include <io.h>        // _commit
+#else
+#include <cerrno>
+#include <unistd.h>    // fsync
 #endif
 
 namespace fs = std::filesystem;
@@ -257,31 +262,39 @@ bool StdFileSystem::write_bytes(const std::string& path, const void* data, size_
 
     // Through `<path>.tmp` and a rename, so power loss mid-save leaves the old file whole.
     const std::string tmp = path + ".tmp";
-    {
-        std::ofstream f(tmp, std::ios::binary | std::ios::trunc);
-        if (!f) return false;
-        if (len > 0) f.write(static_cast<const char*>(data), static_cast<std::streamsize>(len));
-
-        // ⚠️ Closed and checked here: a full disk shows up in this flush, and the destructor would
-        // swallow it — then the rename would put an empty file where the project was.
-        f.close();
-        if (!f) {
-            std::error_code ignored;
-            fs::remove(tmp, ignored);
-            return false;
-        }
+    std::FILE* f = std::fopen(tmp.c_str(), "wb");
+    if (!f) return false;
+    bool ok = len == 0 || std::fwrite(data, 1, len, f) == len;
+    // ⚠️ On disk before the rename (AUDIT 10): otherwise power loss can publish an empty file.
+    ok = ok && std::fflush(f) == 0;
+#if defined(_WIN32)
+    ok = ok && _commit(_fileno(f)) == 0;
+#else
+    if (ok) {
+        int r;
+        do { r = fsync(fileno(f)); } while (r < 0 && errno == EINTR);
+        ok = r == 0;
     }
-
-    fs::rename(tmp, path, ec);
-    if (ec) {
-        // rename(2) fails across filesystems: copy, then drop the temp.
-        ec.clear();
-        fs::copy_file(tmp, path, fs::copy_options::overwrite_existing, ec);
+#endif
+    // ⚠️ `fclose` checked: a full disk can show up only here.
+    ok = (std::fclose(f) == 0) && ok;
+    if (!ok) {
         std::error_code ignored;
         fs::remove(tmp, ignored);
-        if (ec) return false;
+        return false;
     }
-    return true;
+
+    // The temp is beside the target, so no cross-device copy fallback (AUDIT 8: it could destroy both).
+    // On Windows OneDrive or a virus scanner can hold the target for a moment: retry for about a second.
+    for (int attempt = 0; attempt < 10; ++attempt) {
+        ec.clear();
+        fs::rename(tmp, path, ec);
+        if (!ec) return true;
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    std::error_code ignored;
+    fs::remove(tmp, ignored);
+    return false;
 }
 
 bool StdFileSystem::delete_path(const std::string& path) {

@@ -21,6 +21,7 @@
 #include <vector>
 
 #if defined(_WIN32)
+#include <io.h>        // _commit
 #include <process.h>   // _getpid
 #else
 #include <signal.h>    // kill (orphan temps)
@@ -39,6 +40,19 @@ inline int16_t float_to_int16(float v) {
 }
 
 namespace detail {
+// Flush stdio and the OS cache to the card before the rename publishes the file (AUDIT 10), so power
+// loss can't leave an empty WAV. A descriptor that can't sync (EINVAL: some SAF pipes) is not an error.
+inline bool flush_to_disk(std::FILE* f) {
+    if (std::fflush(f) != 0) return false;
+#if defined(_WIN32)
+    return _commit(_fileno(f)) == 0;
+#else
+    int r;
+    do { r = fsync(fileno(f)); } while (r < 0 && errno == EINTR);
+    return r == 0 || errno == EINVAL || errno == EROFS;
+#endif
+}
+
 // What sits at a path, as far as publishing a WAV over it is concerned. A directory opens with
 // "rb" on some systems, so the probe also reads: only a readable file (or an empty one) is FILE.
 enum class PathKind { ABSENT, FILE, OTHER };
@@ -354,7 +368,8 @@ class WavStreamWriter {
 
         // ⚠️ `fclose` is a WRITE: it flushes stdio's buffer, and for a small render it is the ONLY place
         // a full card can report. Unchecked, the rename publishes a short file.
-        const bool closed = (std::fclose(file_) == 0);
+        const bool synced = detail::flush_to_disk(file_);
+        const bool closed = (std::fclose(file_) == 0) && synced;
         file_ = nullptr;
         if (!closed) {
             pt_remove(tmpPath_.c_str());
@@ -499,7 +514,8 @@ inline bool wav_write_atomic(const std::string& path, const std::vector<uint8_t>
     if (!f) return false;
     const size_t written = bytes.empty() ? 0 : std::fwrite(bytes.data(), 1, bytes.size(), f);
     // ⚠️ `fclose` checked, and on its own line: a full card surfaces in this flush or nowhere.
-    const bool   flushed = (std::fclose(f) == 0);
+    const bool   synced  = flush_to_disk(f);
+    const bool   flushed = (std::fclose(f) == 0) && synced;
     const bool   ok      = (written == bytes.size()) && flushed;
     if (!ok) {
         pt_remove(tmp.c_str());

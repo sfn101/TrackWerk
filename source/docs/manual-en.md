@@ -779,7 +779,7 @@ own.
 |---|---|
 | D-pad UP/DOWN | Move through files / folders |
 | A | Load file or enter folder |
-| A on `..` | Go up one directory level |
+| A on `..` | Go up one directory level (on Windows, `..` at a drive's root lists the drives) |
 | R + LEFT | Go up one directory level |
 | B | Close the browser |
 | START | Preview highlighted audio (WAV / MP3 / FLAC / OGG / OPUS / M4A) or video file |
@@ -1518,7 +1518,7 @@ Navigate here: **R+UP** from SONG or CHAIN.
 
 | Row | Action |
 |---|---|
-| SAVE | Save project to `.ptp` file (press A to confirm). |
+| SAVE | Save the song as `<NAME>.ptp`. A song opened from a file saves back into that file's folder; a new, recovered or imported song goes to `Projects/`. If that folder can't be written (read-only, or no permission on Android) it saves in `Projects/` and says `FOLDER READ-ONLY: SAVED IN PROJECTS`. A different song already under that name asks `SONG EXISTS - OVERWRITE?` first. |
 | LOAD | Open file browser to load a project. With unsaved changes it asks `UNSAVED CHANGES - LOAD ANYWAY?` first. A damaged song asks `FILE DAMAGED - REPAIR?` (see below). |
 | COLLECT | Copy the song and every sample and SoundFont it plays into `<home>/Songs/ProjectName/`. Move or share that folder and the song opens anywhere. If the folder is already there, choose REPLACE, NEW COPY (`ProjectName_2`) or CANCEL. |
 | EXPORT — MIX | Open the RENDER panel, set to a stereo WAV (offline, faster than real-time). |
@@ -3110,7 +3110,7 @@ exports and sample-editor saves keep their own folders.
 |---|---|
 | D-pad UP / DOWN | Move through files / folders |
 | A | Load file / enter folder |
-| A on `..`, or R + LEFT | Go up one directory level |
+| A on `..`, or R + LEFT | Go up one directory level (on Windows, above a drive's root: the list of drives) |
 | B | Close the browser |
 | START | Preview highlighted WAV |
 | SELECT + A | Rename |

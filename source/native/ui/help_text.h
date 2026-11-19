@@ -1087,10 +1087,10 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
      {"A opens the keyboard"}},
     /* PROJECT_SAVE */
     {"SAVE: write the song to disk", "It uses the name on the NAME", "row above.",
-     {"Saves into the Projects folder,",
-      "under the NAME above. A song",
-      "saved earlier with the same name",
-      "is replaced."},
+     {"Saves under the NAME above, in",
+      "the folder the song came from.",
+      "New songs go to Projects. A",
+      "different song there asks first."},
      {"A saves"}},
     /* PROJECT_LOAD */
     {"LOAD: open another song", "Opens the file browser to", "pick one.",

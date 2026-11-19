@@ -136,6 +136,42 @@ std::string default_app_root() {
     return "TrackWerk";
 }
 
+#if defined(_WIN32)
+namespace {
+// The browser's list of drives, above every drive's root. Not a real path (a name ending in ':' is
+// invalid on Windows), so it can't collide with a folder.
+constexpr const char* kDrivesListing = "DRIVES:";
+
+// Every drive that can be opened now: C:/, D:/ … An empty card reader or CD drive is left out, and
+// asking about it shows no "no disk" dialog. Network drives are listed without being touched.
+std::vector<FileInfo> list_drives() {
+    std::vector<FileInfo> out;
+    const UINT oldMode = ::SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
+    const DWORD mask   = ::GetLogicalDrives();
+    for (int i = 0; i < 26; ++i) {
+        if (!(mask & (1u << i))) continue;
+        const wchar_t root[] = {static_cast<wchar_t>(L'A' + i), L':', L'\\', 0};
+        const UINT type = ::GetDriveTypeW(root);
+        if (type == DRIVE_NO_ROOT_DIR || type == DRIVE_UNKNOWN) continue;
+        if ((type == DRIVE_REMOVABLE || type == DRIVE_CDROM) &&
+            !::GetVolumeInformationW(root, nullptr, 0, nullptr, nullptr, nullptr, nullptr, 0))
+            continue;   // no medium in it
+        FileInfo info;
+        info.path        = std::string(1, static_cast<char>('A' + i)) + ":/";
+        info.name        = std::string(1, static_cast<char>('A' + i)) + ":";
+        info.isDirectory = true;
+        out.push_back(std::move(info));
+    }
+    ::SetErrorMode(oldMode);
+    return out;
+}
+
+bool is_drive_root(const fs::path& p) {
+    return p.has_root_name() && p.has_root_directory() && !p.has_relative_path();
+}
+}  // namespace
+#endif  // _WIN32
+
 // ─── StdFileSystem ───────────────────────────────────────────────────────────────────────────────
 
 std::string StdFileSystem::ensure_dir(const char* sub) {
@@ -153,6 +189,9 @@ bool StdFileSystem::read_file(const std::string& path, std::string& out) {
 }
 
 std::vector<FileInfo> StdFileSystem::list_files(const std::string& directory) {
+#if defined(_WIN32)
+    if (directory == kDrivesListing) return list_drives();
+#endif
     std::vector<FileInfo> out;
     std::error_code ec;
 
@@ -186,11 +225,21 @@ bool StdFileSystem::file_exists(const std::string& path) {
 }
 
 bool StdFileSystem::is_directory(const std::string& path) {
+#if defined(_WIN32)
+    if (path == kDrivesListing) return true;
+#endif
     std::error_code ec;
     return fs::is_directory(path, ec) && !ec;
 }
 
+
+
 std::string StdFileSystem::parent_path(const std::string& path) {
+#if defined(_WIN32)
+    // Above a drive's root: the list of drives; above that, nothing.
+    if (path == kDrivesListing) return "";
+    if (is_drive_root(fs::path(path))) return kDrivesListing;
+#endif
     const fs::path p      = fs::path(path);
     const fs::path parent = p.parent_path();
     // A filesystem root is its own parent.

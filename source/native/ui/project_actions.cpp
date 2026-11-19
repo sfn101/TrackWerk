@@ -44,21 +44,38 @@ std::string unique_render_path(FileSystem& fs, const std::string& dir, const std
 
 // ─── SAVE ────────────────────────────────────────────────────────────────────────────────────────
 
-static std::string project_save_path(const songcore::SongcoreHost& host, FileSystem& fs) {
-    return fs.projects_directory() + "/" + songcore::project_file_name(host.project().name) + ".ptp";
+static std::string project_file(const songcore::SongcoreHost& host) {
+    return songcore::project_file_name(host.project().name) + ".ptp";
+}
+
+// A song opened from a file saves into that file's folder (as <name>.ptp, so a renamed song stays
+// beside it); a new, recovered or imported song has no path and goes to Projects.
+static std::string project_save_path(const songcore::SongcoreHost& host, FileSystem& fs, const AppState& s) {
+    const std::string folder = s.projectPath.empty() ? std::string() : fs.parent_path(s.projectPath);
+    return (folder.empty() ? fs.projects_directory() : folder) + "/" + project_file(host);
 }
 
 ActionResult save_project(songcore::SongcoreHost& host, FileSystem& fs, AppState& s) {
-    const std::string path = project_save_path(host, fs);
+    std::string path = project_save_path(host, fs, s);
+    const char* message = "SAVED";
 
-    if (!write_project(host, fs, path)) return ActionResult{false, "SAVE FAILED"};
+    if (!write_project(host, fs, path)) {
+        // Its own folder refused the write (read-only, or no permission on Android): Projects instead.
+        const std::string fallback = fs.projects_directory() + "/" + project_file(host);
+        if (fallback == path) return ActionResult{false, "SAVE FAILED"};
+        // Never silently over another song there: that question was asked about the other folder.
+        if (fs.file_exists(fallback)) return ActionResult{false, "FOLDER READ-ONLY: NAME TAKEN IN PROJECTS"};
+        if (!write_project(host, fs, fallback)) return ActionResult{false, "SAVE FAILED"};
+        path    = fallback;
+        message = "FOLDER READ-ONLY: SAVED IN PROJECTS";
+    }
 
     // Clean, and the autosave goes with it (its pending deadline re-checks the dirty flag).
     s.savedProjectVersion = s.projectVersion;
     s.projectPath         = path;
     autosave_clear(fs);
 
-    return ActionResult{true, "SAVED"};
+    return ActionResult{true, message};
 }
 
 // ─── COLLECT ─────────────────────────────────────────────────────────────────────────────────────
@@ -140,7 +157,7 @@ bool copy_in_pieces(const std::string& from, const std::string& to,
 }  // namespace
 
 bool save_would_replace_other_song(const songcore::SongcoreHost& host, FileSystem& fs, const AppState& s) {
-    const std::string target = project_save_path(host, fs);
+    const std::string target = project_save_path(host, fs, s);
     if (!fs.file_exists(target)) return false;
     // A repaired song not saved yet: its own file is the damaged one, so the first SAVE asks too.
     if (s.repairedUnsaved) return true;

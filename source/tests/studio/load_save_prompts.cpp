@@ -175,6 +175,33 @@ int main(int argc, char** argv) {
     check(r.host.project().name == "DAMAGED" && r.state.project_dirty() && r.state.projectPath.empty() &&
           r.state.statusMessage == "REPAIRED: 1 FIX", "A brings the work back repaired and unsaved");
 
+    // ── 7 · A song opened from another folder saves back there, not into Projects ──
+    const std::string elsewhere = (dir / "Elsewhere").generic_string();
+    std::filesystem::create_directories(elsewhere);
+    const std::string away = elsewhere + "/AWAY.ptp";
+    r.fs.write_file(away, "{\"version\":1,\"name\":\"AWAY\"}");
+    r.host.edit_project().name = "AWAY";
+    r.state.projectPath = away;   // as if LOAD had opened it there
+    r.state.repairedUnsaved = false;
+    r.state.projectVersion++;
+    r.project_cell(1);
+    check(!r.state.confirm.is_open() && read(r.fs, away) != "{\"version\":1,\"name\":\"AWAY\"}" &&
+          !r.fs.file_exists(r.fs.projects_directory() + "/AWAY.ptp"),
+          "a song opened elsewhere saves back into its own folder");
+    check(r.state.projectPath == away, "...and keeps that path");
+
+#ifdef _WIN32
+    // ── 8 · Above a drive's root the browser lists the drives ──
+    const std::string system = std::filesystem::path(dir).root_path().generic_string();   // e.g. C:/
+    const std::string drives = r.fs.parent_path(system);
+    check(!drives.empty() && r.fs.is_directory(drives), "a drive root has a parent: the drive list");
+    bool listed = false;
+    for (const auto& f : r.fs.list_files(drives))
+        if (f.isDirectory && f.path == system) listed = true;
+    check(listed, "the drive list holds this drive");
+    check(r.fs.parent_path(drives).empty(), "nothing above the drive list");
+#endif
+
     std::printf(failures ? "%d FAILED\n" : "all passed\n", failures);
     return failures ? 1 : 0;
 }

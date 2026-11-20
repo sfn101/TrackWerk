@@ -10,7 +10,7 @@ no way to give it a link. It now works as a picker.
 
 ## Status
 
-- **Windows:** tested by hand on 2026-11-20, covering link paste and lengths. A typed search after the START fix (4863b4b) has not been tried by hand yet.
+- **Windows:** tested by hand on 2026-11-20, covering link paste, lengths, and typed search after the START fix (4863b4b).
 - **Android:** UNTESTED on a device. It only builds in CI.
 - **Linux desktop:** CI checks only.
 - If Android YouTube misbehaves, start from this spec and the commits f3e64b1 and 4863b4b. Listed under "Needs device testing" in ROADMAP.md.

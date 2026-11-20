@@ -90,6 +90,10 @@ The aim is that the fork can always take every upstream release, and that upstre
   - Never raise a format number alone without telling the user what it means for files exchanged with upstream.
 - Keep fork-only material in fork-only files (`specs/`, `AUDIT.md`, `CLAUDE.md`, `.claude/`), and touch upstream files no more than a change needs.
 
+### Drafts are private
+
+Every draft of a message, issue, comment or PR text to someone else stays on this machine only, in `drafts/` at the repo root. It's ignored through `.git/info/exclude`, so never commit, push or publish it. Only the final text goes out, and only after the user has approved it.
+
 ### Sending a feature upstream
 
 Steps, in order. Don't skip one without the user's explicit OK:
@@ -100,7 +104,7 @@ Steps, in order. Don't skip one without the user's explicit OK:
    - Copy the change with `git cherry-pick`, or rebuild it by hand if its commits mix in other work.
    - If the feature normally builds on another of ours (wide mode on the VI visualizer or sharp scaling, for example), it must work without it. If it can't yet, stop and tell the user.
 4. **Check it.** Run `git diff origin/main --stat`: every file must belong to the feature. Never include `CLAUDE.md`, `AUDIT.md`, `specs/`, `.claude/` or roadmap commits. Then build that branch, test it by hand on Windows, and run CI on it (`gh workflow run build.yml -R sfn101/TrackWerk --ref upstream/<name>`).
-5. **Pace and order.** Send PRs the way the maintainer asks (one at a time, or all at once to pick from); until they've answered, one at a time. Follow the order in `specs/upstream-message-draft.md`: the built features first, then wide mode once it fits upstream's newest screens and stands alone.
+5. **Pace and order.** Send PRs the way the maintainer asks (one at a time, or all at once to pick from); until they've answered, one at a time. Follow the order in the message to upstream (`drafts/upstream-message.md`, local): the built features first, then wide mode once it fits upstream's newest screens and stands alone.
 6. **Open it only when the user says so.** Push the branch to `fork` and open the PR to `kidbee85-beep/TrackWerk` `main`. The description says what it does for the user, what changed and how it was tested, written from the change itself, not from fork-only notes.
 7. **Keep the branch.** Review fixes go on the same branch. Don't rebase or force-push it unless the maintainer asks. If upstream releases again before the PR is merged, merge their release into the branch and retest it.
 
@@ -108,5 +112,5 @@ Steps, in order. Don't skip one without the user's explicit OK:
 
 - PR #3 (Windows build fix) was taken by the maintainer as commit `b34487b` with our authorship, and shipped in 1.3.0.
 - Issue #2's file-validation findings are all fixed upstream.
-- The message offering our features (`specs/upstream-message-draft.md`) is drafted and **not yet sent**. It waits for the user's approval of the text.
+- The message offering our features (`drafts/upstream-message.md`, local only) is drafted and **not yet sent**. It waits for the user's approval of the text.
 - Our audit batches 1-2 are not to be sent: upstream fixed those itself.

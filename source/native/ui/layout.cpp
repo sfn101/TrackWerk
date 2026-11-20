@@ -236,6 +236,68 @@ void draw_phrase_side_view(Canvas& c, const AppState& s, int x, int w, int y) {
     }
 }
 
+// Wide mode's peek (specs/wide-mode.md): on SONG the chain under the cursor (PH, TSP), on CHAIN the
+// phrase under the cursor (NOTE, VOL, INST), row by row beside the editor. View only.
+void draw_peek(Canvas& c, const AppState& s, int x, int w, int y) {
+    const Theme& t = s.theme;
+    const songcore::Project& p = *s.project;
+    const bool song = s.currentScreen == ScreenType::SONG;
+    const int track = s.cursorColumn - 1;
+
+    int id = -1;   // the chain (SONG) or phrase (CHAIN) under the cursor; range-checked
+    if (song) {
+        if (track >= 0 && track < static_cast<int>(p.tracks.size())) {
+            const auto& refs = p.tracks[static_cast<size_t>(track)].chainRefs;
+            if (s.cursorRow >= 0 && s.cursorRow < static_cast<int>(refs.size())) id = refs[static_cast<size_t>(s.cursorRow)];
+        }
+        if (id >= static_cast<int>(p.chains.size())) id = -1;
+    } else if (s.currentChain >= 0 && s.currentChain < static_cast<int>(p.chains.size())) {
+        id = songcore::chain_phrase_ref(p.chains[static_cast<size_t>(s.currentChain)], s.cursorRow);
+        if (id >= static_cast<int>(p.phrases.size())) id = -1;
+    }
+
+    const int titleY = y + TEXT_PADDING + 1;
+    const int headerY = y + ROW_HEIGHT + 14 + TEXT_PADDING + 1;
+    const int firstRowY = y + ROW_HEIGHT + 14 + ROW_HEIGHT;
+    c.draw_label(std::string(song ? "CHAIN " : "PHRASE ") + (id >= 0 ? hex2(id) : "--"), x + 4, titleY,
+                 id >= 0 ? ref_color(t, id) : t.textEmpty, 12);
+    if (song) {
+        c.draw_label("PH", x + 34, headerY, t.textParam, 12);
+        c.draw_label("TSP", x + 70, headerY, t.textParam, 12);
+    } else {
+        c.draw_label("NOTE", x + 34, headerY, t.textParam, 12);
+        c.draw_label("VOL", x + 80, headerY, t.textParam, 12);
+        c.draw_label("INST", x + 116, headerY, t.textParam, 12);
+    }
+
+    const Argb ink = with_alpha(t.textValue, .7f);
+    for (int i = 0; i < 16; ++i) {
+        const int rowY = firstRowY + i * ROW_HEIGHT, textY = rowY + TEXT_PADDING + 2;
+        c.fill_rect(x, rowY, w, ROW_HEIGHT, row_bg_color(i, t));
+        c.draw_label(hex2(i), x + 4, textY, i % 4 == 0 ? t.textParam : t.textEmpty, 12);
+        if (id < 0) continue;
+        if (song) {
+            const auto& chain = p.chains[static_cast<size_t>(id)];
+            const int phrase = songcore::chain_phrase_ref(chain, i);
+            c.draw_label(phrase >= 0 ? hex2(phrase) : std::string("--"), x + 34, textY,
+                         phrase >= 0 ? ref_color(t, phrase) : t.textEmpty, 12);
+            if (phrase >= 0 && i < static_cast<int>(chain.transposeValues.size()))
+                c.draw_label(hex2(chain.transposeValues[static_cast<size_t>(i)] & 0xFF), x + 70, textY, ink, 12);
+        } else {
+            const auto& steps = p.phrases[static_cast<size_t>(id)].steps;
+            if (i >= static_cast<int>(steps.size())) continue;
+            const auto& st = steps[static_cast<size_t>(i)];
+            const bool plays = songcore::step_has_note(st);
+            c.draw_label(st.note.pitch != -1 ? note_name(st.note) : std::string("---"), x + 34, textY,
+                         st.note.pitch != -1 ? ink : t.textEmpty, 12);
+            if (plays) {
+                c.draw_label(hex2(st.volume & 0xFF), x + 80, textY, ink, 12);
+                c.draw_label(hex2(st.instrument & 0xFF), x + 116, textY, inst_color(t, st.instrument), 12);
+            }
+        }
+    }
+}
+
 }  // namespace
 
 void TrackerLayout::draw_frame(Canvas& c, const AppState& s) {
@@ -253,23 +315,23 @@ void TrackerLayout::draw_frame(Canvas& c, const AppState& s) {
     // VI fills the whole main area beside the rail (in 4:3 that is the editors' own width).
     const bool vi = s.currentScreen == ScreenType::VISUALIZER && !s.eq.isOpen && !s.themeEditor.isOpen;
     const int editorWidth = vi ? main_area_width() : EDITOR_CLIP_RIGHT - SIDE_SPACER;
-    int editorX = scene.railLeft ? DESIGN_W - SIDE_SPACER - editorWidth : SIDE_SPACER;
-    // Wide mode centres INSTRUMENT in the space beside the rail; its side space is kept for later.
-    if (wide_dx() > 0 && s.currentScreen == ScreenType::INSTRUMENT && !s.eq.isOpen && !s.themeEditor.isOpen)
-        editorX += scene.railLeft ? -wide_dx() : wide_dx();
+    // The editor sits right beside the rail; wide mode's spare space is always on its right.
+    const int editorX = scene.railLeft ? (vi ? DESIGN_W : DESIGN_W_4_3) - SIDE_SPACER - editorWidth : SIDE_SPACER;
     const int editorY = scene.scopeBottom ? SCREEN_SPACER : EDITOR_Y;
     const int scopeY = scene.scopeBottom ? DESIGN_H - SCREEN_SPACER - OscilloscopeModule::HEIGHT
                                          : SCREEN_SPACER;
 
     draw_scope_strip(c, s, scopeY);
     draw_editor(c, s, editorX, editorY, editorWidth);
-    // Wide mode's PHRASE side view, in the space between the editor and the track rail.
-    if (DESIGN_W > DESIGN_W_4_3 && s.currentScreen == ScreenType::PHRASE && !s.eq.isOpen &&
-        !s.themeEditor.isOpen) {
-        constexpr int gap = 6, railW = NavigationMapModule::WIDTH;
-        const int sideX = scene.railLeft ? SIDE_SPACER + railW + gap : editorX + editorWidth + gap;
-        const int sideW = scene.railLeft ? editorX - gap - sideX : right_bar_x() - gap - sideX;
-        draw_phrase_side_view(c, s, sideX, sideW, editorY);
+    // Wide mode's side views (PHRASE: the other tracks; SONG / CHAIN: a peek one level down), in the
+    // spare space right of the editor, whichever side the rail is on.
+    if (DESIGN_W > DESIGN_W_4_3 && !s.eq.isOpen && !s.themeEditor.isOpen) {
+        constexpr int gap = 6;
+        const int sideX = editorX + editorWidth + gap;
+        const int sideW = (scene.railLeft ? DESIGN_W - SIDE_SPACER : right_bar_x()) - gap - sideX;
+        if (s.currentScreen == ScreenType::PHRASE) draw_phrase_side_view(c, s, sideX, sideW, editorY);
+        if (s.currentScreen == ScreenType::SONG || s.currentScreen == ScreenType::CHAIN)
+            draw_peek(c, s, sideX, sideW, editorY);
     }
 
     if (s.currentScreen != ScreenType::VISUALIZER) {   // VI has no title row to underline

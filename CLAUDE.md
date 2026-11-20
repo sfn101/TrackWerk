@@ -86,7 +86,7 @@ The aim is that the fork can always take every upstream release, and that upstre
 - **Their code is the base.** Where both sides built the same thing, keep upstream's version and add back only what ours does extra. Nothing we built or planned may be lost, and the result must keep performance, stability and quality. If it can't, stop and ask.
 - After a merge: build and test on Windows, run CI, and update the roadmap for what upstream now covers.
 - **Keep song files compatible** with upstream:
-  - New phrase-command codes and format version numbers must not collide with upstream's. Check `songcore/effects.h` and the format numbers on `origin/main` before using a new one, and agree codes with the maintainer.
+  - New phrase-command codes and format version numbers must not collide with upstream's. Before using a new code, `git fetch origin` and check `songcore/effects.h` and the format numbers on `origin/main`, then take a code upstream doesn't use. Right after the command is built, tell the maintainer with a PR for that command, as promised in the message to upstream. The maintainer never has to coordinate codes for us.
   - Never raise a format number alone without telling the user what it means for files exchanged with upstream.
 - Keep fork-only material in fork-only files (`specs/`, `AUDIT.md`, `CLAUDE.md`, `.claude/`), and touch upstream files no more than a change needs.
 
@@ -100,7 +100,7 @@ Steps, in order. Don't skip one without the user's explicit OK:
    - Copy the change with `git cherry-pick`, or rebuild it by hand if its commits mix in other work.
    - If the feature normally builds on another of ours (wide mode on the VI visualizer or sharp scaling, for example), it must work without it. If it can't yet, stop and tell the user.
 4. **Check it.** Run `git diff origin/main --stat`: every file must belong to the feature. Never include `CLAUDE.md`, `AUDIT.md`, `specs/`, `.claude/` or roadmap commits. Then build that branch, test it by hand on Windows, and run CI on it (`gh workflow run build.yml -R sfn101/TrackWerk --ref upstream/<name>`).
-5. **One PR at a time.** Don't open the next PR while one is still waiting for review, unless the user says so. Follow the order agreed in `specs/upstream-message-draft.md`.
+5. **Pace and order.** Send PRs the way the maintainer asks (one at a time, or all at once to pick from); until they've answered, one at a time. Follow the order in `specs/upstream-message-draft.md`: the built features first, then wide mode once it fits upstream's newest screens and stands alone.
 6. **Open it only when the user says so.** Push the branch to `fork` and open the PR to `kidbee85-beep/TrackWerk` `main`. The description says what it does for the user, what changed and how it was tested, written from the change itself, not from fork-only notes.
 7. **Keep the branch.** Review fixes go on the same branch. Don't rebase or force-push it unless the maintainer asks. If upstream releases again before the PR is merged, merge their release into the branch and retest it.
 

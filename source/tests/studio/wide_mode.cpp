@@ -234,6 +234,15 @@ int main(int argc, char** argv) {
     }
     state.scenePicker = -1;
 
+    // The start-up splash and VI, to look at.
+    state.splashProgress = .5f;
+    layout.draw(*canvas, state);
+    write_bmp(*canvas, dir / "splash-wide.bmp");
+    state.splashProgress = -1;
+    state.currentScreen = ScreenType::VISUALIZER;
+    layout.draw(*canvas, state);
+    write_bmp(*canvas, dir / "vi-wide.bmp");
+
     std::printf(failures ? "%d FAILED\n" : "all passed\n", failures);
     return failures ? 1 : 0;
 }

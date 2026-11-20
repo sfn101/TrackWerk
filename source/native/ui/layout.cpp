@@ -250,7 +250,9 @@ void TrackerLayout::draw_frame(Canvas& c, const AppState& s) {
 
     const bool settings = s.currentScreen == ScreenType::SETTINGS;
     const auto scene = settings ? SceneLayout{} : scene_layout(s.theme);
-    constexpr int editorWidth = EDITOR_CLIP_RIGHT - SIDE_SPACER;
+    // VI fills the whole main area beside the rail (in 4:3 that is the editors' own width).
+    const bool vi = s.currentScreen == ScreenType::VISUALIZER && !s.eq.isOpen && !s.themeEditor.isOpen;
+    const int editorWidth = vi ? main_area_width() : EDITOR_CLIP_RIGHT - SIDE_SPACER;
     int editorX = scene.railLeft ? DESIGN_W - SIDE_SPACER - editorWidth : SIDE_SPACER;
     // Wide mode centres INSTRUMENT in the space beside the rail; its side space is kept for later.
     if (wide_dx() > 0 && s.currentScreen == ScreenType::INSTRUMENT && !s.eq.isOpen && !s.themeEditor.isOpen)
@@ -260,7 +262,7 @@ void TrackerLayout::draw_frame(Canvas& c, const AppState& s) {
                                          : SCREEN_SPACER;
 
     draw_scope_strip(c, s, scopeY);
-    draw_editor(c, s, editorX, editorY);
+    draw_editor(c, s, editorX, editorY, editorWidth);
     // Wide mode's PHRASE side view, in the space between the editor and the track rail.
     if (DESIGN_W > DESIGN_W_4_3 && s.currentScreen == ScreenType::PHRASE && !s.eq.isOpen &&
         !s.themeEditor.isOpen) {
@@ -361,8 +363,7 @@ OscilloscopeState TrackerLayout::scope_state(const AppState& s) {
 }
 
 // VI: the visualizer across the main area, redrawn for its size; the style's name fades in after a change.
-void TrackerLayout::draw_visualizer_screen(Canvas& c, const AppState& s, int x, int y) {
-    constexpr int w = EDITOR_CLIP_RIGHT - SIDE_SPACER;
+void TrackerLayout::draw_visualizer_screen(Canvas& c, const AppState& s, int x, int y, int w) {
     constexpr int h = DESIGN_H - EDITOR_Y - SCREEN_SPACER;
     visualizer_.draw_sized(c, x, y, w, h, scope_state(s));
     if (s.vizNameUntilMs <= s.animationMs) return;
@@ -606,8 +607,7 @@ ThemeState theme_state(const AppState& s) {
 
 // ─── The editor, left of the right bar ───────────────────────────────────────────────────────────
 // The EQ and theme editors replace the module but leave the furniture: the scope keeps moving under them.
-void TrackerLayout::draw_editor(Canvas& c, const AppState& s, int x, int y) {
-    constexpr int editorWidth = EDITOR_CLIP_RIGHT - SIDE_SPACER;
+void TrackerLayout::draw_editor(Canvas& c, const AppState& s, int x, int y, int editorWidth) {
     Canvas::ClipScope clip(c, x - SIDE_SPACER, 0, editorWidth + SIDE_SPACER, DESIGN_H);
 
     if (s.eq.isOpen) {
@@ -631,7 +631,7 @@ void TrackerLayout::draw_editor(Canvas& c, const AppState& s, int x, int y) {
         case ScreenType::MODS:       modulation_.draw(c, x, y, mods_state(s)); break;
         case ScreenType::MIXER:      mixer_.draw(c, x, y, mixer_state(s)); break;
         case ScreenType::PERFORM:    draw_perform(c, x, y, s); break;
-        case ScreenType::VISUALIZER: draw_visualizer_screen(c, s, x, y); break;
+        case ScreenType::VISUALIZER: draw_visualizer_screen(c, s, x, y, editorWidth); break;
         case ScreenType::EFFECTS:    effects_.draw(c, x, y, effects_state(s)); break;
         case ScreenType::PROJECT:    project_.draw(c, x, y, project_state(s)); break;
         case ScreenType::SETTINGS:   settings_.draw(c, x, y, settings_state(s)); break;

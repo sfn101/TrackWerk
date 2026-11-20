@@ -48,6 +48,8 @@ inline constexpr int EDITOR_CLIP_RIGHT = RIGHT_BAR_X_4_3 - SCREEN_SPACER;       
 inline int right_bar_x() { return DESIGN_W - NavigationMapModule::WIDTH - SIDE_SPACER; }            // 515 / 729
 // The scope strip: 620 wide in 4:3, the whole width between the side spacers in wide mode.
 inline int scope_width() { return DESIGN_W - 2 * SIDE_SPACER; }
+// The main area beside the rail: the editors' 499 in 4:3; VI fills all of it in wide mode (713).
+inline int main_area_width() { return DESIGN_W - 2 * SIDE_SPACER - NavigationMapModule::WIDTH - SCREEN_SPACER; }
 
 // Widths only this clip can check, pinned from both sides.
 inline constexpr int PROJECT_NAME_CELLS_X = SIDE_SPACER + ProjectModule::VALUE_X;
@@ -107,9 +109,9 @@ private:
 
     void draw_full_screen(Canvas& c, const AppState& s);   // the browser or the sample editor
     void draw_scope_strip(Canvas& c, const AppState& s, int y);
-    void draw_visualizer_screen(Canvas& c, const AppState& s, int x, int y);
+    void draw_visualizer_screen(Canvas& c, const AppState& s, int x, int y, int width);
     static OscilloscopeState scope_state(const AppState& s);
-    void draw_editor(Canvas& c, const AppState& s, int x, int y);        // or the EQ / theme editor in its place
+    void draw_editor(Canvas& c, const AppState& s, int x, int y, int width);        // or the EQ / theme editor in its place
     void draw_overlays(Canvas& c, const AppState& s);
     void draw_placeholder(Canvas& c, int x, int y, ScreenType screen, const Theme& t) const;
     void draw_track_rail(Canvas& c, const AppState& s, int x, int y, bool left) const;

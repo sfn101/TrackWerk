@@ -64,25 +64,29 @@ inline void draw_extreme_splash(Canvas& c, const Theme& theme, float progress) {
     const Argb white = 0xffedf6ffu;
     c.reset_clip(); c.set_surface_style(theme.surfaceStyle);
     c.surface_rect(0, 0, DESIGN_W, DESIGN_H, ground);
+    // Wide mode: the frame, floor, stars and copper band span the canvas; the globe, logo and words
+    // keep their place in the middle. In 4:3 W = 640 and dx = 0, so nothing moves.
+    const int W = DESIGN_W, dx = wide_dx(), cx = W / 2;
+    const float stretch = float(W) / 640.f;
 
     // Edge registration and quiet perspective floor. The travelling rings are geometric artwork,
     // not a simulated loading diagnostic or an audio activity meter.
-    c.stroke_rect(18, 18, 604, 444, alpha(violet, .18f));
+    c.stroke_rect(18, 18, W - 36, 444, alpha(violet, .18f));
     c.fill_rect(18, 18, 74, 1, alpha(mint, .78f));
-    c.fill_rect(548, 461, 74, 1, alpha(mint, .58f));
+    c.fill_rect(W - 92, 461, 74, 1, alpha(mint, .58f));
     for (int i = 0; i <= 10; ++i)
-        c.line(320, 196, -160 + i * 96, 432, alpha(violet, .11f));
+        c.line(cx, 196, cx + (i * 96 - 480) * W / 640, 432, alpha(violet, .11f));
     for (int i = 0; i < 10; ++i) {
         const float depth = fract(float(i) / 10.f + p * .35f);
         const int yy = 196 + int(depth * depth * 236.f);
-        c.line(20, yy, 620, yy, alpha(violet, .035f + depth * .10f));
+        c.line(20, yy, W - 20, yy, alpha(violet, .035f + depth * .10f));
     }
     for (int i = 0; i < 56; ++i) {
         const uint32_t seed = hash(uint32_t(i) + 63u);
         const float angle = float(seed & 65535u) / 65535.f * 2.f * pi;
         const float depth = .16f + .84f * fract(float(seed >> 16) / 65535.f + p * .22f);
         const float radius = 25.f + 156.f * depth;
-        const int sx = 320 + int(std::cos(angle) * radius * 1.58f);
+        const int sx = cx + int(std::cos(angle) * radius * 1.58f * stretch);
         const int sy = 139 + int(std::sin(angle) * radius * .60f);
         const Argb ink = alpha(i % 3 == 0 ? violet : mint, .10f + depth * .45f);
         const int length = depth > .8f ? 3 : 1;
@@ -101,7 +105,7 @@ inline void draw_extreme_splash(Canvas& c, const Theme& theme, float progress) {
         const float rx = ux * cy + uz * sy, rz = -ux * sy + uz * cy;
         const float ry = uy * cp - rz * sp, z = uy * sp + rz * cp;
         const float perspective = 3.2f / (3.2f + z);
-        return Point{320 + int(rx * 77.f * perspective), 139 + int(ry * 77.f * perspective), z};
+        return Point{cx + int(rx * 77.f * perspective), 139 + int(ry * 77.f * perspective), z};
     };
     for (int lat = -2; lat <= 2; ++lat) {
         const float latitude = float(lat) * pi / 7.f;
@@ -125,12 +129,12 @@ inline void draw_extreme_splash(Canvas& c, const Theme& theme, float progress) {
     }
     for (int segment = 0; segment < 32; ++segment) {
         const float a = float(segment) * 2.f * pi / 32.f, b = float(segment + 1) * 2.f * pi / 32.f;
-        const auto orbit = [&](float v) { return Point{320 + int(std::cos(v) * 111.f), 144 + int(std::sin(v) * 22.f + std::cos(v) * 16.f), 0}; };
+        const auto orbit = [&](float v) { return Point{cx + int(std::cos(v) * 111.f), 144 + int(std::sin(v) * 22.f + std::cos(v) * 16.f), 0}; };
         const auto one = orbit(a), two = orbit(b);
         c.line(one.x, one.y, two.x, two.y, alpha(violet, segment < 16 ? .24f : .46f));
     }
     const float satellite = p * 4.8f + .9f;
-    const int satX = 320 + int(std::cos(satellite) * 111.f), satY = 144 + int(std::sin(satellite) * 22.f + std::cos(satellite) * 16.f);
+    const int satX = cx + int(std::cos(satellite) * 111.f), satY = 144 + int(std::sin(satellite) * 22.f + std::cos(satellite) * 16.f);
     c.fill_rect(satX - 3, satY - 3, 7, 7, alpha(mint, .09f));
     c.fill_rect(satX - 1, satY - 1, 3, 3, white);
 
@@ -141,8 +145,8 @@ inline void draw_extreme_splash(Canvas& c, const Theme& theme, float progress) {
     c.draw_label(header, (DESIGN_W - Canvas::label_width(header, 12)) / 2, 31, alpha(violet, .78f), 12);
     c.draw_label(title, (DESIGN_W - Canvas::label_width(title, 28)) / 2, 228, white, 28);   // the title size
     // Keep the main mark clean against the floor while allowing the grid to show through its gaps.
-    c.fill_rect(94, 260, 452, 83, alpha(ground, .53f));
-    logo(c, 94, 267, mint, violet, p);
+    c.fill_rect(94 + dx, 260, 452, 83, alpha(ground, .53f));
+    logo(c, 94 + dx, 267, mint, violet, p);
     c.draw_label(identity, (DESIGN_W - Canvas::label_width(identity, 12)) / 2, 355, alpha(white, .66f), 12);
 
     // Copper bars behind the ribbon, in the splash's own colours: the cracktro's raster band.
@@ -150,23 +154,23 @@ inline void draw_extreme_splash(Canvas& c, const Theme& theme, float progress) {
         Theme copperTheme = theme;
         copperTheme.background = ground; copperTheme.rowEvery4th = mix(ground, violet, .45f);
         copperTheme.rowCursor = mint; copperTheme.textValue = white;
-        Canvas::ClipScope band(c, 20, 372, 600, 44);
-        demo_fx::copper(c, 20, 372, 600, 44, copperTheme, uint64_t(p * 5200.f));
-        c.fill_rect(20, 372, 600, 44, alpha(ground, .45f));
+        Canvas::ClipScope band(c, 20, 372, W - 40, 44);
+        demo_fx::copper(c, 20, 372, W - 40, 44, copperTheme, uint64_t(p * 5200.f));
+        c.fill_rect(20, 372, W - 40, 44, alpha(ground, .45f));
     }
 
     // A compact animated ribbon closes the artwork. Its waveform is explicitly decorative.
-    int previousX = 160, previousY = 394;
+    int previousX = 160 + dx, previousY = 394;
     for (int segment = 1; segment <= 64; ++segment) {
         const float u = float(segment) / 64.f;
-        const int xx = 160 + segment * 5;
+        const int xx = 160 + dx + segment * 5;
         const float envelope = std::sin(u * pi);
         const int yy = 394 + int(envelope * (std::sin(u * 24.f - p * 8.f) * 5.f + std::sin(u * 45.f + p * 7.f) * 3.f));
         c.line(previousX, previousY, xx, yy, alpha(mix(mint, violet, u), .55f));
         previousX = xx; previousY = yy;
     }
-    c.fill_rect(240, 418, 160, 1, alpha(violet, .18f));
-    c.fill_rect(240, 418, std::max(1, int(160.f * p)), 1, alpha(mint, .72f));
+    c.fill_rect(240 + dx, 418, 160, 1, alpha(violet, .18f));
+    c.fill_rect(240 + dx, 418, std::max(1, int(160.f * p)), 1, alpha(mint, .72f));
     c.draw_label(skip, (DESIGN_W - Canvas::label_width(skip, 12)) / 2, 434, alpha(violet, .58f), 12);
 
     // Scanlines over everything, and at the very end a tube switching over: the picture folds to a

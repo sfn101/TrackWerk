@@ -244,7 +244,7 @@ int main(int argc, char** argv) {
         };
         struct Ref { ScreenType screen; uint64_t hash; };
         const Ref refs[] = {
-            {ScreenType::SONG, 0x01875155a25a4e50ull}, {ScreenType::PHRASE, 0xaaab766da386c55aull},
+            {ScreenType::SONG, 0x3ee210682c1ad64cull}, {ScreenType::PHRASE, 0xcd3ee1bb58ec9150ull},
             {ScreenType::INSTRUMENT, 0xcb1a79e96342aca1ull}, {ScreenType::MIXER, 0x18bd0f3a016a447eull},
             {ScreenType::SETTINGS, 0xb002fc343b44b6faull},
         };

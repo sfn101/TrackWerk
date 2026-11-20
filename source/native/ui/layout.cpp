@@ -219,6 +219,7 @@ void draw_phrase_side_view(Canvas& c, const AppState& s, int x, int w, int y) {
     const int headerY = y + ROW_HEIGHT + 14 + TEXT_PADDING + 1;   // the phrase's own header row
     const int firstRowY = y + ROW_HEIGHT + 14 + ROW_HEIGHT;
     const Argb ink = with_alpha(t.textValue, .55f);
+    c.draw_label("OTHER TRACKS PREVIEW", x + 4, y + TEXT_PADDING + 1, t.textParam, 12);
 
     for (int k = 0; k < count; ++k) {
         const int colX = x + k * stride;
@@ -259,7 +260,7 @@ void draw_peek(Canvas& c, const AppState& s, int x, int w, int y) {
     const int titleY = y + TEXT_PADDING + 1;
     const int headerY = y + ROW_HEIGHT + 14 + TEXT_PADDING + 1;
     const int firstRowY = y + ROW_HEIGHT + 14 + ROW_HEIGHT;
-    c.draw_label(std::string(song ? "CHAIN " : "PHRASE ") + (id >= 0 ? hex2(id) : "--"), x + 4, titleY,
+    c.draw_label(std::string(song ? "CHAIN " : "PHRASE ") + (id >= 0 ? hex2(id) : "--") + " PREVIEW", x + 4, titleY,
                  id >= 0 ? ref_color(t, id) : t.textEmpty, 12);
     if (song) {
         c.draw_label("PH", x + 34, headerY, t.textParam, 12);

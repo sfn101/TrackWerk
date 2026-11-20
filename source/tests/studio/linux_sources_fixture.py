@@ -61,10 +61,11 @@ elif '-o' in sys.argv:
  else:output.write_bytes(pathlib.Path(sample).read_bytes())
 elif any(a.startswith('ytsearch') for a in sys.argv):
  identifier='fixtureBIG1' if any('too-large' in a for a in sys.argv) else 'fixtureABC1'
- print(json.dumps({'entries':[{'id':identifier,'title':'YouTube Fixture','duration':3,'channel':'Fixture Artist'}]}))
+ print(json.dumps({'entries':[{'id':identifier,'title':'YouTube Fixture','duration':3,'channel':'Fixture Artist'},
+  {'id':'fixtureLNG1','title':'Two-hour mix','duration':7200,'ie_key':'Youtube'},{'id':'UCfixtureChan','title':'A channel','ie_key':'YoutubeTab'}]}))
 else:
  fmt='fixture-too-large' if any('fixtureBIG1' in a for a in sys.argv) else 'fixture-audio-only'
- print(json.dumps({'id':'fixtureABC1','url':base+'/tone.wav','ext':'wav','duration':3,'protocol':'https','vcodec':'none','format_id':fmt}))
+ print(json.dumps({'id':'fixtureABC1','url':base+'/tone.wav','ext':'wav','duration':7200 if any('fixtureLNG1' in a for a in sys.argv) else 3,'protocol':'https','vcodec':'none','format_id':fmt}))
 ''')
     helper.chmod(0o755)
     env=os.environ.copy();env.update(PT_SOURCE_TEST_BASE=base,PT_YTDLP=str(helper),PT_SOURCE_CODEC_LIST=','.join(codecs),PT_FFMPEG=ffmpeg)

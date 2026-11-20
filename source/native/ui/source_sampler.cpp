@@ -355,7 +355,7 @@ std::string control_value(const SourceSamplerState& s, int row) {
         case 0:return s.provider==SOURCE_YOUTUBE_PROVIDER?(s.youtubeEnabled?"YouTube / ON  A: off":s.youtubeConfirm?"YouTube / A again: ON":"YouTube / OFF  A A: on")
                                                             :source_sampler_provider_name(s.provider);
         case 1:return source_sampler_genre_name(s.genre);
-        case 2:if(s.col==2)return "FAVORITE STATIONS";return s.col==1?"RANDOM / "+std::string(source_sampler_genre_name(s.genre)):s.query.empty()?"A: enter query":s.query;
+        case 2:if(s.col==2)return s.provider==SOURCE_YOUTUBE_PROVIDER?"PASTE LINK":"FAVORITE STATIONS";return s.col==1?"RANDOM / "+std::string(source_sampler_genre_name(s.genre)):s.query.empty()?"A: enter query":s.query;
         case 3:return std::to_string(s.selectedResult<0?0:s.selectedResult+1)+" / "+std::to_string(s.results.size())+
                       (license_filter(s)!=SourceLicenseFilter::ALL?" ("+std::to_string(shown_count(s,s.results))+" shown)":"");
         case 4:return std::to_string(s.selectedTrack<0?0:s.selectedTrack+1)+" / "+std::to_string(s.tracks.size())+
@@ -741,6 +741,14 @@ bool source_sampler_poll(SourceSamplerState& s, uint64_t now) {
         s.previewGainPercent=static_cast<int>(number(state,"preview_gain_percent",200));if(!s.previewGainPercent)s.previewGainPercent=100;
         const auto liveLength = number(state, "live_capture_seconds");
         if (sources::valid_live_take_length(liveLength)) s.liveCaptureSeconds = static_cast<int>(liveLength);
+        // An Android share (specs/youtube-picker.md) opens the link field once, on YouTube.
+        if(const auto shared=number(state,"shared_link_id",INT64_MAX);shared>0&&shared!=s.sharedLinkId){
+            s.sharedLinkId=shared;
+            if(s.providerAvailable[SOURCE_YOUTUBE_PROVIDER]){
+                s.provider=SOURCE_YOUTUBE_PROVIDER;s.row=2;s.col=2;s.choiceList=0;s.collectionOpen=false;s.listFocused=false;
+                s.link=string(state,"shared_link").substr(0,300);s.linkOpen=true;
+            }
+        }
         s.busy=flag(state,"busy");s.playing=flag(state,"playing");s.recording=flag(state,"recording");s.rendering=flag(state,"rendering");
         if(s.pendingTrackList&&!s.busy){
             s.pendingTrackList=false;
@@ -941,7 +949,48 @@ bool source_sampler_submit_query(SourceSamplerState& s, const std::string& query
     return false;
 }
 
+// specs/youtube-picker.md: the first word of the clipboard that is a YouTube link (a share often
+// carries text around it), else the first word, so the field shows what was there.
+std::string clipboard_link(const SourceSamplerState& s) {
+    const std::string text = s.readClipboard ? s.readClipboard() : std::string();
+    std::string first;
+    for (size_t at = 0; at < text.size() && at < 4096;) {
+        const size_t start = text.find_first_not_of(" \t\r\n", at);
+        if (start == std::string::npos) break;
+        const size_t end = std::min(text.find_first_of(" \t\r\n", start), text.size());
+        const std::string word = text.substr(start, std::min<size_t>(end - start, 300));
+        if (first.empty()) first = word;
+        if (word.find("youtu.be/") != std::string::npos || word.find("youtube.com/") != std::string::npos) return word;
+        at = end;
+    }
+    return first;
+}
+bool youtube_link(const std::string& link) {
+    return link.find("youtu.be/") != std::string::npos || link.find("youtube.com/") != std::string::npos;
+}
+void open_link(SourceSamplerState& s) {
+    s.link = clipboard_link(s);
+    s.linkOpen = true;
+    s.status = youtube_link(s.link) ? "A: open this video    B: back" : "Copy a YouTube link, then press A to paste it.";
+}
+// The open field owns the controller: A pastes or opens, B closes, every other button does nothing.
+bool link_button(const ButtonEvent& e, SourceSamplerState& s) {
+    if (e.cancelled || e.action != ButtonAction::RELEASED) return true;
+    if (e.button == Button::B) { s.linkOpen = false; s.status = "Link closed."; return true; }
+    if (e.button != Button::A) return true;
+    if (!youtube_link(s.link)) {
+        s.link = clipboard_link(s);
+        s.status = youtube_link(s.link) ? "A: open this video    B: back" : "No YouTube link on the clipboard yet.";
+        return true;
+    }
+    if (!s.youtubeEnabled) { s.status = "YouTube is off. On Provider, press A twice to opt in."; return true; }
+    s.provider = SOURCE_YOUTUBE_PROVIDER;
+    if (source_sampler_submit_query(s, s.link)) s.linkOpen = false;
+    return true;
+}
+
 bool source_sampler_button(const ButtonEvent& e, SourceSamplerState& s, songcore::SongcoreHost& host, AudioEngine& engine) {
+    if (s.linkOpen) return link_button(e, s);
     if (e.cancelled) {
         source_sampler_disarm(s);
         s.quickClipArmed = false;
@@ -997,7 +1046,8 @@ bool source_sampler_button(const ButtonEvent& e, SourceSamplerState& s, songcore
             s.status="YouTube is off. On Provider, press A twice to opt in.";}
         else if(s.row==2){if(s.providerAvailable[s.provider]){
             s.listFocused=false;s.pendingTrackList=false;s.showingTracks=false;
-            if(s.col==2){if(s.favoritesAvailable&&idle(s)&&send(s,"favorites",search_args(s))){s.shelfTitle.clear();s.busy=true;invalidate_clip(s);}else s.status="Station favorites are unavailable on this backend.";}
+            if(s.col==2&&s.provider==SOURCE_YOUTUBE_PROVIDER)open_link(s);
+            else if(s.col==2){if(s.favoritesAvailable&&idle(s)&&send(s,"favorites",search_args(s))){s.shelfTitle.clear();s.busy=true;invalidate_clip(s);}else s.status="Station favorites are unavailable on this backend.";}
             else if(s.col==1){auto args=search_args(s);args["query"]="";if(idle(s)&&send(s,"discover",args)){s.shelfTitle.clear();s.busy=true;invalidate_clip(s);}}
             else if(!s.quickClipRequest&&send(s,"query_dialog",search_args(s)))s.shelfTitle.clear();
         }else s.status="This provider is unavailable on this device.";}
@@ -1241,8 +1291,14 @@ void source_sampler_draw(Canvas& c,const SourceSamplerState& s,const Theme& t,co
         if(i==(showTracks?s.playingTrack:s.openedResult))c.fill_rect(609,y+5,2,12,accent);
         const auto kind=item_license(list[i]);
         const char* badge=source_license_badge(kind);
-        const int badgeW=Canvas::label_width(badge,12);
+        int badgeW=Canvas::label_width(badge,12);
         c.draw_label(badge,603-badgeW,y,source_license_release_safe(kind)?accent:t.meterHigh,12);
+        if(list[i].durationMs>0&&!list[i].live){   // the length before a download (specs/youtube-picker.md)
+            const int64_t secs=list[i].durationMs/1000;char length[24];
+            std::snprintf(length,sizeof length,"%lld:%02lld",static_cast<long long>(secs/60),static_cast<long long>(secs%60));
+            const int lengthW=Canvas::label_width(length,12);
+            c.draw_label(length,603-badgeW-8-lengthW,y,muted,12);badgeW+=8+lengthW;
+        }
         c.draw_label(Canvas::clip_label(list[i].title.empty()?list[i].id:list[i].title,340-badgeW,12),253,y,current?ink:muted,12);
         const auto detail=list[i].creator.empty()?(list[i].kind.empty()?"Creator not supplied":list[i].kind):list[i].creator;
         c.draw_label(Canvas::clip_label(detail,350,12),253,y+12,muted,12);
@@ -1278,6 +1334,22 @@ void source_sampler_draw(Canvas& c,const SourceSamplerState& s,const Theme& t,co
         c.draw_label("Up / Down: choose   A: take it   B or Left: keep "+std::string(prov?providers[s.provider]:genres[std::clamp(s.genre,0,genreCount-1)]),18,461,t.textTitle,12);
         return;
     }
+    if(s.linkOpen){
+        // The YouTube link field over the results panel; it holds the controller until A or B.
+        source_panel(c,238,162,384,278,t,recess(t.background,panel,.86f),accent,7);
+        c.draw_label("YOUTUBE LINK",250,172,accent,12);
+        c.draw_label("A: paste / open   B: back",610-Canvas::label_width("A: paste / open   B: back",12),172,muted,12);
+        const bool usable=youtube_link(s.link);
+        if(s.link.empty())c.draw_label("The clipboard is empty.",256,204,muted,12);
+        else for(size_t at=0,line=0;at<s.link.size()&&line<4;at+=46,++line)
+            c.draw_label(s.link.substr(at,46),256,204+static_cast<int>(line)*18,usable?ink:muted,12);
+        c.draw_label(usable?"A opens this video.":"Not a YouTube link.",256,290,usable?accent:t.meterHigh,12);
+        c.draw_label("Copy a link in a browser or the YouTube app,",256,320,muted,12);
+        c.draw_label("then press A here to paste it.",256,338,muted,12);
+        c.draw_label("Videos up to 15 minutes; no live streams.",256,368,muted,12);
+        c.draw_label("Only A and B work while this field is open.",18,461,t.textTitle,12);
+        return;
+    }
     std::string catalog=s.catalogProvider;
     for(int p=0;p<SOURCE_SAMPLER_PROVIDERS;++p)if(catalog==providerIds[p]){catalog=providers[p];break;}
     if(!s.shelfTitle.empty())catalog+=" / "+s.shelfTitle;
@@ -1290,6 +1362,7 @@ void source_sampler_draw(Canvas& c,const SourceSamplerState& s,const Theme& t,co
         s.row==11?"Left / Right with A: target slot    -1 = the current instrument":
         s.row==12&&s.replaceArmed?"A again: replace the slot    any other button: keep it":
         cursor==SOURCE_COLLECTION_ROW?"A: browse archives and radio   L / R switches providers inside":
+        s.row==2&&s.provider==SOURCE_YOUTUBE_PROVIDER?"Left / Right: Search / Random / Paste link     A: choose":
         s.row==2?"Left / Right: Search / Random / Favorites     A: discover     L: title order":
         live_history(s)&&s.row==6?"Left / Right: jump 5 s     A: return LIVE":
         live_history(s)&&s.row==SOURCE_QUICK_CLIP_ROW?"Left / Right: length     A: save before the playhead and open editor":

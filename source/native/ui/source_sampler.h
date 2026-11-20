@@ -89,6 +89,12 @@ struct SourceSamplerState {
     // Mirrors SettingsValues::sourceYoutube (studio.cpp copies it in and out around each button).
     bool youtubeEnabled = false;
     bool youtubeConfirm = false;   // A once on Provider = YouTube: the next A opts in
+    // The YouTube link field (specs/youtube-picker.md): Search > PASTE LINK, or an Android share.
+    // While it is open it takes every button: A pastes / opens, B closes, the rest do nothing.
+    bool linkOpen = false;
+    std::string link;
+    std::string (*readClipboard)() = nullptr;   // the shell's system clipboard; null where there is none
+    int64_t sharedLinkId = 0;                   // the last Android share already taken
     int collectionProvider = 0, shelfGroup = 0, shelfCursor = 0, stationGenre = 0;
     bool collectionOpen = false, collectionArmed = false;
     bool quickClipArmed = false;
@@ -114,6 +120,8 @@ struct SourceSamplerState {
 };
 
 inline constexpr int source_sampler_row_count() { return SOURCE_SAMPLER_ROWS; }
+// True while the YouTube link field is open on Studio > Sources: no other shortcut may run.
+bool source_sampler_link_open(const AppState&);
 const char* source_sampler_genre_name(int genre);
 const char* source_sampler_provider_name(int provider);
 // At most one backend snapshot per100ms. Draws consume only this parsed cache.

@@ -37,6 +37,10 @@ and they will show up in the file browser.
 These are the same folder names the Android version uses, so a TrackWerk folder
 copied off a phone works here as-is, and vice versa.
 
+The tools\ folder beside TrackWerk.exe holds yt-dlp.exe, qjs.exe and ffmpeg.exe. Studio
+SOURCE uses them to fetch audio from YouTube. Keep them next to the exe; without them
+SOURCE still works with the Internet Archive, Wikimedia Commons, SomaFM and radio.
+
 
 CONTROLS
 --------

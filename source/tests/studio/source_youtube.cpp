@@ -120,7 +120,62 @@ int main(int argc, char** argv) {
     s.row = 3; s.listFocused = true; s.busy = false;
     tap(pt::ui::Button::A, sample);
     assert(!backend.commands.empty() && backend.commands.back().find("open") == 0);
+
+    // specs/youtube-picker.md: Search > PASTE LINK opens a field that holds the controller until A or B.
+    static std::string clipboard;
+    s.readClipboard = [] { return clipboard; };
+    const auto press = [&](pt::ui::Button b) {
+        pt::ui::ButtonEvent e;
+        e.button = b;
+        for (auto action : {pt::ui::ButtonAction::PRESSED, pt::ui::ButtonAction::RELEASED}) {
+            e.action = action;
+            pt::ui::studio_button(e, st, sample.host, *sample.engine, sample.fs);
+        }
+    };
+    st.settings.sourceYoutube = true;
+    s.provider = pt::ui::SOURCE_YOUTUBE_PROVIDER; s.row = 2; s.col = 2; s.listFocused = false; s.busy = false;
+    clipboard = "listen https://youtu.be/dQw4w9WgXcQ?si=x";
+    backend.commands.clear();
+    press(pt::ui::Button::A);
+    assert(s.linkOpen && pt::ui::source_sampler_link_open(st) && s.link == "https://youtu.be/dQw4w9WgXcQ?si=x" && backend.commands.empty());
+    for (auto b : {pt::ui::Button::DPAD_UP, pt::ui::Button::DPAD_LEFT, pt::ui::Button::L_SHIFT, pt::ui::Button::R_SHIFT,
+                   pt::ui::Button::START, pt::ui::Button::SELECT})
+        press(b);
+    assert(s.linkOpen && s.row == 2 && s.col == 2 && !s.showHelp && !st.studioHelp && st.studioOpen && st.studioTab == 7 &&
+           backend.commands.empty());
+    press(pt::ui::Button::A);
+    assert(!s.linkOpen && !backend.commands.empty() && backend.commands.back().find("search") == 0 &&
+           backend.commands.back().find("youtu.be/dQw4w9WgXcQ") != std::string::npos);
+    s.busy = false;
+    press(pt::ui::Button::A);   // reopen, then B closes and sends nothing
+    backend.commands.clear();
+    press(pt::ui::Button::B);
+    assert(!s.linkOpen && backend.commands.empty() && st.studioOpen);
+    // An Android share opens the field once, on YouTube.
+    backend.snapshot = songcore::json{{"status", "idle"}, {"shared_link", "https://youtu.be/abcdefghijk"}, {"shared_link_id", 42},
+        {"providers", songcore::json::array({{{"id", "archive"}, {"available", true}}, {{"id", "commons"}, {"available", true}},
+            {{"id", "youtube"}, {"available", true}}})}}.dump();
+    s.provider = 0; s.hasPolled = false;
+    assert(pt::ui::source_sampler_poll(s, 7000) && s.linkOpen && s.link == "https://youtu.be/abcdefghijk" &&
+           s.provider == pt::ui::SOURCE_YOUTUBE_PROVIDER);
+    press(pt::ui::Button::B);
+    s.hasPolled = false;
+    pt::ui::source_sampler_poll(s, 8000);
+    assert(!s.linkOpen);
+    // The search keyboard applies on the START press; the release then reaches Studio and must not
+    // send Stop, which cancelled every typed search.
+    {
+        backend.commands.clear();
+        pt::ui::ButtonEvent release;
+        release.button = pt::ui::Button::START;
+        release.action = pt::ui::ButtonAction::RELEASED;
+        pt::ui::studio_button(release, st, sample.host, *sample.engine, sample.fs);
+        for (const auto& c : backend.commands) assert(c.find("stop") != 0);
+        release.action = pt::ui::ButtonAction::PRESSED;   // a real START press still stops
+        pt::ui::studio_button(release, st, sample.host, *sample.engine, sample.fs);
+        assert(!backend.commands.empty() && backend.commands.back().find("stop") == 0);
+    }
     s.backend = nullptr;
-    std::cout << "ptsource-youtube-check: off by default, A A opts in, A opts out, saved only when on; old YouTube results and the search callback refused while off\n";
+    std::cout << "ptsource-youtube-check: off by default, A A opts in, A opts out, saved only when on; old YouTube results and the search callback refused while off; the link field holds the controller, A sends, B closes, a share opens it once\n";
     return 0;
 }

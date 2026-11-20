@@ -96,6 +96,20 @@ New-Item -ItemType Directory -Force -Path (Join-Path $app 'licenses') | Out-Null
 Copy-Item $exe (Join-Path $app 'TrackWerk.exe')
 Copy-Item (Join-Path $PSScriptRoot 'windows\README.txt') (Join-Path $app 'README.txt')
 
+# Studio SOURCE's helpers (specs/windows-sources.md), so YouTube works with nothing to download.
+$helpers = Join-Path $PSScriptRoot 'windows\helpers'
+foreach ($h in 'yt-dlp.exe', 'qjs.exe', 'ffmpeg.exe') {
+    if (-not (Test-Path (Join-Path $helpers $h))) {
+        throw "shell\windows\helpers\$h is missing - run shell\windows\fetch-helpers.ps1 first"
+    }
+}
+$ytSha = (Get-FileHash -Algorithm SHA256 (Join-Path $helpers 'yt-dlp.exe')).Hash.ToLowerInvariant()
+if ($ytSha -ne 'f5389d3698ecde4ef06f4e6b1ce0294fe9ac1396228c8990b8d3416d6d177a7d') {
+    throw 'yt-dlp.exe is not the pinned official 2026.10.26 build - rerun fetch-helpers.ps1'
+}
+New-Item -ItemType Directory -Force -Path (Join-Path $app 'tools') | Out-Null
+foreach ($h in 'yt-dlp.exe', 'qjs.exe', 'ffmpeg.exe') { Copy-Item (Join-Path $helpers $h) (Join-Path $app "tools\$h") }
+
 # TrackWerk is GPL-3.0 and statically links its decoders, so their notices ship with the binary
 # that contains them rather than only with the source tree that built it. A missing one is a licence
 # breach in the artifact, which is the only thing a user ever receives.
@@ -129,6 +143,13 @@ if (-not (Test-Path $sdlLicense)) {
            "came from somewhere other than FetchContent, copy that build's LICENSE.txt here.")
 }
 Copy-Item $sdlLicense (Join-Path $lic 'SDL2-LICENSE.txt')
+# libcurl, also from the source that was compiled; the helpers' texts from fetch-helpers.ps1 and external\.
+$curlLicense = Join-Path $build '_deps\curl-src\COPYING'
+if (-not (Test-Path $curlLicense)) { throw "libcurl's COPYING is not at $curlLicense - it is linked into the exe" }
+Copy-Item $curlLicense (Join-Path $lic 'curl-COPYING.txt')
+Copy-Item (Join-Path $helpers 'licenses\*') $lic
+Copy-Item (Join-Path $repo 'external\yt-dlp-LICENSE') (Join-Path $lic 'yt-dlp-LICENSE.txt')
+Copy-Item (Join-Path $repo 'external\yt-dlp-THIRD_PARTY_LICENSES.txt') (Join-Path $lic 'yt-dlp-THIRD_PARTY_LICENSES.txt')
 Get-ChildItem $lic | ForEach-Object { Write-Output ("  {0,10:N0}  {1}" -f $_.Length, $_.Name) }
 
 # ─── 3/5  verify the ARTIFACT, not the build log ────────────────────────────────────────────────
@@ -232,7 +253,7 @@ $vendored = Get-ChildItem (Join-Path $repo 'native\vendor') -Directory | ForEach
 $missing  = @()
 Write-Output ""
 Write-Output "licence notices:"
-foreach ($c in @($vendored + @('kissfft', 'daisysp', 'soundpipe', 'SDL2'))) {
+foreach ($c in @($vendored + @('kissfft', 'daisysp', 'soundpipe', 'SDL2', 'curl', 'yt-dlp', 'QuickJS', 'FFmpeg'))) {
     if ($notices -match [regex]::Escape($c)) { Write-Output "  ok      $c" }
     else { Write-Output "  MISSING $c"; $missing += $c }
 }
@@ -294,7 +315,14 @@ try {
                           'TrackWerk/licenses/Mutable-Instruments-MIT.txt',
                           'TrackWerk/licenses/Mutable-Instruments-PROVENANCE.txt',
                           'TrackWerk/licenses/Mutable-stmlib-LICENSE',
-                          'TrackWerk/licenses/DaisySP-GPL-CONVERSION.txt')) {
+                          'TrackWerk/licenses/DaisySP-GPL-CONVERSION.txt',
+                          'TrackWerk/licenses/curl-COPYING.txt',
+                          'TrackWerk/licenses/QuickJS-LICENSE.txt',
+                          'TrackWerk/licenses/FFmpeg-COPYING.LGPLv2.1.txt',
+                          'TrackWerk/licenses/yt-dlp-LICENSE.txt',
+                          'TrackWerk/tools/yt-dlp.exe',
+                          'TrackWerk/tools/qjs.exe',
+                          'TrackWerk/tools/ffmpeg.exe')) {
         $e = $archive.GetEntry($needed)
         if (-not $e)            { throw "$needed is MISSING from the zip" }
         if ($e.Length -lt 100)  { throw "$needed is only $($e.Length) bytes inside the zip" }

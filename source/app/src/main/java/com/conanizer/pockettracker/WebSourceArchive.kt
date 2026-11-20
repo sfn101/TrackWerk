@@ -20,7 +20,7 @@ internal class SourceCancel {
 
 /** Provider-owned HTTPS endpoints only; redirects receive the same validation. */
 internal object SourceNet {
-    const val USER_AGENT = "TrackWerk/0.9 (private audio source browser)"
+    const val USER_AGENT = "TrackWerk/0.9 (https://github.com/sfn101/TrackWerk; private audio source browser)" // Wikimedia answers 429 without a contact link
     fun allowed(url: String): Boolean = try {
         val uri = URI(url)
         val host = uri.host?.lowercase().orEmpty()

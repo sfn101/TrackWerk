@@ -200,6 +200,47 @@ if(UNIX AND NOT ANDROID AND NOT PT_MIYOO_OFFLINE)
     endif()
 endif()
 
+# Studio SOURCE on Windows (specs/windows-sources.md): the same backend as Linux. libcurl is built in,
+# HTTP/HTTPS only, with Schannel (Windows' own TLS and certificate store), so the exe needs no DLL.
+# yt-dlp.exe, qjs.exe and ffmpeg.exe ship beside it in tools\ (windows/fetch-helpers.ps1).
+if(WIN32)
+    include(FetchContent)
+    set(BUILD_SHARED_LIBS     OFF CACHE BOOL "" FORCE)
+    set(BUILD_STATIC_LIBS     ON  CACHE BOOL "" FORCE)
+    set(BUILD_CURL_EXE        OFF CACHE BOOL "" FORCE)
+    set(BUILD_TESTING         OFF CACHE BOOL "" FORCE)
+    set(BUILD_EXAMPLES        OFF CACHE BOOL "" FORCE)
+    set(BUILD_LIBCURL_DOCS    OFF CACHE BOOL "" FORCE)
+    set(BUILD_MISC_DOCS       OFF CACHE BOOL "" FORCE)
+    set(ENABLE_CURL_MANUAL    OFF CACHE BOOL "" FORCE)
+    set(HTTP_ONLY             ON  CACHE BOOL "" FORCE)
+    set(CURL_USE_SCHANNEL     ON  CACHE BOOL "" FORCE)
+    set(CURL_USE_OPENSSL      OFF CACHE BOOL "" FORCE)
+    set(CURL_USE_LIBPSL       OFF CACHE BOOL "" FORCE)
+    set(CURL_USE_LIBSSH2      OFF CACHE BOOL "" FORCE)
+    set(USE_LIBIDN2           OFF CACHE BOOL "" FORCE)
+    set(USE_NGHTTP2           OFF CACHE BOOL "" FORCE)
+    set(CURL_ZLIB             OFF CACHE STRING "" FORCE)
+    set(CURL_BROTLI           OFF CACHE STRING "" FORCE)
+    set(CURL_ZSTD             OFF CACHE STRING "" FORCE)
+    set(CURL_STATIC_CRT       ON  CACHE BOOL "" FORCE)
+    FetchContent_Declare(curl
+            GIT_REPOSITORY https://github.com/curl/curl.git
+            GIT_TAG        curl-8_11_1
+            GIT_SHALLOW    TRUE
+    )
+    FetchContent_MakeAvailable(curl)
+    target_sources(pockettracker-sdl PRIVATE linux/source-sampler.cpp)
+    target_link_libraries(pockettracker-sdl PRIVATE CURL::libcurl ws2_32)
+    target_compile_definitions(pockettracker-sdl PRIVATE PT_NATIVE_STUDIO_SERVICES=1)
+    # The helpers beside the dev exe too. An empty folder until fetch-helpers.ps1 has run: SOURCE then
+    # works without YouTube.
+    set(PT_WIN_HELPERS "${CMAKE_CURRENT_SOURCE_DIR}/windows/helpers")
+    add_custom_command(TARGET pockettracker-sdl POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${PT_WIN_HELPERS}"
+            COMMAND ${CMAKE_COMMAND} -E copy_directory "${PT_WIN_HELPERS}" "$<TARGET_FILE_DIR:pockettracker-sdl>/tools")
+endif()
+
 # app.cpp's boot banner. A bug report arrives as a log file and a sentence, and without this the
 # version is only in the download's filename — which a reporter has usually thrown away.
 target_compile_definitions(pockettracker-sdl PRIVATE "PT_VERSION_STRING=\"${PT_VERSION}\"")

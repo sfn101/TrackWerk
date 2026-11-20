@@ -2730,6 +2730,26 @@ Plain text, and readable on the device itself. It records the whole start-up —
 found, how many samples loaded, which controller was detected — which is exactly what a bug report
 needs and what is hardest to describe from memory. If something is wrong, attach this file.
 
+### YouTube in Studio > Sources
+
+On Android, Windows and Linux desktops (not on handhelds), Studio > Sources can take audio from
+YouTube. It is off until you turn it on: on **Provider**, choose YouTube and press **A** twice
+(A once turns it off again).
+
+The **Search** row has three columns (Left / Right):
+
+- **Search** looks for exactly what you type, such as a song or an artist. The genre is not added.
+- **Random** searches the chosen genre plus a sampling word (drum break, loop, rare groove...).
+- **Paste link** opens the link field. Copy a YouTube link in a browser or the YouTube app, then
+  press **A** to paste it and **A** again to open that video. **B** closes the field. While it is
+  open, no other button does anything, so a paste never triggers another shortcut. On Android you
+  can also use **Share > TrackWerk** in the YouTube app: the link waits in the field the next time
+  you open Studio > Sources.
+
+Results show each video's length. Only videos up to 15 minutes are listed; channels, playlists and
+live streams are left out, and a pasted link to a longer video or a live stream is refused with the
+reason. Searching also accepts a link typed or pasted as the query.
+
 ---
 
 ## 26. Workflow Tips

@@ -211,3 +211,6 @@ apk/
 # Python helper build caches
 __pycache__/
 *.py[cod]
+
+# Studio SOURCE helpers for Windows: made by shell/windows/fetch-helpers.ps1, never committed
+/shell/windows/helpers/

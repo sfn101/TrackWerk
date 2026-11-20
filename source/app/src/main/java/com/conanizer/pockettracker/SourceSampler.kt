@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.widget.EditText
+import android.widget.Toast
 import android.text.InputFilter
 import android.view.WindowManager
 import org.json.JSONArray
@@ -67,6 +68,7 @@ internal class SourceSampler(private val activity: Activity, private val beforeP
     private fun itemJson(item: SourceItem): JSONObject = JSONObject().put("id", item.id).put("title", item.title)
         .put("creator", item.creator).put("kind", item.kind).put("url", item.itemUrl).put("license", item.licenseUrl)
         .put("description",item.description).put("tags",JSONArray(item.tags)).put("instruments",JSONArray(item.instruments))
+        .put("duration_ms", item.durationMs)
     private fun trackJson(track: SourceTrack): JSONObject = JSONObject().put("id",track.id).put("title",track.title)
         .put("creator",track.creator).put("url",track.itemUrl).put("license",track.licenseUrl).put("duration_ms",track.durationMs)
         .put("description",track.description).put("tags",JSONArray(track.tags)).put("instruments",JSONArray(track.instruments))
@@ -98,7 +100,17 @@ internal class SourceSampler(private val activity: Activity, private val beforeP
             put("clip_frames", clip?.frames ?: 0); put("clip_rate", clip?.rate ?: 0); put("clip_channels", clip?.channels ?: 0)
             put("clip_request_id", clipRequest)
             put("progress", progress.toDouble())
+            put("shared_link", sharedLink); put("shared_link_id", sharedLinkId)
         }.toString()
+    }
+    // Share > TrackWerk (specs/youtube-picker.md): the native SOURCE screen opens its link field once per id.
+    private var sharedLink = ""
+    private var sharedLinkId = 0L
+    fun share(text: String) = main.post {
+        val link = text.split(Regex("\\s+")).firstOrNull { YouTubeFacade.videoId(it) != null }
+        if (link == null) { Toast.makeText(activity, "TrackWerk takes YouTube video links", Toast.LENGTH_LONG).show(); return@post }
+        sharedLink = link.take(300); sharedLinkId = System.currentTimeMillis(); publish()
+        Toast.makeText(activity, "YouTube link ready in Studio > Sources", Toast.LENGTH_LONG).show()
     }
     private fun clearClip() { clip = null; progress = 0f; clipRequest = 0L }
     private fun failure(problem: Throwable) {
@@ -156,7 +168,15 @@ internal class SourceSampler(private val activity: Activity, private val beforeP
         sourceResults=emptyList();sourceTracks=emptyList();if(discover) sortTitle=false
         selected = -1; trackIndex = -1; position = 0; duration = 0; inMs = 0; outMs = 0
         val term = if(discover&&genre.equals("library",true)) "library music" else genre
-        val text = (query + " " + term).trim(); val selectedProvider = provider
+        val selectedProvider = provider
+        // YouTube (specs/youtube-picker.md): a link opens that video; a typed search is the words
+        // alone; Random is the genre plus a sampling word.
+        val link = if (selectedProvider == "youtube" && !discover) YouTubeFacade.videoId(query) else null
+        val text = when {
+            selectedProvider != "youtube" -> (query + " " + term).trim()
+            discover -> (term.ifBlank { "music" } + " " + listOf("instrumental", "drum break", "rare groove", "loop", "vintage").random()).trim()
+            else -> query.trim().ifBlank { term }
+        }
         message = "Searching " + when (selectedProvider) {
             "archive" -> "Internet Archive"
             "commons" -> "Wikimedia Commons"
@@ -164,14 +184,14 @@ internal class SourceSampler(private val activity: Activity, private val beforeP
             else -> "YouTube"
         }
         background("searching", { cancel -> when (selectedProvider) {
-            "youtube" -> YouTubeFacade.search(text)
+            "youtube" -> if (link != null) YouTubeFacade.link(link) else YouTubeFacade.search(text)
             "commons" -> CommonsSource.search(text)
             "radio_browser" -> AndroidRadioCatalog.search(query, genre, discover)
             else -> WebSourceArchive.search(query, term, cancel, discover, selectedCollection)
         }.let { if (discover && selectedProvider in listOf("youtube", "commons")) it.shuffled() else it } }) { found ->
             sourceResults=found.take(60);results=sourceResults;reorder(sortTitle)
             status = "results"; message = if (radio) "${results.size} curated MP3 stations; open a result to listen" else
-                if (results.isEmpty()) "No matching public audio found" else
+                if (results.isEmpty()) (if (selectedProvider == "youtube") "No YouTube video up to 15:00 matched; try other words or paste a link" else "No matching public audio found") else
                 if(discover) "${results.size} random ${genre} finds; Right enters the list, A opens a result"
                 else "${results.size} results; open an item to list its tracks"
         }

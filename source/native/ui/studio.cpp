@@ -202,7 +202,11 @@ static bool studio_source_button(const ButtonEvent& e,AppState& s,songcore::Song
  return handled;
 }
 
+bool source_sampler_link_open(const AppState& s){return s.studioOpen&&s.studioTab==7&&s.sourceSampler.linkOpen;}
+
 bool studio_button(const ButtonEvent& e,AppState& s,songcore::SongcoreHost& host,AudioEngine& engine,FileSystem& fs){
+ // The YouTube link field holds the controller: help, tabs and chords wait until A or B closes it.
+ if(source_sampler_link_open(s))return studio_source_button(e,s,host,engine);
  // A replace question on Sources belongs to that screen: elsewhere, or after Studio closed, it is gone.
  if(!s.studioOpen||s.studioTab!=7||e.cancelled)source_sampler_disarm(s.sourceSampler);
  const uint16_t modalReturnBit=e.button==Button::A?1u:e.button==Button::B?2u:0u;
@@ -337,7 +341,9 @@ bool studio_button(const ButtonEvent& e,AppState& s,songcore::SongcoreHost& host
   s.studioSynthPage=(s.studioSynthPage+studio_synth_page_count(s)+(e.button==Button::DPAD_RIGHT?1:-1))%studio_synth_page_count(s);s.studioRow=3;s.studioAUsed|=e.mods.a;s.studioConfirm=false;s.studioMessage.clear();return true;
  }
  if(s.studioTab==8 && e.button==Button::START)harmony_stop(s.harmony,host);
- if(e.button==Button::START){studio_synth_stop_audition(s,host);drumlab_stop(s.drumLab,host,engine);source_sampler_stop(s.sourceSampler);engine.studioRack.punch.store(0);s.studioPunchBankHeld=0;if(s.studioTab==3)s.studioAUsed=false;s.studioConfirm=false;return false;}
+ if(e.button==Button::START){studio_synth_stop_audition(s,host);drumlab_stop(s.drumLab,host,engine);
+  // On the press only: the search keyboard applies on the START press, and its release must not cancel that search.
+  if(e.action==ButtonAction::PRESSED)source_sampler_stop(s.sourceSampler);engine.studioRack.punch.store(0);s.studioPunchBankHeld=0;if(s.studioTab==3)s.studioAUsed=false;s.studioConfirm=false;return false;}
  // The Sources browser after the Studio-wide chords: R + SELECT leaves, L + SELECT opens Punch and START
  // keeps the transport (source_sampler_stop above also closes the browser), as on every other page.
  if(s.studioTab==7&&s.sourceSampler.collectionOpen)return studio_source_button(e,s,host,engine);

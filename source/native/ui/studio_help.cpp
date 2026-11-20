@@ -177,6 +177,17 @@ StudioHelpContent studio_help_quick_content(const AppState& s) {
         "Write fills an empty Phrase. On PHRASE, Select + Up undoes it."}};
     case 7: {
         const auto& source=s.sourceSampler;
+        if(source.linkOpen)
+            return {"Sources / YouTube link", {"A  Paste the copied link, then open it",
+                "B  Close the field. Nothing else works while it is open",
+                "youtube.com, youtu.be, Shorts and YouTube Music links",
+                "Videos up to 15 minutes; live streams are refused"}};
+        if(source.provider==SOURCE_YOUTUBE_PROVIDER&&!source.listFocused)
+            return {"Sources / YouTube", {"A A on Provider  Turn YouTube on (A once: off)",
+                "Search  A song or artist, as typed; the genre is not added",
+                "Random  The genre plus a sampling word (break, loop...)",
+                "Paste link  Copy a YouTube link, then A. Android: Share > TrackWerk",
+                "Results list videos up to 15 minutes, with their length"}};
         if(source.choiceList)
             return {source.choiceList==1?"Sources / Provider":"Sources / Genre", {"Up / Down  Choose",
                 "A  Take it    B or Left  Keep the old one", "Unavailable providers cannot be chosen here",

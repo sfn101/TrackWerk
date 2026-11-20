@@ -4,8 +4,19 @@
 #include <cstdint>
 #include <cstring>
 #include <string>
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <winsock2.h>
+#include <ws2tcpip.h>   // sockaddr_in6, socklen_t
+#else
 #include <netinet/in.h>
 #include <sys/socket.h>
+#endif
 
 namespace pt::platform::source_live {
 inline bool local_fixture_url(const std::string& url,const std::string& base) {

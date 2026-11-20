@@ -1037,6 +1037,8 @@ void FrameLoop::handle_input(Uint64 now) {
         const auto oldProjectVersion=state.projectVersion;
         if (ui::is_live_resample_chord(be) && be.action == ui::ButtonAction::PRESSED)
             mapper.shoulderClearPending = false;
+        // The SOURCE link field takes every button (specs/youtube-picker.md): no help key, no chord.
+        if(ui::source_sampler_link_open(state)){ui::studio_button(be,state,host,engineRef,*cfg.filesystem);continue;}
         if(dispatch.help_full_open() || mapper.owns_help_key(be.button) ||
            !ui::studio_button(be,state,host,engineRef,*cfg.filesystem))
             ui::handle_button(be, dispatch, mapper, now);
@@ -1659,6 +1661,9 @@ int run(const AppConfig& cfg) {
     ui::AppState state;
     state.captureBackend=cfg.capture;
     state.sourceSampler.backend=cfg.sources;
+    // SOURCE > YouTube > PASTE LINK (specs/youtube-picker.md); SDL reads Android's clipboard too.
+    state.sourceSampler.readClipboard=[]()->std::string{
+        char* text=SDL_GetClipboardText();std::string out=text?text:"";SDL_free(text);return out.substr(0,4096);};
 #ifdef PT_MIYOO_OFFLINE
     state.sourceSampler.status="Offline edition: use local WAV preview and slicing. Internet sources need the Online app on a WiFi device.";
     state.capture.inputError="Miyoo: physical recording is unavailable. Internal resampling is enabled.";

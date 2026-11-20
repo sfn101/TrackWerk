@@ -58,6 +58,19 @@ Fill wide screens: RG505, Odin, TrimUI Smart Pro, laptops and tablets. 4:3 stays
     ALWAYS.
 - Android's own navigation bar stays hidden as today (immersive mode, shown by a swipe from the edge).
 
+## Every theme and scene layout
+
+Wide mode works with every theme and every scene layout that exists, including the ones that move parts of the screen
+(`scene_layout.h`), without special cases left for later:
+- **`railLeft`** (side panel on the left): the panel sits at the far *left* edge. Editors anchor on the right and the extra
+  space opens between them, mirroring the default layout.
+- **`scopeBottom`** (visualizer band at the bottom): the band stretches to the full width at the bottom, exactly as it does
+  at the top.
+- The PHRASE side view, the centred screens and the stretched file browser and sample editor all follow the same mirroring.
+- **The theme / scene picker's previews** (`scene_picker.cpp`) show the wide layout when wide mode is on.
+- Every theme's colours, fonts and surface styles apply to everything new.
+- Tests render each scene layout in wide mode. Every built-in theme is drawn at 854×480 without overlaps.
+
 ## Desktop (Windows, Linux)
 
 - The window opens at 16:9: the largest whole scale that fits, for example 1708×960 on a 1080p screen.

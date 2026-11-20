@@ -184,6 +184,7 @@ std::string trimmed_text(const QwertyKeyboardState& s) {
 // A 470×228 box, centred; the keys on a fixed 10-column grid.
 
 void QwertyKeyboardOverlay::draw(Canvas& c, const QwertyKeyboardState& s, const Theme& t) const {
+    const Canvas::OriginScope inMiddle(c, wide_dx());   // a 640-wide dialog, in the middle
     constexpr int FS    = 4;                  // 20×20px keys, the one place the font goes big
     constexpr int CS    = 3;
     constexpr int CHARW = 5 * FS + CS;        // 23px per char slot
@@ -194,7 +195,7 @@ void QwertyKeyboardOverlay::draw(Canvas& c, const QwertyKeyboardState& s, const 
     // The fill: the border grows outward from it (helpers.h).
     constexpr int BOXW = 470;
     constexpr int BOXH = 228;
-    constexpr int BOXX = (DESIGN_W - BOXW) / 2;
+    constexpr int BOXX = (DESIGN_W_4_3 - BOXW) / 2;
     constexpr int BOXY = (DESIGN_H - BOXH) / 2;
     constexpr int INNERX = BOXX + 5;
     constexpr int INNERW = BOXW - 10;

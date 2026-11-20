@@ -137,7 +137,7 @@ inline void draw_modal_box(Canvas& c, int x, int y, int boxW, int boxH, const Th
 
 // The full-canvas dim. ⚠️ A modal using it belongs in `modal_backdrop_active` too, or the letterbox
 // bars stay bright.
-inline void draw_modal_backdrop(Canvas& c) { c.fill_rect(0, 0, DESIGN_W, DESIGN_H, MODAL_BACKDROP); }
+inline void draw_modal_backdrop(Canvas& c) { c.fill_rect(-c.origin_x(), 0, DESIGN_W, DESIGN_H, MODAL_BACKDROP); }
 
 // ─── Row background ──────────────────────────────────────────────────────────────────────────────
 

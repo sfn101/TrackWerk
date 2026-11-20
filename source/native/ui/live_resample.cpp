@@ -267,8 +267,8 @@ void draw_live_resample_strip(Canvas& c,const AppState& s,int x,int y,int w,int 
 void draw_live_resample_indicator(Canvas& c,const AppState& s){
     const auto& v=s.resampleView;if(!v.active&&!v.saving&&!v.failed)return;
     const Argb color=v.failed?0xffffb070:v.saving?s.theme.rowCursor:0xffff7777;
-    c.fill_rect(0,477,640,3,with_alpha(color,.20f));
-    const int width=v.active&&v.limit>0?std::clamp(int(640.0*v.frames/v.limit),1,640):640;
+    c.fill_rect(0,477,DESIGN_W,3,with_alpha(color,.20f));
+    const int width=v.active&&v.limit>0?std::clamp(int(double(DESIGN_W)*v.frames/v.limit),1,DESIGN_W):DESIGN_W;
     c.fill_rect(0,477,width,3,color);
 }
 }

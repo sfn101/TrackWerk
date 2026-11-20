@@ -1,7 +1,8 @@
 #pragma once
 
-// A 640×480 software framebuffer and the primitives the whole UI is drawn with: filled and stroked
-// rects, bitmap text, a clip. The shell scales the finished frame onto the display.
+// A 640×480 software framebuffer (854×480 in wide mode, specs/wide-mode.md) and the primitives the
+// whole UI is drawn with: filled and stroked rects, bitmap text, a clip. The shell scales the
+// finished frame onto the display.
 
 #include <cstdint>
 #include <unordered_map>
@@ -13,8 +14,16 @@
 
 namespace pt::ui {
 
-inline constexpr int DESIGN_W = 640;
+inline constexpr int DESIGN_W_4_3  = 640;
+inline constexpr int DESIGN_W_WIDE = 854;
+// The canvas width: DESIGN_W_4_3, or DESIGN_W_WIDE when SETTINGS > SCREEN is 16:9. ⚠️ Set once at
+// startup (set_design_width) before any Canvas exists, never while the app runs: every canvas,
+// texture and window is sized from it.
+inline int DESIGN_W = DESIGN_W_4_3;
 inline constexpr int DESIGN_H = 480;
+inline void set_design_width(bool wide) { DESIGN_W = wide ? DESIGN_W_WIDE : DESIGN_W_4_3; }
+// How far a 640-wide block (a dialog, a centred screen) moves right to sit in the middle; 0 in 4:3.
+inline int wide_dx() { return (DESIGN_W - DESIGN_W_4_3) / 2; }
 
 // The modal dim; the shell blends the same value over the letterbox bars.
 inline constexpr Argb MODAL_BACKDROP = 0xCC000000;
@@ -35,12 +44,12 @@ public:
     // Grids (RowCells) and lists mark the cell their cursor is drawn on; TrackerLayout glides a
     // highlight from where it was to there (ui/layout.cpp, apply_glide). Cleared at each frame's start.
     struct Rect { int x = 0, y = 0, w = 0, h = 0; };
-    void mark_cursor(int x, int y, int w, int h) { cursorMark_ = {x, y, w, h}; }
+    void mark_cursor(int x, int y, int w, int h) { cursorMark_ = {x + ox_, y, w, h}; }
     void clear_cursor_mark() { cursorMark_ = {}; scrollMark_ = {}; stageMark_ = {}; selectorMark_ = {}; }
     // The highlighted entry of a selector that stays on screen while pages change: the Studio tabs,
     // the screen map in the track rail. TrackerLayout glides a highlight from the last entry to it.
     struct SelectorMark { int id = -1; Rect at; };
-    void mark_selector(int id, int x, int y, int w, int h) { selectorMark_ = {id, {x, y, w, h}}; }
+    void mark_selector(int id, int x, int y, int w, int h) { selectorMark_ = {id, {x + ox_, y, w, h}}; }
     SelectorMark selector_mark() const { return selectorMark_; }
 
     // ── Values that ease to a new setting (knobs, faders, level blocks) ─────────────────────────
@@ -55,7 +64,7 @@ public:
     // A list that scrolls marks its viewport and how far its content is scrolled, in pixels; `id`
     // tells lists apart. The shell slides the content from the last offset to this one (slide).
     struct ScrollMark { int id = -1; Rect view; int offset = 0; };
-    void mark_scroll(int id, int x, int y, int w, int h, int offset) { scrollMark_ = {id, {x, y, w, h}, offset}; }
+    void mark_scroll(int id, int x, int y, int w, int h, int offset) { scrollMark_ = {id, {x + ox_, y, w, h}, offset}; }
     ScrollMark scroll_mark() const { return scrollMark_; }
 
     // ── Motion over whole frames (shell/app.cpp, after an input or a page change) ────────────────
@@ -78,7 +87,7 @@ public:
                     Rect area = {0, 0, DESIGN_W, DESIGN_H});
     // The part of the screen a page's content occupies; the chrome around it (title, scope, track
     // rail, Studio tabs) stays in place while the content changes. Cleared each frame.
-    void mark_stage(int x, int y, int w, int h) { stageMark_ = {x, y, w, h}; }
+    void mark_stage(int x, int y, int w, int h) { stageMark_ = {x + ox_, y, w, h}; }
     Rect stage_mark() const { return stageMark_; }
     // Smooth scrolling inside `view`: the content moved up by `distance` pixels (down if negative)
     // since `previous`, and `remaining` of that is still to go. Rows the shifted frame does not cover
@@ -131,6 +140,23 @@ public:
     // The same, keeping the end — for paths.
     static std::string clip_text_head(const std::string& text, int max_glyphs);
 
+    // ── The origin ───────────────────────────────────────────────────────────────────────────────
+    // Every x a primitive, clip or mark takes is shifted right by the origin, so a 640-wide block is
+    // drawn in the middle of a wide canvas without changing its own coordinates. 0 in 4:3, where
+    // nothing moves. The frame-wide operations (clear, afterglow, transition, slide) ignore it.
+    int origin_x() const { return ox_; }
+    class OriginScope {
+    public:
+        OriginScope(Canvas& c, int x) : c_(c), saved_(c.ox_) { c.ox_ = x; }   // absolute, not added
+        ~OriginScope() { c_.ox_ = saved_; }
+        OriginScope(const OriginScope&)            = delete;
+        OriginScope& operator=(const OriginScope&) = delete;
+
+    private:
+        Canvas& c_;
+        int     saved_;
+    };
+
     // ── Clipping ─────────────────────────────────────────────────────────────────────────────────
 
     void set_clip(int x, int y, int w, int h);
@@ -143,7 +169,8 @@ public:
             : c_(c), cx_(c.clipX_), cy_(c.clipY_), cw_(c.clipW_), ch_(c.clipH_) {
             c.set_clip(x, y, w, h);
         }
-        ~ClipScope() { c_.set_clip(cx_, cy_, cw_, ch_); }
+        // The saved clip is absolute: restored as is, not through set_clip and the origin.
+        ~ClipScope() { c_.clipX_ = cx_; c_.clipY_ = cy_; c_.clipW_ = cw_; c_.clipH_ = ch_; }
         ClipScope(const ClipScope&)            = delete;
         ClipScope& operator=(const ClipScope&) = delete;
 
@@ -153,6 +180,22 @@ public:
     };
 
 private:
+    // A public primitive takes `x` in origin coordinates: it adds the origin once and draws with the
+    // origin at 0, so the primitives it calls in turn do not add it again.
+    class Absolute {
+    public:
+        Absolute(Canvas& c, int& x) : c_(c), saved_(c.ox_) { x += c.ox_; c.ox_ = 0; }
+        Absolute(Canvas& c, int& x0, int& x1) : c_(c), saved_(c.ox_) { x0 += c.ox_; x1 += c.ox_; c.ox_ = 0; }
+        ~Absolute() { c_.ox_ = saved_; }
+        Absolute(const Absolute&)            = delete;
+        Absolute& operator=(const Absolute&) = delete;
+
+    private:
+        Canvas& c_;
+        int     saved_;
+    };
+
+    int ox_ = 0;
     std::vector<uint32_t> px_;
     Rect cursorMark_;
     ScrollMark scrollMark_;

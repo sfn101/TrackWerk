@@ -105,6 +105,11 @@ void SettingsModule::draw(Canvas& c, int x, int y, const SettingsState& s) const
               : s.scalingFallback             ? "SHARP (BILINEAR)"
                                               : "SHARP");
 
+    // The canvas is sized at startup: a choice that differs from the running one waits for a restart.
+    const bool wideNow = DESIGN_W == DESIGN_W_WIDE;
+    param_row(SettingsRow::SCREEN, "SCREEN",
+              v.wideScreen != wideNow ? "RESTART TO APPLY" : v.wideScreen ? "16:9" : "4:3");
+
     dual_row(SettingsRow::OVERLAY, "OVERLAY", s.overlayText, "STR", hex2(v.overlayStrength));
 
     // An OS driver name: 18 characters to the panel edge.
@@ -200,6 +205,9 @@ CursorContext SettingsModule::cursor_context(const SettingsState& s) const {
         case SettingsRow::SCALING:
             return cc::enum_cycle(v.scaling, 3);
 
+        case SettingsRow::SCREEN:
+            return cc::toggle_binary(v.wideScreen);
+
         case SettingsRow::OVERLAY:
             if (s.cursorColumn == 1) return cc::enum_cycle(v.overlayIndex, v.overlayCount);
             return cc::hex_byte(v.overlayStrength, 0, 255);
@@ -293,6 +301,7 @@ SettingsInputResult SettingsModule::handle_input(SettingsValues& v, Theme& theme
         case SettingsRow::AUDIO_OUT: v.audioOutIndex = index_in(v.audioOutCount); break;
 
         case SettingsRow::KB_INSERT: v.insertBefore       = on; break;
+        case SettingsRow::SCREEN:    v.wideScreen         = on; break;
         case SettingsRow::CURSOR:    v.cursorRemember     = on; break;
         case SettingsRow::NOTE_PREV: v.notePreviewEnabled = on; break;
         case SettingsRow::FOLDER:    v.rememberFolder     = on; break;

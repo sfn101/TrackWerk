@@ -97,7 +97,9 @@ private:
     // SCOPE on a Scene look: the two previous traces glow on behind the current one, like phosphor
     // on a tube. Only frames that are drawn anyway carry it (the strip redraws while audio sounds);
     // silence, a classic theme or another mode clears it, so nothing is left to fade on an idle loop.
-    static constexpr int SCOPE_BLOCKS = WIDTH / SCOPE_PIXEL_BLOCK;
+    // The widest strip: wide mode's, the canvas less 10 px each side.
+    static constexpr int MAX_WIDTH    = DESIGN_W_WIDE - 20;
+    static constexpr int SCOPE_BLOCKS = MAX_WIDTH / SCOPE_PIXEL_BLOCK;
     int16_t phosphor_[2][SCOPE_BLOCKS] = {};   // dot rows relative to the strip's top
     int     phosphorFrames_ = 0;
     int     phosphorX_ = -1, phosphorY_ = -1;  // where the history was drawn; a move discards it

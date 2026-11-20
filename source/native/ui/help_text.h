@@ -363,6 +363,7 @@ enum class HelpTopic {
     SCREEN_PERFORM,
     SCREEN_VISUALIZER,
     PROJECT_SAVE_AS,
+    SET_SCREEN,
 
     COUNT
 };
@@ -2643,6 +2644,15 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
      {"A opens the keyboard",
       "START on the keyboard saves",
       "SELECT on the keyboard cancels"}},
+    /* SET_SCREEN */
+    {"SCREEN: picture shape", "4:3, or 16:9 to fill a wide", "screen. Applies after restart.",
+     {"16:9 uses the whole width of a",
+      "wide screen: the side panel goes",
+      "to the right edge and the scope",
+      "stretches across. The change",
+      "applies the next time the app",
+      "starts."},
+     {"A+←/→ picks 4:3 or 16:9"}},
 };
 
 // ─── Rules 2 and 3, as compile errors — at runtime they fail silently ────────────────────────────
@@ -2964,6 +2974,7 @@ inline HelpTopic settings_cell_topic(int row, int column) {
     switch (static_cast<SettingsRow>(row)) {
         case SettingsRow::LAYOUT:     return second ? HelpTopic::SET_SKIN : HelpTopic::SET_LAYOUT;
         case SettingsRow::SCALING:    return HelpTopic::SET_SCALING;
+        case SettingsRow::SCREEN:     return HelpTopic::SET_SCREEN;
         case SettingsRow::OVERLAY:
             return second ? HelpTopic::SET_OVERLAY_STRENGTH : HelpTopic::SET_OVERLAY;
         case SettingsRow::BTN_SOUND:

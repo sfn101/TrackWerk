@@ -8,6 +8,7 @@
 namespace pt::ui {
 
 void HelpPanelModule::draw(Canvas& c, HelpTopic topic, const Theme& t) const {
+    const Canvas::OriginScope inMiddle(c, wide_dx());   // a 640-wide dialog, in the middle
     const auto& entry = help_entry(topic);
     std::array<const char*, 5> actions{};
     int count = 0;
@@ -28,7 +29,7 @@ void HelpPanelModule::draw(Canvas& c, HelpTopic topic, const Theme& t) const {
     while (*description == ' ') ++description;
 
     constexpr int width = 548, rowHeight = 28, inset = 21;
-    const int x = (DESIGN_W - width) / 2;
+    const int x = (DESIGN_W_4_3 - width) / 2;
     const int height = 124 + count * rowHeight;
     const int y = (DESIGN_H - height) / 2;
     const int left = x + inset;

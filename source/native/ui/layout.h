@@ -5,6 +5,8 @@
 //     y = 82..473   the editor module   (510 × 392, at x = 10)
 //     x = 515..     the right bar       (115 wide: BPM, note monitor, navigation map)
 // Editors are clipped at x = 509, or their row backgrounds would run into the right bar.
+// Wide mode (854 wide): editors stay at the left, the right bar moves to the right edge
+// (right_bar_x()), the scope strip stretches across, and the space between stays empty.
 
 #include "ui/app_state.h"
 #include "ui/canvas.h"
@@ -40,8 +42,12 @@
 namespace pt::ui {
 
 inline constexpr int EDITOR_Y = SCREEN_SPACER + OscilloscopeModule::HEIGHT + SCREEN_SPACER;   // 82
-inline constexpr int RIGHT_BAR_X = DESIGN_W - NavigationMapModule::WIDTH - SIDE_SPACER;      // 515
-inline constexpr int EDITOR_CLIP_RIGHT = RIGHT_BAR_X - SCREEN_SPACER;                         // 509
+// The editors' own width is the same in both modes; only the right bar follows the canvas width.
+inline constexpr int RIGHT_BAR_X_4_3 = DESIGN_W_4_3 - NavigationMapModule::WIDTH - SIDE_SPACER;   // 515
+inline constexpr int EDITOR_CLIP_RIGHT = RIGHT_BAR_X_4_3 - SCREEN_SPACER;                         // 509
+inline int right_bar_x() { return DESIGN_W - NavigationMapModule::WIDTH - SIDE_SPACER; }            // 515 / 729
+// The scope strip: 620 wide in 4:3, the whole width between the side spacers in wide mode.
+inline int scope_width() { return DESIGN_W - 2 * SIDE_SPACER; }
 
 // Widths only this clip can check, pinned from both sides.
 inline constexpr int PROJECT_NAME_CELLS_X = SIDE_SPACER + ProjectModule::VALUE_X;

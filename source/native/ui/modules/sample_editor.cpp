@@ -1022,7 +1022,7 @@ namespace {
 
 // Under the waveform, so the playhead of a preview runs in view above the box.
 constexpr int STRETCH_BOX_W   = 320;
-constexpr int STRETCH_BOX_X   = (DESIGN_W - STRETCH_BOX_W) / 2;
+constexpr int STRETCH_BOX_X   = (DESIGN_W_4_3 - STRETCH_BOX_W) / 2;
 constexpr int STRETCH_BOX_Y   = SampleEditorModule::WAVEFORM_Y + SampleEditorModule::WAVEFORM_H + 8;
 constexpr int STRETCH_PAD     = 8;
 constexpr int STRETCH_GAP     = 8;    // between the title and the lines
@@ -1118,6 +1118,7 @@ void stretch_handle_input(SampleEditorState& s, const InputAction& action, int s
 }
 
 void draw_stretch_editor(Canvas& c, const SampleEditorState& s, int song_tempo, const Theme& t) {
+    const Canvas::OriginScope inMiddle(c, wide_dx());   // a 640-wide dialog, in the middle
     if (!s.stretchOpen) return;
 
     c.reset_clip();

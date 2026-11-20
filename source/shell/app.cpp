@@ -1630,6 +1630,14 @@ int run(const AppConfig& cfg) {
     make_app_folders(cfg, filesystem);
     log_startup_phase("app folders preparation ready");
 
+    // SETTINGS > SCREEN sizes the canvas, so it is read before the window, texture and canvas exist.
+    {
+        ui::SettingsValues early;
+        ui::Theme earlyTheme = ui::theme_default();
+        ui::load_settings(filesystem, early, earlyTheme);
+        ui::set_design_width(early.wideScreen);
+        if (early.wideScreen) std::printf("video:   SCREEN 16:9 - canvas %dx%d\n", ui::DESIGN_W, ui::DESIGN_H);
+    }
     Screen screen;
     log_startup_phase("opening video begin");
     if (!screen.video.open("TrackWerk", ui::DESIGN_W, ui::DESIGN_H, /*fullscreen=*/cfg.fullscreen,

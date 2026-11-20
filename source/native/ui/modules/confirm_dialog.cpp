@@ -12,7 +12,7 @@ namespace {
 // The fill; the border grows outward from it (helpers.h).
 constexpr int BOX_W = 260;
 constexpr int BOX_H = 55;
-constexpr int BOX_X = (DESIGN_W - BOX_W) / 2;
+constexpr int BOX_X = (DESIGN_W_4_3 - BOX_W) / 2;
 constexpr int BOX_Y = (DESIGN_H - BOX_H) / 2;
 
 // A bigger font than the editors.
@@ -57,13 +57,14 @@ std::string confirm_dialog_title(ConfirmDialogState::Kind kind, int arg) {
 }
 
 void draw_confirm_box(Canvas& c, const std::string& title, const Theme& t) {
+    const Canvas::OriginScope inMiddle(c, wide_dx());   // a 640-wide dialog, in the middle
     const std::string instruction = "A=YES  B=NO";
 
     const int titleW = Canvas::text_width(title, DLG_CHAR_SPACING, DLG_FONT_SCALE);
     const int instrW = Canvas::text_width(instruction, DLG_CHAR_SPACING, DLG_FONT_SCALE);
     // Widened for a long question, as draw_choice_box does; the short ones keep the old box.
     const int boxW = std::max(BOX_W, titleW + 48);
-    const int boxX = (DESIGN_W - boxW) / 2;
+    const int boxX = (DESIGN_W_4_3 - boxW) / 2;
 
     draw_modal_box(c, boxX, BOX_Y, boxW, BOX_H, t);
 
@@ -79,6 +80,7 @@ namespace {
 // The question, and its answers as cursor cells in place of "A=YES  B=NO". As wide as its text needs.
 void draw_choice_box(Canvas& c, const std::string& question,
                      std::initializer_list<const char*> answers, int chosen, const Theme& t) {
+    const Canvas::OriginScope inMiddle(c, wide_dx());   // a 640-wide dialog, in the middle
     constexpr int GAP = 24;   // between answers
     constexpr int PAD = 24;   // either side of the widest line
 
@@ -90,7 +92,7 @@ void draw_choice_box(Canvas& c, const std::string& question,
     for (const char* a : answers) width += width_of(a) + GAP;
 
     const int boxW = std::max(BOX_W, std::max(width_of(question), width) + 2 * PAD);
-    const int boxX = (DESIGN_W - boxW) / 2;
+    const int boxX = (DESIGN_W_4_3 - boxW) / 2;
     draw_modal_box(c, boxX, BOX_Y, boxW, BOX_H, t);
 
     c.draw_text(question, boxX + (boxW - width_of(question)) / 2, BOX_Y + DLG_TITLE_Y, t.textTitle,
@@ -108,6 +110,7 @@ void draw_choice_box(Canvas& c, const std::string& question,
 }  // namespace
 
 void draw_confirm_dialog(Canvas& c, const ConfirmDialogState& s, const Theme& t) {
+    const Canvas::OriginScope inMiddle(c, wide_dx());   // a 640-wide dialog, in the middle
     if (!s.is_open()) return;
     draw_modal_backdrop(c);
     if(s.kind==ConfirmDialogState::Kind::M8_IMPORT){

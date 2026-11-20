@@ -12,7 +12,7 @@ namespace {
 constexpr int CELL_W = 180;
 constexpr int GRID_W = MAP_PICKER_COLS * CELL_W;
 constexpr int BOX_W  = GRID_W + 40;
-constexpr int BOX_X  = (DESIGN_W - BOX_W) / 2;
+constexpr int BOX_X  = (DESIGN_W_4_3 - BOX_W) / 2;
 
 constexpr int CONTENT_PAD = 8;
 
@@ -39,6 +39,7 @@ constexpr int CELL_PAD = 6;
 }  // namespace
 
 void draw_map_picker(Canvas& c, const MapPickerState& s, const Theme& t) {
+    const Canvas::OriginScope inMiddle(c, wide_dx());   // a 640-wide dialog, in the middle
     if (!s.isOpen) return;
 
     // Modal: not clipped by the editor beneath.

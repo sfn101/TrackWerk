@@ -25,7 +25,7 @@ namespace help_overlay_geometry {
 // Every x is on the canvas; every y is an offset from the box's top.
 
 inline constexpr int BOX_W = 620;
-inline constexpr int BOX_X = (DESIGN_W - BOX_W) / 2;
+inline constexpr int BOX_X = (DESIGN_W_4_3 - BOX_W) / 2;
 
 inline constexpr int PAD = 12;
 

@@ -21,6 +21,7 @@ json& loaded_settings() { static json j = json::object(); return j; }
 // ⚠️ Every key serialize_settings writes only sometimes, or turning it off would leave the old value.
 const char* const kOptionalKeys[] = {"fontStyle", "sceneMotion", "sourceYoutube", "sampleGranularFavorites",
                                      "soundFavorites", "soundRecent", "soundPreviewLevel", "firstBeatDone",
+                                     "wideScreen",
                                      "midi_test_channel"};
 
 // An absent or wrong-typed key leaves the default alone.
@@ -151,6 +152,7 @@ bool load_settings(FileSystem& fs, SettingsValues& values, Theme& theme) {
 
     values.autosaveResumeAuto = get_bool(j, "autosaveResumeAuto", values.autosaveResumeAuto);
     values.firstBeatDone = get_bool(j, "firstBeatDone", values.firstBeatDone);
+    values.wideScreen = get_bool(j, "wideScreen", values.wideScreen);
 
     // ── The device rows, read and written on every platform even where not shown ─────────────────
     // ⚠️ Android's prefs import writes these keys before boot; a key one side writes and the other drops
@@ -214,6 +216,7 @@ std::string serialize_settings(const SettingsValues& values, const Theme& theme)
     j["trace"]              = values.traceEnabled;
     j["autosaveResumeAuto"] = values.autosaveResumeAuto;
     if (values.firstBeatDone) j["firstBeatDone"] = true;   // an older file stays byte-identical
+    if (values.wideScreen) j["wideScreen"] = true;         // likewise
     j["visualizer"]         = static_cast<int>(theme.visualizerType);
 
     j["midi_out_device"]    = values.midiOutDevice;

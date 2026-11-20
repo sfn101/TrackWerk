@@ -226,7 +226,7 @@ void draw_cells(Canvas& c, int x, int line1_y, const EffectsLayout& lay, int onl
 // ── The send editor's box ────────────────────────────────────────────────────────────────────────
 // The columns as EFFECTS spaces them.
 constexpr int BOX_W       = 480;
-constexpr int BOX_X       = (DESIGN_W - BOX_W) / 2;
+constexpr int BOX_X       = (DESIGN_W_4_3 - BOX_W) / 2;
 constexpr int CONTENT_PAD = 8;
 constexpr int TITLE_GAP   = 8;
 
@@ -273,6 +273,7 @@ void EffectModule::draw(Canvas& c, int x, int y, const EffectState& s) const {
 
 void draw_send_editor(Canvas& c, const SendEditorState& s, const songcore::Project& project,
                       const Theme& t) {
+    const Canvas::OriginScope inMiddle(c, wide_dx());   // a 640-wide dialog, in the middle
     if (!s.isOpen) return;
 
     // Modal: not clipped by the editor beneath.

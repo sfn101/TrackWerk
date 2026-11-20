@@ -32,6 +32,7 @@ void draw_large_mascot(Canvas& c, int x, int y, const MascotInk& ink) {
 }  // namespace
 
 void HelpOverlayModule::draw(Canvas& c, HelpTopic topic, const Theme& t) const {
+    const Canvas::OriginScope inMiddle(c, wide_dx());   // a 640-wide dialog, in the middle
     const HelpEntry& e = help_entry(topic);
 
     const int boxH = box_h(help_overlay_flow(e, detail::HelpFlowNoEmit{}));

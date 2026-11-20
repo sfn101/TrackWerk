@@ -432,6 +432,7 @@ void Canvas::blinds(const uint32_t* previous, int shown) {
 }
 
 void Canvas::set_clip(int x, int y, int w, int h) {
+    x += ox_;
     clipX_ = std::max(0, x);
     clipY_ = std::max(0, y);
     clipW_ = std::max(0, std::min(x + w, DESIGN_W) - clipX_);
@@ -447,6 +448,7 @@ void Canvas::reset_clip() {
 
 void Canvas::fill_rect(int x, int y, int w, int h, Argb color) {
     if (w <= 0 || h <= 0) return;
+    const Absolute at(*this, x);
 
     const int x0 = std::max(x, clipX_);
     const int y0 = std::max(y, clipY_);
@@ -480,6 +482,7 @@ void Canvas::set_font_style(int style) { fontStyle_=valid_demo_font_style(style)
 
 void Canvas::surface_rect(int x, int y, int w, int h, Argb base) {
     if (w <= 0 || h <= 0) return;
+    const Absolute at(*this, x);
     const int x0 = std::max(x, clipX_), y0 = std::max(y, clipY_);
     const int x1 = std::min(x + w, clipX_ + clipW_), y1 = std::min(y + h, clipY_ + clipH_);
     if (x0 >= x1 || y0 >= y1) return;
@@ -529,6 +532,7 @@ void Canvas::surface_rect(int x, int y, int w, int h, Argb base) {
 
 void Canvas::scene_edge(int x, int y, int w, int h, Argb color) {
     if (!sceneChrome_ || w < 12 || h < 8) return;
+    const Absolute at(*this, x);
     const int index = sceneChrome_ - 1;
     const int variant = scene_look(index).variant;
     const auto family = scene_look(index).family;
@@ -592,6 +596,7 @@ void Canvas::scene_edge(int x, int y, int w, int h, Argb color) {
 
 void Canvas::panel_rect(int x, int y, int w, int h, Argb base, Argb border, int radius) {
     if (w <= 0 || h <= 0) return;
+    const Absolute at(*this, x);
     if (sceneChrome_ && w >= 24 && h >= 14) {
         fill_rect(x, y, w, h, base);
         const Argb edge = (border >> 24) < 0x55 ? (border & 0xffffffu) | 0x55000000u : border;
@@ -624,6 +629,7 @@ void Canvas::panel_rect(int x, int y, int w, int h, Argb base, Argb border, int 
 
 void Canvas::stroke_rect(int x, int y, int w, int h, Argb color, int thickness) {
     if (w <= 0 || h <= 0 || thickness <= 0) return;
+    const Absolute at(*this, x);
     const int t = std::min(thickness, std::min(w, h));
     fill_rect(x, y, w, t, color);                  // top
     fill_rect(x, y + h - t, w, t, color);          // bottom
@@ -632,6 +638,7 @@ void Canvas::stroke_rect(int x, int y, int w, int h, Argb color, int thickness) 
 }
 
 void Canvas::line(int x0, int y0, int x1, int y1, Argb color) {
+    const Absolute at(*this, x0, x1);
     if (clipW_ <= 0 || clipH_ <= 0 || (color >> 24) == 0) return;
     const int left = clipX_, right = clipX_ + clipW_ - 1;
     const int top = clipY_, bottom = clipY_ + clipH_ - 1;
@@ -667,6 +674,7 @@ void Canvas::line(int x0, int y0, int x1, int y1, Argb color) {
 // of a frame's cost); the rects never overlap, so a translucent colour blends each pixel once.
 void Canvas::draw_glyph(const Glyph& g, int x, int y, Argb color, int font_scale) {
     if (font_scale <= 0) return;
+    const Absolute at(*this, x);
     for (int row = 0; row < 5;) {
         const uint8_t bits = g[static_cast<size_t>(row)];
         if (bits == 0) { ++row; continue; }
@@ -731,6 +739,7 @@ void blend_bit_row(uint32_t* dest, const uint8_t* bits, uint32_t first, int coun
 
 void Canvas::draw_text(const std::string& text, int x, int y, Argb color, int spacing,
                        int font_scale) {
+    const Absolute at(*this, x);
     int cx = x;
     for (size_t i = 0; i < text.size();) {
         const auto cp=next_codepoint(text,i);
@@ -766,6 +775,7 @@ void Canvas::draw_text(const std::string& text, int x, int y, Argb color, int sp
 
 void Canvas::draw_label(const std::string& text, int x, int y, Argb color, int size) {
     if (size <= 0 || clipW_ <= 0 || clipH_ <= 0 || (color >> 24) == 0) return;
+    const Absolute at(*this, x);
     auto font = label_font(size);
     const detail::DemoAlpha custom=fontStyle_?detail::demo_label_pixels(fontStyle_,size):detail::DemoAlpha{};
     if (static_cast<int64_t>(y) + font.height <= clipY_ || y >= clipY_ + clipH_) return;

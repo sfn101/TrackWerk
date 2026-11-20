@@ -81,6 +81,9 @@ struct SettingsValues {
     // SCALING (specs/sharp-scaling.md): SCALING_INT, SCALING_SHARP or SCALING_BILINEAR. A new install
     // gets SHARP; an older settings.json's scalingBilinear carries over (settings_store.cpp).
     int scaling             = SCALING_SHARP;
+    // SCREEN: 16:9 (an 854-wide canvas) instead of 4:3. Read at startup only; a change waits for a
+    // restart. Saved only when on, so an existing settings.json is unchanged.
+    bool wideScreen         = false;
     // Stable appearance-only ID; 0 preserves existing installs. Independent of theme presets.
     int fontStyle           = 0;
     // Appearance > Motion: the Scene animations (ui/scene_animation.h). OFF keeps the screens still;

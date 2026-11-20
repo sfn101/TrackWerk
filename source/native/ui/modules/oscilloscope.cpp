@@ -16,7 +16,7 @@ inline float clampf(float v, float lo, float hi) { return v < lo ? lo : (v > hi 
 
 void OscilloscopeModule::draw_sized(Canvas& c, int x, int y, int w, int h, const OscilloscopeState& s) {
     const Theme& t = s.theme;
-    w_ = std::min(w, int(WIDTH));   // the phosphor history holds at most WIDTH/N blocks
+    w_ = std::min(w, int(MAX_WIDTH));   // the phosphor history holds at most MAX_WIDTH/N blocks
     h_ = h;
 
     // OCTA fills the strip with `background`, so the gaps between lanes read as it, then paints each

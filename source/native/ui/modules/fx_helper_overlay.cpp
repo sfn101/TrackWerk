@@ -15,7 +15,7 @@ constexpr int content_h(int gridRows) {
     return 4 * ROW_HEIGHT + 8 + ROW_HEIGHT + 8 + gridRows * ROW_HEIGHT;
 }
 constexpr int box_h(int gridRows) { return content_h(gridRows) + 2 * CONTENT_PAD; }
-constexpr int BOX_X   = (DESIGN_W - BOX_W) / 2;
+constexpr int BOX_X   = (DESIGN_W_4_3 - BOX_W) / 2;
 constexpr int INNER_X = BOX_X + 10;
 constexpr int CELL_W  = 80;
 
@@ -30,6 +30,7 @@ constexpr int run_advance(int chars) { return chars * CHAR_W; }
 }  // namespace
 
 void draw_fx_helper(Canvas& c, const FxHelperState& s, const Theme& t) {
+    const Canvas::OriginScope inMiddle(c, wide_dx());   // a 640-wide dialog, in the middle
     if (!s.isOpen || s.layout.count() == 0) return;
 
     // Modal: not clipped by the editor beneath.

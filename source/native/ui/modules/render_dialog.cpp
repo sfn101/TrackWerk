@@ -17,7 +17,7 @@ constexpr int TITLE_GAP = 8;
 // ⚠️ The percentage readout sets the width (static_assert below).
 constexpr int BOX_W     = 420;
 constexpr int BOX_H     = 2 * CONTENT_PAD + ROW_HEIGHT + TITLE_GAP + ROWS * ROW_HEIGHT;
-constexpr int BOX_X     = (DESIGN_W - BOX_W) / 2;
+constexpr int BOX_X     = (DESIGN_W_4_3 - BOX_W) / 2;
 constexpr int BOX_Y     = (DESIGN_H - BOX_H) / 2;
 
 constexpr int PAD_X   = 14;
@@ -45,6 +45,7 @@ int render_dialog_end_row(const RenderDialogState& s, const songcore::Project& p
 
 void draw_render_dialog(Canvas& c, const RenderDialogState& s, const songcore::Project& project,
                         bool isRendering, float progress, const Theme& t) {
+    const Canvas::OriginScope inMiddle(c, wide_dx());   // a 640-wide dialog, in the middle
     if (!s.isOpen) return;
 
     // Modal: not clipped by the screen beneath.

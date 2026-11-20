@@ -53,10 +53,17 @@ void TrackerLayout::draw(Canvas& c, const AppState& s) {
     if(s.splashProgress>=0){draw_extreme_splash(c,s.theme,s.splashProgress);return;}
     if(s.attractActive){demo_fx::draw_attract(c,s,s.animationMs-s.attractStarted);return;}
     if(s.showActive){demo_fx::draw_show(c,s,&showPeaks_);return;}
-    if(s.localSampleRange.isOpen){draw_local_sample_range(c,s.localSampleRange,s.theme);draw_loading_strip(c,s.loading,s.theme);return;}
+    if(s.localSampleRange.isOpen){
+        // A 640-wide screen: centred on a wide canvas, the background across all of it.
+        c.surface_rect(0, 0, DESIGN_W, DESIGN_H, s.theme.background);
+        {const Canvas::OriginScope inMiddle(c, wide_dx());draw_local_sample_range(c,s.localSampleRange,s.theme);}
+        draw_loading_strip(c,s.loading,s.theme);return;}
     if (s.scenePicker >= 0) {
         draw_scene_picker(c, s.scenePicker, s.theme, s.settings.sceneMotion ? s.animationMs : 0);
     } else if (s.studioOpen) {
+        // As the sample range: centred, with the background across the whole canvas.
+        c.surface_rect(0, 0, DESIGN_W, DESIGN_H, s.theme.background);
+        const Canvas::OriginScope inMiddle(c, wide_dx());
         draw_studio(c, s);
         if (s.qwerty.isOpen) qwerty_.draw(c, s.qwerty, s.theme);
     } else {
@@ -205,15 +212,15 @@ void TrackerLayout::draw_frame(Canvas& c, const AppState& s) {
                     with_alpha(s.theme.textParam, .22f));
         c.fill_rect(editorX, editorY + ROW_HEIGHT + 4, 36, 1, s.theme.rowCursor);
     }
-    c.stroke_rect(SIDE_SPACER, scopeY, OscilloscopeModule::WIDTH,
-                  OscilloscopeModule::HEIGHT, with_alpha(s.theme.textParam, .18f));
+    c.stroke_rect(SIDE_SPACER, scopeY, scope_width(), OscilloscopeModule::HEIGHT,
+                  with_alpha(s.theme.textParam, .18f));
 
     if (s.theme.sceneChrome) {
         const Argb frame = with_alpha(s.theme.textTitle, .44f);
-        c.scene_edge(SIDE_SPACER, scopeY, OscilloscopeModule::WIDTH, OscilloscopeModule::HEIGHT, frame);
+        c.scene_edge(SIDE_SPACER, scopeY, scope_width(), OscilloscopeModule::HEIGHT, frame);
         c.scene_edge(editorX - 3, editorY - 2, editorWidth + 6, DESIGN_H - EDITOR_Y - 4, frame);
     }
-    if (!settings) draw_track_rail(c, s, scene.railLeft ? SIDE_SPACER : RIGHT_BAR_X,
+    if (!settings) draw_track_rail(c, s, scene.railLeft ? SIDE_SPACER : right_bar_x(),
                                   editorY, scene.railLeft);
 
     draw_status_line(c, s, scopeY);
@@ -255,7 +262,7 @@ void TrackerLayout::draw_scope_strip(Canvas& c, const AppState& s, int y) {
         return;
     }
 
-    oscilloscope_.draw(c, SIDE_SPACER, y, scope_state(s));
+    oscilloscope_.draw_sized(c, SIDE_SPACER, y, scope_width(), OscilloscopeModule::HEIGHT, scope_state(s));
 }
 
 // What the visualizer is handed, the strip's and VI's alike.
@@ -724,7 +731,7 @@ void TrackerLayout::draw_selection_clipboard(Canvas& c, const AppState& s, int s
     const std::string clip = s.clipboard ? s.clipboard->info() : std::string();
     if (sel.empty() && clip.empty()) return;
 
-    const int x = SIDE_SPACER + OscilloscopeModule::WIDTH - 150;
+    const int x = SIDE_SPACER + scope_width() - 150;   // the strip's right end, in both modes
     const int y = scopeY + 10;
 
     if (!sel.empty())

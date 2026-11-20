@@ -11,7 +11,7 @@ Work top to bottom. Each item has its own spec; finish (build, test on Windows, 
 | 5 | Audit fixes, batch 2 (save safety) | [audit-fixes-batch2.md](audit-fixes-batch2.md) | Done |
 | 6 | Audit fixes, batch 3 (the rest) | [audit-fixes-batch3.md](audit-fixes-batch3.md) | Done |
 | 7 | Refuse files from a newer TrackWerk | [refuse-newer-files.md](refuse-newer-files.md) | Done |
-| 8 | Save under a new name | [save-under-new-name.md](save-under-new-name.md) | Spec ready |
+| 8 | Save under a new name | [save-under-new-name.md](save-under-new-name.md) | Done |
 | 9 | Sharp scaling | [sharp-scaling.md](sharp-scaling.md) | Spec ready |
 | 10 | Wide mode (16:9) | [wide-mode.md](wide-mode.md) | Spec ready |
 | 11 | Fake stereo loads as mono | [fake-stereo-mono.md](fake-stereo-mono.md) | Spec ready |

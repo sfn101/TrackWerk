@@ -112,5 +112,5 @@ Steps, in order. Don't skip one without the user's explicit OK:
 
 - PR #3 (Windows build fix) was taken by the maintainer as commit `b34487b` with our authorship, and shipped in 1.3.0.
 - Issue #2's file-validation findings are all fixed upstream.
-- The message offering our features (`drafts/upstream-message.md`, local only) is drafted and **not yet sent**. It waits for the user's approval of the text.
+- The message offering our features was posted on 2026-11-20 as kidbee85-beep/TrackWerk#7 (local copy: `drafts/upstream-message.md`). It asks whether PRs should come one at a time or all at once. **No feature PR goes up before the maintainer answers there.**
 - Our audit batches 1-2 are not to be sent: upstream fixed those itself.

@@ -15,6 +15,14 @@ namespace {
 
 using nlohmann::json;
 
+// settings.json as load_settings last read it; every save writes this app's values over it.
+json& loaded_settings() { static json j = json::object(); return j; }
+
+// ⚠️ Every key serialize_settings writes only sometimes, or turning it off would leave the old value.
+const char* const kOptionalKeys[] = {"fontStyle", "sceneMotion", "sourceYoutube", "sampleGranularFavorites",
+                                     "soundFavorites", "soundRecent", "soundPreviewLevel", "firstBeatDone",
+                                     "midi_test_channel"};
+
 // An absent or wrong-typed key leaves the default alone.
 bool get_bool(const json& j, const char* key, bool fallback) {
     const auto it = j.find(key);
@@ -41,11 +49,13 @@ constexpr int VISUALIZER_COUNT = 9;   // VisualizerType — SCOPE … PLASMA
 }  // namespace
 
 bool load_settings(FileSystem& fs, SettingsValues& values, Theme& theme) {
+    loaded_settings() = json::object();
     std::string blob;
     if (!fs.read_file(fs.settings_path(), blob)) return false;   // first launch
 
     const json j = json::parse(blob, nullptr, /*allow_exceptions=*/false);
     if (!j.is_object()) return false;
+    loaded_settings() = j;
 
     values.scalingBilinear    = get_bool(j, "scalingBilinear",    values.scalingBilinear);
     // Unknown/future IDs and wrong types fall back to the existing classic face.
@@ -167,7 +177,9 @@ namespace {
 
 // The exact bytes settings.json should hold — both the comparison and the write use it.
 std::string serialize_settings(const SettingsValues& values, const Theme& theme) {
-    json j;
+    // Over the file as loaded, so a key only a newer TrackWerk knows survives this one.
+    json j = loaded_settings();
+    for (const char* key : kOptionalKeys) j.erase(key);
     j["scalingBilinear"]    = values.scalingBilinear;
     if(valid_demo_font_style(values.fontStyle))j["fontStyle"]=valid_demo_font_style(values.fontStyle);
     if(!values.sceneMotion)j["sceneMotion"]=false;

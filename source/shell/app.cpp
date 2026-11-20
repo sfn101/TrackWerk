@@ -1672,6 +1672,7 @@ int run(const AppConfig& cfg) {
     state.splashProgress=0;
     host.set_before_play_hook([&]{ui::studio_synth_stop_audition(state,host);ui::drumlab_before_transport(state.drumLab,engineRef);});
     state.appVersion = PT_VERSION_STRING;
+    songcore::app_version() = PT_VERSION_STRING;   // "app" in every file this build saves
     state.project = &host.edit_project();
 
     state.caps = cfg.caps;
@@ -1721,6 +1722,7 @@ int run(const AppConfig& cfg) {
         case BR::ASKED:    std::printf("autosave: FOUND - asking (SETTINGS > RESUME = ASK)\n"); break;
         case BR::RESTORED: std::printf("autosave: FOUND - restored (SETTINGS > RESUME = AUTO)\n"); break;
         case BR::DROPPED:  std::printf("autosave: FOUND but UNREADABLE - dropped\n"); break;
+        case BR::KEPT:     std::printf("autosave: FOUND - from a newer TrackWerk, kept\n"); break;
     }
 
     // After boot_recovery, so a backgrounding during start-up cannot save over the autosave in question.

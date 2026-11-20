@@ -26,4 +26,11 @@ bool autosave_load(songcore::SongcoreHost& host, FileSystem& fs, const std::stri
     return host.load_project_file(path, mediaBaseDir, repair);
 }
 
+std::string load_failed_message(FileSystem& fs, const std::string& path, const songcore::FileFormat& format,
+                                const std::string& fallback) {
+    std::string text;
+    const std::string newer = fs.read_file(path, text) ? songcore::newer_file_message(text, format) : std::string();
+    return newer.empty() ? fallback : newer;
+}
+
 }  // namespace pt::ui

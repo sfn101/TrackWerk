@@ -8,6 +8,7 @@
 #include <string>
 
 #include "songcore/host.h"
+#include "songcore/project_io.h"   // FileFormat
 #include "ui/filesystem.h"
 
 namespace pt::ui {
@@ -25,5 +26,9 @@ bool autosave_clear(FileSystem& fs);
 // `repair` fixes a damaged but readable autosave instead of refusing it.
 bool autosave_load(songcore::SongcoreHost& host, FileSystem& fs, const std::string& mediaBaseDir,
                    bool repair = false);
+
+// After a load failed: the refusal for a file from a newer TrackWerk, else `fallback`.
+std::string load_failed_message(FileSystem& fs, const std::string& path, const songcore::FileFormat& format,
+                                const std::string& fallback);
 
 }  // namespace pt::ui

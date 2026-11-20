@@ -12,6 +12,7 @@
 #include "ui/scale_io.h"
 #include "ui/std_filesystem.h"   // path_name / path_stem / path_extension / to_lower
 #include "ui/theme_io.h"
+#include "ui/lifecycle.h"        // load_failed_message
 #include "common/load_progress.h"       // load_cancelled
 #include "common/byte_source.h"         // pt_path_is_uri: native and granted storage stay distinct
 #include "common/platform_memory.h"
@@ -479,7 +480,8 @@ void InputDispatcher::browser_confirm() {
                     s_.confirm.open(ConfirmDialogState::Kind::REPAIR_SONG, ConfirmDialogState::REPAIR_FROM_LOAD);
                     return;
                 }
-                set_status(b, host_.last_project_damaged() ? "LOAD FAILED: FILE DAMAGED" : "LOAD FAILED", false);
+                set_status(b, host_.last_project_damaged() ? std::string("LOAD FAILED: FILE DAMAGED")
+                           : load_failed_message(fs_, path, songcore::SONG_FORMAT, "LOAD FAILED"), false);
                 return;
             }
             // ⚠️ A cancelled project load cannot stay half-done (later instruments would play silence):
@@ -513,7 +515,7 @@ void InputDispatcher::browser_confirm() {
             // re-checked: the D-pad walks out of the folder.
             songcore::Scale loaded = host_.project().scales[static_cast<size_t>(s_.currentScale)];
             if (ext != SCALE_FILE_EXT || !load_scale_file(fs_, path, loaded)) {
-                set_status(b, "LOAD FAILED", false);
+                set_status(b, load_failed_message(fs_, path, songcore::SCALE_FORMAT, "LOAD FAILED"), false);
                 return;
             }
             host_.edit_project().scales[static_cast<size_t>(s_.currentScale)] = loaded;
@@ -527,7 +529,7 @@ void InputDispatcher::browser_confirm() {
             // The scale load's two guards, for the same reasons (the slot's `id` is what `GRV` names).
             songcore::Groove loaded = host_.project().grooves[static_cast<size_t>(s_.currentGroove)];
             if (ext != GROOVE_FILE_EXT || !load_groove_file(fs_, path, loaded)) {
-                set_status(b, "LOAD FAILED", false);
+                set_status(b, load_failed_message(fs_, path, songcore::GROOVE_FORMAT, "LOAD FAILED"), false);
                 return;
             }
             host_.edit_project().grooves[static_cast<size_t>(s_.currentGroove)] = loaded;
@@ -572,7 +574,7 @@ void InputDispatcher::browser_confirm() {
             std::array<int,studio::COUNT> checked{};
             if (ext != (effect ? STUDIO_FX_FILE_EXT : STUDIO_MASTER_FILE_EXT) ||
                 !fs_.read_file(path,data) || !parse_studio_preset(effect,data,checked)) {
-                set_status(b,"INVALID PRESET - MIX KEPT",false); return;
+                set_status(b,load_failed_message(fs_,path,songcore::STUDIO_PRESET_FORMAT,"INVALID PRESET - MIX KEPT"),false); return;
             }
             apply_studio_preset(effect,checked,host_.edit_project());
             // Factory files and the native selector are two views of the same authored bank.
@@ -603,8 +605,10 @@ void InputDispatcher::browser_confirm() {
         if(s_.browserPurpose==AppState::BrowserPurpose::LOAD_GRANULAR_SAMPLE){set_status(b,s_.studioMessage.empty()?"SOURCE LOAD FAILED / OLD SOUND KEPT":s_.studioMessage,false);return;}
         // ⚠️ A file too big for the device is not corrupt; say so.
         const bool sampleFile = ext == "wav" || ext == "sf2" || ext == "sf3";   // the readers that refuse damage
-        set_status(b, host_.last_load_ran_out_of_memory() ? "FILE TOO BIG"
-                      : sampleFile ? "SAMPLE FAILED: FILE DAMAGED" : "LOAD FAILED", false);
+        set_status(b, host_.last_load_ran_out_of_memory() ? std::string("FILE TOO BIG")
+                      : sampleFile ? std::string("SAMPLE FAILED: FILE DAMAGED")
+                      : ext == "pti" ? load_failed_message(fs_, path, songcore::INSTRUMENT_FORMAT, "LOAD FAILED")
+                      : std::string("LOAD FAILED"), false);
         return;
     }
 

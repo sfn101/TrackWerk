@@ -12,6 +12,7 @@
 #include "ui/button_mapper.h"
 #include "ui/input_dispatcher.h"
 #include "ui/settings_row_layout.h"
+#include "ui/settings_store.h"
 #include "ui/std_filesystem.h"
 
 #include <cstdio>
@@ -189,6 +190,41 @@ int main(int argc, char** argv) {
           !r.fs.file_exists(r.fs.projects_directory() + "/AWAY.ptp"),
           "a song opened elsewhere saves back into its own folder");
     check(r.state.projectPath == away, "...and keeps that path");
+
+    // ── 7b · A song from a newer TrackWerk (specs/refuse-newer-files.md) ──
+    const std::string newer = r.fs.projects_directory() + "/NEWER.ptp";
+    const std::string newerText = "{\"version\":2,\"minReader\":99,\"app\":\"9.9.9\",\"name\":\"NEWER\"}";
+    const char* newerMessage = "MADE WITH TRACKWERK 9.9.9 - UPDATE TO OPEN";
+    r.fs.write_file(newer, newerText);
+    r.project_cell(2);
+    for (size_t i = 0; i < r.state.fileBrowser.items.size(); ++i)
+        if (r.state.fileBrowser.items[i].path == newer) r.state.fileBrowser.cursor = static_cast<int>(i);
+    r.tap(Button::A);
+    check(!r.state.confirm.is_open() && r.host.project().name == "AWAY", "LOAD refuses a newer song, no repair offered");
+    check(r.state.fileBrowser.statusMessage == newerMessage, "...says MADE WITH TRACKWERK 9.9.9 - UPDATE TO OPEN");
+    check(read(r.fs, newer) == newerText, "...and leaves the file as it was");
+    r.tap(Button::B);
+    r.state.settings.autosaveResumeAuto = true;    // AUTO
+    r.fs.write_file(autosave, newerText);
+    check(r.dispatch.boot_recovery() == InputDispatcher::BootRecovery::KEPT && r.host.project().name == "AWAY" &&
+          r.state.statusMessage == newerMessage && read(r.fs, autosave) == newerText,
+          "AUTO: a newer autosave is not loaded and the file is kept");
+    r.state.settings.autosaveResumeAuto = false;   // ASK
+    check(r.dispatch.boot_recovery() == InputDispatcher::BootRecovery::ASKED, "ASK: RECOVER WORK? as for any autosave");
+    r.tap(Button::A);
+    check(r.host.project().name == "AWAY" && read(r.fs, autosave) == newerText,
+          "ASK: A refuses it and keeps the file");
+    r.fs.write_file(newer, "{\"version\":99,\"minReader\":1,\"name\":\"OLDREADER\"}");
+    check(r.host.load_project_file(newer, "") && r.host.project().name == "OLDREADER",
+          "a newer song this format can read (minReader 1) opens");
+
+    // ── 7c · settings.json keeps a key only a newer TrackWerk knows ──
+    r.fs.write_file(r.fs.settings_path(), "{\"futureKey\":42,\"metronome\":true}");
+    SettingsValues values;
+    Theme theme = r.state.theme;
+    check(load_settings(r.fs, values, theme) && save_settings(r.fs, values, theme) &&
+          read(r.fs, r.fs.settings_path()).find("\"futureKey\": 42") != std::string::npos,
+          "an unknown settings.json key survives a load and save");
 
 #ifdef _WIN32
     // ── 8 · Above a drive's root the browser lists the drives ──

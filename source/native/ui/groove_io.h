@@ -19,6 +19,7 @@ inline constexpr const char* GROOVE_FILE_EXT = "ptg";
 inline std::string serialize_groove(const songcore::Groove& g) {
     songcore::JsonWriter w{songcore::JsonLayout::Pretty};
     w.begin_object();
+    songcore::emit_format(w, songcore::GROOVE_FORMAT);
     if (!g.name.empty()) w.field_string("name", g.name);
     songcore::detail::emit_int_array(w, "steps", g.steps);
     if (g.ticksPerStep != songcore::GROOVE_DEFAULT_RULER) w.field_int("ticksPerStep", g.ticksPerStep);
@@ -26,10 +27,11 @@ inline std::string serialize_groove(const songcore::Groove& g) {
     return std::move(w.out);
 }
 
-// `out` keeps its `id` and whatever the file does not name. False only when it is not a JSON object.
+// `out` keeps its `id` and whatever the file does not name. False when it is not a JSON object, its
+// version is broken, or it is from a newer TrackWerk.
 inline bool parse_groove_text(const std::string& text, songcore::Groove& out) {
     const nlohmann::json j = nlohmann::json::parse(text, nullptr, /*allow_exceptions=*/false);
-    if (!j.is_object()) return false;
+    if (songcore::check_format(j, songcore::GROOVE_FORMAT) != songcore::FormatCheck::OK) return false;
 
     songcore::Groove g = out;
     g.name  = songcore::detail::get_str(j, "name", g.name);

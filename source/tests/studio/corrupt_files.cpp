@@ -8,8 +8,14 @@
 #include "soundfont-trim.h"
 #include "songcore/host.h"
 #include "songcore/project_io.h"
+#include "ui/groove_io.h"
+#include "ui/scale_io.h"
+#include "ui/studio_preset_io.h"
 
+#include <array>
 #include <cstdio>
+#include <fstream>
+#include <sstream>
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -21,6 +27,12 @@ void check(bool ok, const std::string& what) {
     std::printf("%s  %s\n", ok ? "ok  " : "FAIL", what.c_str());
     std::fflush(stdout);   // a hang shows which file it was on
     if (!ok) ++failures;
+}
+std::string read_text(const std::string& path) {
+    std::ifstream in(path, std::ios::binary);
+    std::ostringstream out;
+    out << in.rdbuf();
+    return out.str();
 }
 }  // namespace
 
@@ -40,7 +52,39 @@ int main(int argc, char** argv) {
         const std::string path = entry.path().string();
         const std::string name = entry.path().filename().string();
         const std::string ext  = entry.path().extension().string();
-        if (ext == ".ptp") {
+        const bool newer = name.rfind("22-newer-", 0) == 0;   // from a newer TrackWerk: refused, not damaged
+        if (newer) {
+            ++seen;
+            std::printf("--  %s\n", name.c_str());
+            const std::string text = read_text(path);
+            const songcore::FileFormat format = ext == ".ptp"   ? songcore::SONG_FORMAT
+                                                : ext == ".pti" ? songcore::INSTRUMENT_FORMAT
+                                                : ext == ".pts" ? songcore::SCALE_FORMAT
+                                                : ext == ".ptg" ? songcore::GROOVE_FORMAT
+                                                                : songcore::STUDIO_PRESET_FORMAT;
+            const std::string message = songcore::newer_file_message(text, format);
+            check(message == (ext == ".ptg" ? "MADE WITH A NEWER TRACKWERK"
+                                            : "MADE WITH TRACKWERK 9.9.9 - UPDATE TO OPEN"),
+                  name + ": says " + message);
+            bool refused = false;
+            if (ext == ".ptp") {
+                refused = !host.load_project_file(path, "") && !host.last_project_repairable();
+            } else if (ext == ".pti") {
+                refused = !host.load_instrument_preset(0, path);
+            } else if (ext == ".pts") {
+                songcore::Scale scale = host.project().scales[0];
+                refused = !pt::ui::parse_scale_text(text, scale);
+            } else if (ext == ".ptg") {
+                songcore::Groove groove = host.project().grooves[0];
+                refused = !pt::ui::parse_groove_text(text, groove);
+            } else {
+                std::array<int, studio::COUNT> values{};
+                refused = !pt::ui::parse_studio_preset(true, text, values);
+            }
+            check(refused, name + ": refused");
+            check(songcore::serialize_project(host.project()) == before, name + ": open song untouched");
+            check(read_text(path) == text, name + ": file untouched");
+        } else if (ext == ".ptp") {
             ++seen;
             std::printf("--  %s\n", name.c_str());
             const bool loaded = host.load_project_file(path, "");
@@ -71,7 +115,7 @@ int main(int argc, char** argv) {
             check(engine->loadSoundfont(0, path.c_str(), 0, 0) < 0, name + ": refused");
         }
     }
-    check(seen >= 10, "all " + std::to_string(seen) + " test files were found");
+    check(seen >= 16, "all " + std::to_string(seen) + " test files were found");
     // Not a song at all: nothing to repair.
     check(!host.push_project("not json") && host.last_project_damaged() && !host.last_project_repairable(),
           "unreadable JSON is refused with no repair offered");

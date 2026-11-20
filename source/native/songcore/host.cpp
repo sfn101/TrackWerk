@@ -68,6 +68,12 @@ bool SongcoreHost::push_project(const std::string& blob, bool repair) {
         std::fprintf(stderr, "project refused: not a JSON object\n");
         return false;
     }
+    // A newer TrackWerk's song: refused, not damaged, so no repair is offered.
+    if (check_format(j, SONG_FORMAT) == FormatCheck::TOO_NEW) {
+        projectDamaged_ = false;
+        std::fprintf(stderr, "project refused: %s\n", too_new_message(j).c_str());
+        return false;
+    }
     const std::vector<std::string> damages = project_damages(j);
     if (!damages.empty() && !repair) {
         for (const std::string& why : damages) std::fprintf(stderr, "project refused: %s\n", why.c_str());
@@ -544,6 +550,7 @@ bool parse_instrument_preset_checked(const std::string& blob, InstrumentPreset& 
   try {
     json j = json::parse(blob, /*cb=*/nullptr, /*allow_exceptions=*/false);
     if (j.is_discarded() || !j.is_object()) return false;
+    if (check_format(j, INSTRUMENT_FORMAT) != FormatCheck::OK) return false;   // too new, or a broken version
 
     if(!j.contains("instrument")){
         // A recognized legacy flat instrument is safe to wrap. Arbitrary JSON and an empty

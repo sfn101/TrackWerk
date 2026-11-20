@@ -20,6 +20,7 @@ inline constexpr const char* SCALE_FILE_EXT = "pts";
 inline std::string serialize_scale(const songcore::Scale& s) {
     songcore::JsonWriter w{songcore::JsonLayout::Pretty};
     w.begin_object();
+    songcore::emit_format(w, songcore::SCALE_FORMAT);
     if (!s.name.empty()) w.field_string("name", s.name);
     songcore::detail::emit_int_array(w, "enabled", s.enabled);
     if (s.offset != std::vector<int>(12, 0))
@@ -28,10 +29,11 @@ inline std::string serialize_scale(const songcore::Scale& s) {
     return std::move(w.out);
 }
 
-// `out` keeps its `id` and whatever the file does not name. False only when it is not a JSON object.
+// `out` keeps its `id` and whatever the file does not name. False when it is not a JSON object, its
+// version is broken, or it is from a newer TrackWerk.
 inline bool parse_scale_text(const std::string& text, songcore::Scale& out) {
     const nlohmann::json j = nlohmann::json::parse(text, nullptr, /*allow_exceptions=*/false);
-    if (!j.is_object()) return false;
+    if (songcore::check_format(j, songcore::SCALE_FORMAT) != songcore::FormatCheck::OK) return false;
 
     songcore::Scale s = out;
     s.name    = songcore::detail::get_str(j, "name", s.name);

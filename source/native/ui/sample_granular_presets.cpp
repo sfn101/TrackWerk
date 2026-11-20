@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ui/sample_granular_presets.h"
+#include "songcore/project_io.h"   // check_format / stamp_format
 #include "vendor/nlohmann/json.hpp"
 #include <algorithm>
 #include <array>
@@ -72,8 +73,10 @@ bool sample_granular_relative_reference(const std::string& path){
 }
 bool parse_sample_granular_preset(const std::string& text,SampleGranularPresetFile& output,std::string& error){
  const auto j=nlohmann::json::parse(text,nullptr,false);
- if(!j.is_object()||!j.contains("version")||!j["version"].is_number_integer()||j["version"]!=1||j.value("kind",nlohmann::json{})!="sample-granular"||!j.contains("parameters")||!j["parameters"].is_object()){
-  error="Not a version1 sample-granular preset";return false;
+ const auto format=songcore::check_format(j,songcore::GRAIN_PRESET_FORMAT);
+ if(format==songcore::FormatCheck::TOO_NEW){error=songcore::too_new_message(j);return false;}
+ if(format!=songcore::FormatCheck::OK||j.value("kind",nlohmann::json{})!="sample-granular"||!j.contains("parameters")||!j["parameters"].is_object()){
+  error="Not a sample-granular preset";return false;
  }
  SampleGranularPresetFile next;const auto& p=j["parameters"];
  for(const auto& field:fields){
@@ -100,7 +103,8 @@ bool parse_sample_granular_preset(const std::string& text,SampleGranularPresetFi
 }
 std::string serialize_sample_granular_preset(const SampleGranularPresetFile& preset){
  nlohmann::json p=nlohmann::json::object();for(const auto& field:fields)p[field.name]=preset.parameters.*(field.member);p["freeze"]=preset.parameters.freeze;
- nlohmann::json j={{"version",1},{"kind","sample-granular"},{"parameters",p}};
+ nlohmann::json j={{"kind","sample-granular"},{"parameters",p}};
+ songcore::stamp_format(j,songcore::GRAIN_PRESET_FORMAT);
  if(!preset.name.empty())j["name"]=preset.name;
  if(preset.hasSample){j["sample"]=preset.sampleReference;j["seed"]=preset.seed;}
  return j.dump(2);

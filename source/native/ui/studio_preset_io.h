@@ -17,7 +17,7 @@ inline void apply_studio_preset(bool effect,const std::array<int,studio::COUNT>&
 // custom slots can still read older files that omitted it. Parse atomically into a temporary.
 inline bool parse_studio_preset(bool effect,const std::string& text,std::array<int,studio::COUNT>& out,bool requireKind=true){
  const auto j=songcore::json::parse(text,nullptr,false);
- if(!j.is_object()||!j.contains("version")||!j["version"].is_number_integer()||j["version"]!=1||!j.contains("master"))return false;
+ if(songcore::check_format(j,songcore::STUDIO_PRESET_FORMAT)!=songcore::FormatCheck::OK||!j.contains("master"))return false;
  if(requireKind&&!j.contains("kind"))return false;
  if(j.contains("kind")&&j["kind"]!=(effect?"effects":"master"))return false;
  const auto& values=j["master"];if(!values.is_array()||values.size()!=studio::COUNT)return false;
@@ -31,7 +31,8 @@ inline bool parse_studio_preset(bool effect,const std::string& text,std::array<i
  out=checked;return true;
 }
 inline std::string serialize_studio_preset(bool effect,const std::array<int,studio::COUNT>& values,const std::string& name={}){
- songcore::json j={{"version",1},{"kind",effect?"effects":"master"},{"master",values}};
+ songcore::json j={{"kind",effect?"effects":"master"},{"master",values}};
+ songcore::stamp_format(j,songcore::STUDIO_PRESET_FORMAT);
  if(!name.empty())j["name"]=name;
  return j.dump(2);
 }

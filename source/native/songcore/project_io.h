@@ -384,6 +384,67 @@ inline std::vector<T> parse_pool(const json& j, const char* k, F&& parse_elem) {
 
 }  // namespace detail
 
+// ─── File versions (specs/refuse-newer-files.md) ────────────────────────────────────────────────
+// `version` is the format that wrote a file, `minReader` the oldest format that can open it safely.
+// ⚠️ The rule for every later format change: raise minReader with version whenever losing the new
+// data would change how the file sounds, plays or is arranged (notes, commands, instruments, mixing,
+// tracks); raise only version for harmless data (view state, a remembered cursor). An older app never
+// carries data it does not know through SAVE.
+struct FileFormat { int version; int minReader; };
+inline constexpr FileFormat SONG_FORMAT{1, 1};
+inline constexpr FileFormat INSTRUMENT_FORMAT{1, 1};
+inline constexpr FileFormat SCALE_FORMAT{1, 1};
+inline constexpr FileFormat GROOVE_FORMAT{1, 1};
+inline constexpr FileFormat STUDIO_PRESET_FORMAT{1, 1};
+inline constexpr FileFormat GRAIN_PRESET_FORMAT{1, 1};
+inline constexpr double FORMAT_NUMBER_MAX = 1000000;
+
+// The TrackWerk version saved into every versioned file as "app". The shell sets it once at boot;
+// empty in the tools, and then nothing is written.
+inline std::string& app_version() { static std::string v; return v; }
+
+enum class FormatCheck { OK, DAMAGED, TOO_NEW };
+
+inline bool valid_format_number(const json& v) {
+    return v.is_number_integer() && v.get<double>() >= 0 && v.get<double>() <= FORMAT_NUMBER_MAX;
+}
+
+// A missing `version` is 0 (an old file); a missing `minReader` is the `version`.
+inline FormatCheck check_format(const json& j, const FileFormat& supported) {
+    if (!j.is_object()) return FormatCheck::DAMAGED;
+    const auto v = j.find("version"), m = j.find("minReader");
+    if ((v != j.end() && !valid_format_number(*v)) || (m != j.end() && !valid_format_number(*m)))
+        return FormatCheck::DAMAGED;
+    const int minReader = m != j.end() ? m->get<int>() : v != j.end() ? v->get<int>() : 0;
+    return minReader > supported.version ? FormatCheck::TOO_NEW : FormatCheck::OK;
+}
+
+// The refusal the screen shows for a TOO_NEW file. "app" is untrusted: shown only as a short version.
+inline std::string too_new_message(const json& j) {
+    const auto a = j.find("app");
+    std::string app = a != j.end() && a->is_string() ? a->get<std::string>() : std::string();
+    const bool shown = !app.empty() && app.size() <= 24 && std::all_of(app.begin(), app.end(), [](char c) {
+        return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '.' ||
+               c == '-' || c == '+';
+    });
+    if (!shown) return "MADE WITH A NEWER TRACKWERK";
+    for (char& c : app) if (c >= 'a' && c <= 'z') c = static_cast<char>(c - 'a' + 'A');
+    return "MADE WITH TRACKWERK " + app + " - UPDATE TO OPEN";
+}
+
+// From a file's text: the refusal when it is too new for `supported`, else empty.
+inline std::string newer_file_message(const std::string& text, const FileFormat& supported) {
+    const json j = json::parse(text, nullptr, /*allow_exceptions=*/false);
+    return check_format(j, supported) == FormatCheck::TOO_NEW ? too_new_message(j) : std::string();
+}
+
+// The two numbers and the app, for files written through nlohmann::json.
+inline void stamp_format(json& j, const FileFormat& f) {
+    j["version"]   = f.version;
+    j["minReader"] = f.minReader;
+    if (!app_version().empty()) j["app"] = app_version();
+}
+
 // Values the engine indexes or divides by, checked on the raw JSON before parse_project. Every bad
 // value is one entry, worded for the log; empty = fine. A damaged song is refused unless the user asks
 // for a repair, and then parse_project / normalize_project fix each one (tempo and groove steps to the
@@ -404,6 +465,8 @@ inline std::vector<std::string> project_damages(const json& j) {
         auto it = j.find(key);
         return it != j.end() && it->is_array() ? &*it : nullptr;
     };
+    if (check_format(j, SONG_FORMAT) == FormatCheck::DAMAGED)
+        out.push_back("version or minReader is not a whole number from 0 to 1000000");
     if (bad(j, "tempo", 20, 999)) out.push_back("tempo " + j["tempo"].dump() + " outside 20..999");
     if (const json* a = pool("instruments"))
         for (size_t i = 0; i < a->size(); ++i) {
@@ -448,7 +511,9 @@ inline Project parse_project(const json& j) {
     using namespace detail;
     Project p;  // scalar members hold their field defaults; pools start EMPTY
     p.version         = get_int(j, "version", p.version);
-    p.name            = get_str(j, "name", p.name);
+    // A repaired broken version is taken as this format's, not as an old file to migrate.
+    if (auto v = j.find("version"); v != j.end() && !valid_format_number(*v)) p.version = SONG_FORMAT.version;
+    p.name           = get_str(j, "name", p.name);
     p.tempo           = bounded_tempo(get_int(j, "tempo", p.tempo));
     p.swing           = std::clamp(get_int(j, "swing", p.swing), 50, 75);
     p.transpose       = get_int(j, "transpose", p.transpose);
@@ -677,6 +742,13 @@ private:
         }
     }
 };
+
+// stamp_format, for files written through JsonWriter.
+inline void emit_format(JsonWriter& w, const FileFormat& f) {
+    w.field_int("version", f.version);
+    w.field_int("minReader", f.minReader);
+    if (!app_version().empty()) w.field_string("app", app_version());
+}
 
 namespace detail {
 
@@ -921,7 +993,8 @@ inline std::string serialize_project(const Project& p) {
     using namespace detail;
     JsonWriter w{JsonLayout::Minified};
     w.begin_object();
-    if (p.version != 0)         w.field_int("version", p.version);
+    // This app's numbers, never the file's: whatever a newer file held beyond them is gone.
+    if (p.version != 0)         emit_format(w, SONG_FORMAT);
     if (p.name != "UNTITLED")   w.field_string("name", p.name);
     if (p.tempo != 128)         w.field_int("tempo", p.tempo);
     if (p.swing != 50)          w.field_int("swing", std::clamp(p.swing, 50, 75));
@@ -1020,7 +1093,7 @@ inline std::string serialize_instrument_preset(const InstrumentPreset& ip) {
     using namespace detail;
     JsonWriter w{JsonLayout::Minified};
     w.begin_object();
-    if (ip.version != 1) w.field_int("version", ip.version);
+    emit_format(w, INSTRUMENT_FORMAT);
     w.key("instrument");
     emit_instrument(w, ip.instrument);
     if (ip.tableRows) {

@@ -101,6 +101,7 @@ class InputDispatcher {
         ASKED,     // RESUME=ASK: the RECOVER WORK? dialog is up
         RESTORED,  // RESUME=AUTO: the document is back, and dirty
         DROPPED,   // it would not parse; the file is gone
+        KEPT,      // RESUME=AUTO: a newer TrackWerk's, not loaded; the file stays
     };
 
     // An autosave that survived to launch means an unclean exit; SETTINGS → RESUME decides what to do.
@@ -369,6 +370,7 @@ class InputDispatcher {
 
     // Empty means relative paths stay relative.
     std::string mediaBaseDir_{};
+    bool autosaveTooNew_ = false;   // the last recover_from_autosave refused a newer TrackWerk's file
 
     // ⚠️ A handler here is one step, always. A held direction arrives from the shell as more presses,
     // closer together — never a bigger step.

@@ -408,8 +408,8 @@ bool studio_button(const ButtonEvent& e,AppState& s,songcore::SongcoreHost& host
     const int slot=s.studioTab==1?s.studioFxUserSlot:s.studioMasterUserSlot;
     char suffix[24];std::snprintf(suffix,sizeof(suffix),"-%02d.json",slot+1);
     const auto path=folder+(s.studioTab==1?"/Custom-FX":"/Custom-Master")+(slot==0?".json":suffix);
-    if((s.studioTab==2&&s.studioRow==13)||(s.studioTab==1&&s.studioRow==9)){std::string data;if(fs.read_file(path,data)){if(load_custom_preset(s.studioTab==1,data,host.edit_project())){changed(s,host,engine);s.studioMessage="CUSTOM PRESET LOADED";}else s.studioMessage="INVALID PRESET - SETTINGS KEPT";}else s.studioMessage="NO CUSTOM PRESET FOUND";}
-    else{songcore::json j;j["version"]=1;j["kind"]=s.studioTab==1?"effects":"master";j["master"]=host.project().studioMaster;s.studioMessage=fs.write_file(path,j.dump(2))?"CUSTOM PRESET SAVED":"SAVE FAILED - CHECK FOLDER";}
+    if((s.studioTab==2&&s.studioRow==13)||(s.studioTab==1&&s.studioRow==9)){std::string data;if(fs.read_file(path,data)){if(load_custom_preset(s.studioTab==1,data,host.edit_project())){changed(s,host,engine);s.studioMessage="CUSTOM PRESET LOADED";}else{const auto newer=songcore::newer_file_message(data,songcore::STUDIO_PRESET_FORMAT);s.studioMessage=newer.empty()?"INVALID PRESET - SETTINGS KEPT":newer;}}else s.studioMessage="NO CUSTOM PRESET FOUND";}
+    else{songcore::json j;songcore::stamp_format(j,songcore::STUDIO_PRESET_FORMAT);j["kind"]=s.studioTab==1?"effects":"master";j["master"]=host.project().studioMaster;s.studioMessage=fs.write_file(path,j.dump(2))?"CUSTOM PRESET SAVED":"SAVE FAILED - CHECK FOLDER";}
    }
    }else if(e.button==Button::B){if(s.studioBUsed)s.studioBUsed=false;else{studio_synth_stop_audition(s,host);drumlab_stop(s.drumLab,host,engine);s.drumLab.gridFocused=false;source_sampler_stop(s.sourceSampler);if(s.captureBackend&&s.capture.active())s.captureBackend->stop();s.studioOpen=false;s.studioConfirm=false;s.studioMessage.clear();engine.studioRack.punch.store(0);host.stop_preview();restore_appearance_context(s);}}
   return true;

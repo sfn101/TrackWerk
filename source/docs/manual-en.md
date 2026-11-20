@@ -1537,6 +1537,8 @@ A song whose files have gone missing from their own folders plays the copies in 
 
 A file that is not a readable song at all (not valid JSON) can't be repaired and only shows `LOAD FAILED: FILE DAMAGED`. The same box appears when RESUME finds a damaged recovery file (see SETTINGS → RESUME): A brings the work back repaired and unsaved; B starts a new empty song and deletes the recovery file, so the question doesn't come back at every launch. Samples, SoundFonts and M8 songs are never repaired.
 
+**Songs from a newer TrackWerk.** A song saved by a newer TrackWerk that holds things this version doesn't know is not loaded, because saving it here would lose them. The status says `MADE WITH TRACKWERK 1.3.0 - UPDATE TO OPEN` (the version that saved it), or `MADE WITH A NEWER TRACKWERK` when the file doesn't say. The open song stays as it was, and the file is never changed. Update TrackWerk to open it. The same happens to a recovery file from a newer TrackWerk at RESUME: it isn't loaded and isn't deleted.
+
 WAV exports are saved to `<home>/Renders/` — `<home>` being PocketTracker's home folder (section 2) — with auto-incremented filenames (`ProjectName_0001.wav`). Stems are written to a per-project subfolder — `Renders/ProjectName/ProjectName_1.wav`, `_2.wav`, … — plus `_reverb.wav` / `_delay.wav` when those sends are in use.
 
 ### The RENDER panel
@@ -2652,6 +2654,9 @@ Two details worth knowing:
 ### Project files
 
 - Format: `.ptp` (JSON with version field; old projects are migrated automatically on load)
+- Every song, instrument, scale, groove and Studio or Grain preset records the TrackWerk version that
+  saved it. A file from a newer TrackWerk that this version can't open safely is refused with
+  `MADE WITH TRACKWERK <version> - UPDATE TO OPEN` (or `MADE WITH A NEWER TRACKWERK`), and is left as it was.
 - Location: `<home>/Projects/`
 - Save: PROJECT screen → SAVE
 - Load: PROJECT screen → LOAD

@@ -14,6 +14,9 @@ Each file is damaged on purpose. Numbers are findings in `AUDIT.md`. The app mus
 | `16-negative-rate.wav` | negative sample rate | `SAMPLE FAILED: FILE DAMAGED` |
 | `17-negative-groove.ptp` | groove step -6 | `LOAD FAILED: FILE DAMAGED` |
 | `21-huge-slice-marker.ptp` | a slice marker of 1e30 | `LOAD FAILED: FILE DAMAGED` |
+| `23-broken-version.ptp` | `version` is the text `"one"` | `LOAD FAILED: FILE DAMAGED` |
+| `22-newer-song.ptp`, `-instrument.pti`, `-scale.pts`, `-studio.ptfx` | `minReader` 99, saved by TrackWerk 9.9.9 | `MADE WITH TRACKWERK 9.9.9 - UPDATE TO OPEN`, no repair offered, file untouched |
+| `22-newer-groove.ptg` | `minReader` 99, no app version | `MADE WITH A NEWER TRACKWERK` |
 | `18-several-damages.ptp` | tempo 5000 and three short phrases | asks to repair; A gives `REPAIRED: 4 FIXES` |
 
 The reason for each refusal goes to `trackwerk-log.txt`.

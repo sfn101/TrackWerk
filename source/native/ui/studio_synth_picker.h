@@ -53,11 +53,21 @@ struct StudioSynthModelGroup {
     const char* name;
     int firstModel;
     int count;
+    // A group of models that are not neighbours in the stable ID range lists them here (`count` entries); the
+    // IDs themselves never move. nullptr: the models firstModel … firstModel + count - 1.
+    const int* models = nullptr;
 };
+inline int studio_synth_group_model(const StudioSynthModelGroup& g, int item) {
+    return g.models ? g.models[item] : g.firstModel + item;
+}
+inline int studio_synth_group_index(const StudioSynthModelGroup& g, int model) {
+    for (int i = 0; i < g.count; ++i) if (studio_synth_group_model(g, i) == model) return i;
+    return -1;
+}
 
 // Sample Granular is a UI choice outside the stable oscillator ID range.
 inline constexpr int kSampleGranularModel = -1;
-const std::array<StudioSynthModelGroup, 11>& studio_synth_model_groups();
+const std::array<StudioSynthModelGroup, 12>& studio_synth_model_groups();
 int studio_synth_model_group_count();
 int studio_synth_model_group(int model);
 std::string studio_synth_preset_label(int model, int variation);

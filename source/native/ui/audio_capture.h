@@ -11,6 +11,9 @@ public:
     virtual bool start(int deviceId,int channels,int rate)=0;
     virtual void stop()=0;
     virtual std::string state_json()=0;
+    // Input monitoring: mix what is being captured into the already-open output. False where the
+    // backend cannot (the phone helper owns its own device). A backend that stops recording disables it.
+    virtual bool set_monitor(bool on){ (void)on; return false; }
 };
 struct CaptureInput {int id=0;std::string name,kind,detail;bool connected=true;};
 struct CaptureView {
@@ -21,6 +24,7 @@ struct CaptureView {
     std::string state="idle",message,path,routedName,importedPath;
     std::string inputError;
     int targetInstrument=-1;
+    bool monitor=false;   // monitor the selected external input through the output
     bool phoneDetected=false,phoneTrusted=false;
     uint64_t nextPoll=0,nextInputsPoll=0;
     bool internal_source()const{return !inputs.empty()&&inputs[std::clamp(selected,0,int(inputs.size())-1)].kind=="internal-master";}

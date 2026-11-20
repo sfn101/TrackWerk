@@ -81,7 +81,7 @@ int main(int argc, char** argv) {
     r.host.edit_project().name = "MINE";
     r.state.projectVersion = 1;   // an edit nobody saved
     r.project_cell(3);
-    check(r.state.confirm.kind == ConfirmDialogState::Kind::LOAD_DISCARD, "dirty LOAD asks first");
+    check(r.state.confirm.kind == ConfirmDialogState::Kind::LOAD_PROJECT, "dirty LOAD asks first");
     check(r.state.currentScreen != ScreenType::FILE_BROWSER, "...and the browser waits for the answer");
     r.tap(Button::B);
     check(!r.state.confirm.is_open() && r.state.project_dirty() && r.host.project().name == "MINE",
@@ -139,7 +139,7 @@ int main(int argc, char** argv) {
     r.host.edit_project().name = "MINE2";
     r.state.projectVersion++;   // unsaved work again
     r.project_cell(3);
-    check(r.state.confirm.kind == ConfirmDialogState::Kind::LOAD_DISCARD, "damaged LOAD: unsaved changes asked first");
+    check(r.state.confirm.kind == ConfirmDialogState::Kind::LOAD_PROJECT, "damaged LOAD: unsaved changes asked first");
     r.tap(Button::A);
     pick(damaged);
     check(r.state.confirm.kind == ConfirmDialogState::Kind::REPAIR_SONG, "a damaged song opens the repair box");

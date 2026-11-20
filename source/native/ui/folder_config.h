@@ -42,6 +42,13 @@ std::string resolve_browse_dir(FileSystem& fs, const std::optional<std::string>&
 // Returns how many entries moved.
 int move_old_preset_folders(FileSystem& fs);
 
+// The preset inbox: files dropped into <home>/Presets/Inbox (over USB, from a friend or a download)
+// are moved to where the app looks for them — .pti to Instruments, .ptr Reverbs, .ptd Delays, .pts
+// Scales, .ptg Grooves. A file that is not a readable preset of its kind stays in the Inbox untouched
+// and is counted in `rejected`; one whose name is taken keeps both (`NAME_2.pti`); nothing is ever
+// overwritten. The folder is created, so the place to drop files is visible. Returns the number moved.
+int import_preset_inbox(FileSystem& fs, int* rejected = nullptr);
+
 // Write a starter config.json when none exists: every section filled with what the app does now, so
 // it changes nothing until edited. Never overwrites. True if written.
 bool seed_config_template(FileSystem& fs, const ButtonBindings& keyboardDefaults,

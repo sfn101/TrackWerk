@@ -145,6 +145,13 @@ void SdlAudioEngine::set_external_audio(ExternalAudio hook, void* userdata) {
     if (device_) SDL_UnlockAudioDevice(device_);
 }
 
+void SdlAudioEngine::set_monitor_audio(ExternalAudio hook, void* userdata) {
+    if (device_) SDL_LockAudioDevice(device_);
+    monitorAudio_ = hook;
+    monitorUser_  = userdata;
+    if (device_) SDL_UnlockAudioDevice(device_);
+}
+
 void SDLCALL SdlAudioEngine::audioCallback(void* userdata, Uint8* out, int lenBytes) {
     auto* self = static_cast<SdlAudioEngine*>(userdata);
 
@@ -170,6 +177,8 @@ void SDLCALL SdlAudioEngine::audioCallback(void* userdata, Uint8* out, int lenBy
                                       float(self->sampleRate_));
         if (self->externalAudio_)
             self->externalAudio_(self->externalUser_, reinterpret_cast<float*>(out), numFrames, self->sampleRate_);
+        if (self->monitorAudio_)
+            self->monitorAudio_(self->monitorUser_, reinterpret_cast<float*>(out), numFrames, self->sampleRate_);
         return;
     }
     static uint64_t lastNs = 0, printNs = 0, maxBlk = 0, maxGap = 0, sumBlk = 0, cnt = 0, over = 0;
@@ -181,6 +190,8 @@ void SDLCALL SdlAudioEngine::audioCallback(void* userdata, Uint8* out, int lenBy
                                   float(self->sampleRate_));
     if (self->externalAudio_)
         self->externalAudio_(self->externalUser_, reinterpret_cast<float*>(out), numFrames, self->sampleRate_);
+    if (self->monitorAudio_)
+        self->monitorAudio_(self->monitorUser_, reinterpret_cast<float*>(out), numFrames, self->sampleRate_);
 
     uint64_t t1 = latency::now_ns();
     uint64_t blk = t1 - t0;

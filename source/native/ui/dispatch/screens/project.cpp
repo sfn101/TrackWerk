@@ -47,15 +47,16 @@ void InputDispatcher::leave_to(ScreenType back) {
     go_to_screen(s_, {back, s_.previousColumn});
 }
 
-void InputDispatcher::save_project_now() {
+void InputDispatcher::save_now() {
     before_save();
     const ActionResult r = save_project(host_, fs_, s_);
     if (r.ok) s_.repairedUnsaved = false;   // the damaged file is gone; later saves don't ask
     set_status(s_, r.message, r.ok);
 }
 
-void InputDispatcher::open_project_browser() {
-    open_file_browser(AppState::BrowserPurpose::LOAD_PROJECT, browser_dir(BrowserDir::PROJECTS), {"ptp", "m8s"});
+void InputDispatcher::open_project_loader() {
+    open_file_browser(AppState::BrowserPurpose::LOAD_PROJECT, browser_dir(BrowserDir::PROJECTS),
+                      {"ptp", "m8s"});
 }
 
 // ─── What A does ─────────────────────────────────────────────────────────────────────────────────
@@ -68,15 +69,19 @@ void InputDispatcher::project_action() {
 
         case ProjectRow::PROJECT:
             switch (s_.projectCursorColumn) {
-                case 1:     // SAVE: another song already at <name>.ptp asks first
-                    typed_save(QwertyContext::PROJECT_SAVE_AS, "", host_.project().name);
+                case 1:     // SAVE — another document's file of this name is never replaced unasked
+                    if (save_replaces_other(host_, fs_, s_))
+                        s_.confirm.open(ConfirmDialogState::Kind::SAVE_EXISTS,
+                                        ConfirmDialogState::COLLECT_CANCEL);
+                    else
+                        save_now();
                     break;
                 case 2:     // COPY (save as): the keyboard on <NAME>-COPY
                     open_copy_keyboard(QwertyContext::PROJECT_SAVE_AS, "", host_.project().name);
                     break;
-                case 3:     // LOAD, asking like NEW
-                    if (s_.project_dirty()) s_.confirm.open(ConfirmDialogState::Kind::LOAD_DISCARD);
-                    else                    open_project_browser();
+                case 3:     // LOAD — asks first when there is something to lose, as NEW does
+                    if (s_.project_dirty()) s_.confirm.open(ConfirmDialogState::Kind::LOAD_PROJECT);
+                    else                    open_project_loader();
                     break;
                 case 4:     // NEW
                     // Only ask if there is something to lose.
@@ -102,6 +107,11 @@ void InputDispatcher::project_action() {
             // Both open the RENDER panel; the button picks MIX or STEMS.
             if (s_.projectCursorColumn == 1)      open_render_dialog(RenderDialogState::Output::MIX);
             else if (s_.projectCursorColumn == 2) open_render_dialog(RenderDialogState::Output::STEMS);
+            else if (s_.projectCursorColumn == 3) {   // MIDI: a note sketch, no render panel and no wait
+                before_save();
+                const ActionResult r = export_midi(host_, fs_);
+                set_status(s_, r.message, r.ok);
+            }
             break;
 
         case ProjectRow::COMPACT:

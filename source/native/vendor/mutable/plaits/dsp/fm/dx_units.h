@@ -147,7 +147,13 @@ inline void LFODelay(int delay, float increments[2]) {
 inline float NormalizeVelocity(float velocity) {
   // float cube_root = stmlib::Sqrt(
   //     0.7f * stmlib::Sqrt(velocity) + 0.3f * velocity);
-  const float cube_root = stmlib::Interpolate(lut_cube_root, velocity, 16);
+  // Interpolate reads index + 1. Full MIDI velocity is the last table point,
+  // so return that endpoint directly instead of reading past the 17 values.
+  const float bounded_velocity = std::isfinite(velocity)
+      ? std::clamp(velocity, 0.0f, 1.0f) : 0.0f;
+  const float cube_root = bounded_velocity >= 1.0f
+      ? lut_cube_root[16]
+      : stmlib::Interpolate(lut_cube_root, bounded_velocity, 16);
   return 16.0f * (cube_root - 0.918f);
 }
 

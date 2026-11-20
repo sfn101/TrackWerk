@@ -124,6 +124,7 @@ void TableModule::draw_row(Canvas& c, int x, int y, int index, const TableRow& r
 }
 
 CursorContext TableModule::cursor_context(const TableState& s) const {
+    if (s.cursorRow < 0 || s.cursorRow >= static_cast<int>(s.table.rows.size())) return cc::none();
     const songcore::TableRow& row = s.table.rows[static_cast<size_t>(s.cursorRow)];
     // Never empty: A+B puts it back to 00.
     const auto fx_value = [](int value, int type) {
@@ -157,6 +158,7 @@ CursorContext TableModule::cursor_context(const TableState& s) const {
 
 TableInputResult TableModule::handle_input(songcore::Table& table, int cursor_row, int cursor_column,
                                            const InputAction& action) const {
+    if (cursor_row < 0 || cursor_row >= static_cast<int>(table.rows.size())) return {};
     TableRow&        row = table.rows[static_cast<size_t>(cursor_row)];
     TableInputResult r;
 

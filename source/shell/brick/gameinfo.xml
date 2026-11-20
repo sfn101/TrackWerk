@@ -2,10 +2,10 @@
 <gameList>
   <game>
     <path>./TrackWerk.sh</path>
-    <name>TrackWerk</name>
-    <desc>TrackWerk 0.2.0-beta.3 by Kid Bunka — independent GPL music studio for TrimUI Brick / KNULLI. Project swing, internal post-FX resampling, categorized effect/master libraries, branded materials, synthesis, sample editing, online digging, Drumlab and Punch. Earlier musical workflows user-tested; current-beta hardware acceptance remains open. Direct iPhone recording failed in the current user setup; interfaces are separately untested.</desc>
-    <image>./trackwerk/screenshot.png</image>
-    <releasedate>20261109T000000</releasedate>
+    <name>TrackWerk 1.3</name>
+    <desc>TrackWerk 1.3.0 by Kid Bunka: independent GPL music studio. New: FROGGY, a frog that sings the words you type, CROAKER, ACID BOX, REESE BASS, a synth tab with control sheets and a curated drum sample pack.</desc>
+    <image>./trackwerk/menu-cover-trackwerk-1.3.0.png</image>
+    <releasedate>20261120T000000</releasedate>
     <developer>PocketTracker contributors / TrackWerk</developer>
     <publisher>Kid Bunka public beta</publisher>
     <genre>Other</genre>

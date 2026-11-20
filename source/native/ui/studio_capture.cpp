@@ -21,6 +21,8 @@ int free_capture_slot(const AppState& s){
 void open_studio_capture(AppState& s){
  s.studioOpen=true;s.studioTab=4;s.studioRow=4;s.studioHelp=false;
  s.studioConfirm=false;s.studioAUsed=false;s.studioBUsed=false;s.studioMessage.clear();
+ // Monitoring never outlives its take: reopening the page starts with it off.
+ if(!s.capture.active()){s.capture.monitor=false;if(s.captureBackend)s.captureBackend->set_monitor(false);}
  if(s.capture.targetInstrument<0||!s.project||s.capture.targetInstrument>=int(s.project->instruments.size())||
     !songcore::instrument_is_free(s.project->instruments[s.capture.targetInstrument]))s.capture.targetInstrument=free_capture_slot(s);
  // Opening a recorder must not wait for external audio hardware. Keep an
@@ -51,6 +53,10 @@ void studio_capture_select_internal(AppState& s){
  const bool stopExternal=s.capture.active()&&!s.capture.internal_source();
  studio_capture_refresh(s,false);
  for(size_t i=0;i<s.capture.inputs.size();++i)if(s.capture.inputs[i].kind=="internal-master"){s.capture.selected=int(i);break;}
+ if(s.capture.monitor){
+  s.capture.monitor=false;
+  if(s.captureBackend)try{s.captureBackend->set_monitor(false);}catch(...){/* nothing to silence */}
+ }
  if(stopExternal&&s.captureBackend){
   try{s.captureBackend->stop();}catch(...){/* Internal mix never depends on this external driver. */}
   s.studioMessage="Input stop requested. Internal master remains available.";
@@ -90,7 +96,10 @@ bool studio_poll_capture(AppState& s,uint64_t now){
   v.phoneDetected=data.value("phoneDetected",false);v.phoneTrusted=data.value("phoneTrusted",false);
   const auto peak=[&](const char* name){const float p=data.value(name,0.f);return std::isfinite(p)?std::clamp(p,0.f,1.f):0.f;};
   v.peakL=v.receiving()?peak("peakL"):0.f;v.peakR=v.receiving()?peak("peakR"):0.f;
-  if(wasActive&&!v.active()&&v.frames>0&&!v.path.empty()&&s.studioTab==4)s.studioRow=5;
+  if(wasActive&&!v.active()){
+   if(v.monitor){v.monitor=false;try{s.captureBackend->set_monitor(false);}catch(...){}}
+   if(v.frames>0&&!v.path.empty()&&s.studioTab==4)s.studioRow=5;
+  }
   if(s.studioOpen&&s.studioTab==4&&!v.active()&&now>=v.nextInputsPoll){v.nextInputsPoll=now+2000;studio_capture_refresh(s);}
  }catch(...){v.message="Input status unavailable";}
  return true;
@@ -126,7 +135,16 @@ void studio_capture_refresh(AppState& s,bool scanExternal){
 }
 void studio_capture_action(AppState& s,songcore::SongcoreHost& host,AudioEngine& engine,FileSystem& fs){
  auto& v=s.capture;
- if(s.studioRow==6||s.studioRow==0){studio_capture_refresh(s);return;}
+ if(s.studioRow==6){
+  if(v.internal_source()){s.studioMessage="Monitor: external inputs only";return;}
+  if(!s.captureBackend){s.studioMessage="External monitoring is unavailable";return;}
+  v.monitor=!v.monitor;
+  if(!s.captureBackend->set_monitor(v.monitor)){
+   v.monitor=false;s.studioMessage="Monitoring is unavailable on this input";
+  }else s.studioMessage=v.monitor?"Monitor on: audible while recording":"Monitor off";
+  return;
+ }
+ if(s.studioRow==7||s.studioRow==0){studio_capture_refresh(s);return;}
  if(v.internal_source()){
   if(s.studioRow==4)live_resample_toggle(s,host,engine,fs);
   if(s.studioRow==5)live_resample_use(s,host,engine,fs,v.targetInstrument);
@@ -149,6 +167,9 @@ void studio_capture_action(AppState& s,songcore::SongcoreHost& host,AudioEngine&
    bool accepted=false;
    try{accepted=s.captureBackend->start(selected.id,v.channels,v.rate);}catch(...){v.state="error";v.message="Audio input could not start";}
    if(accepted)v.importedPath.clear();
+   if(accepted&&v.monitor&&!s.captureBackend->set_monitor(true)){
+    v.monitor=false;s.studioMessage="Record started; monitoring is unavailable on this input";
+   }
    v.nextPoll=0;studio_poll_capture(s,0);
    if(!accepted&&v.state!="error"&&v.state!="permission"){v.state="error";v.message="Audio input refused to start - refresh and retry";}
    return;

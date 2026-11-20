@@ -1,0 +1,1 @@
+TrackWerk 1.2.1 fixes malformed project and audio file handling: safe SoundFont routing, complete phrase rows, bounded tempo and groove timing, and checked RIFF/WAV/SF2 offsets. Includes the community Windows/MSVC build correction. Existing samples, projects, settings and app identity are retained. Install over TrackWerk 1.2.0; do not uninstall.

@@ -130,7 +130,9 @@ inline bool note_is_pitch(const Note& n) { return n.pitch >= 0; }
 // ─── Note ↔ MIDI ↔ display ──────────────────────────────────────────────────────────────────────
 inline int note_to_midi(const Note& n) {
     if (n.pitch < 0) return -1;
-    return (n.octave + 1) * 12 + n.pitch;  // C-4 = 60 (standard MIDI)
+    // Compute wide before validating corrupt/imported octave values. B-9 (131) is authored.
+    const int64_t midi = (int64_t(n.octave) + 1) * 12 + n.pitch;
+    return n.pitch <= 11 && midi >= 0 && midi <= 131 ? static_cast<int>(midi) : -1;
 }
 inline Note note_from_midi(int midi) {
     if (midi < 0 || midi > 127) return Note::EMPTY();
@@ -379,6 +381,9 @@ struct Instrument {
     // FM SYSEX's own voice, 128 packed bytes in the DX7 bank layout (studio/fm_sysex.h); absent = the
     // built-in banks. Carried by the song so it sounds the same without the .syx file it came from.
     std::optional<std::array<uint8_t,128>> fmVoice;
+    // FROGGY's words (up to 120 characters, studio/sing_text.h); empty = the built-in line. Carried by the
+    // song, each note sings the next syllable.
+    std::string lyric;
     // Optional sample-based mode. The real sampleFilePath remains the source; legacy defaults omit it.
     bool granularEnabled = false;
     studio::granular::Parameters granularParams{};

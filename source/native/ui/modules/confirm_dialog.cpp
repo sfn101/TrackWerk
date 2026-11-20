@@ -34,12 +34,13 @@ std::string confirm_dialog_title(ConfirmDialogState::Kind kind, int arg) {
         case ConfirmDialogState::Kind::CLEAN_SEQ:   return "CLEAN SEQ?";
         case ConfirmDialogState::Kind::CLEAN_INST:  return "CLEAN INST?";
         case ConfirmDialogState::Kind::NEW_PROJECT: return "NEW PROJECT?";
+        case ConfirmDialogState::Kind::LOAD_PROJECT: return "LOAD PROJECT?";
         case ConfirmDialogState::Kind::CHANGE_TYPE: return "CHANGE TYPE?";
         case ConfirmDialogState::Kind::EXIT:        return "EXIT?";
         case ConfirmDialogState::Kind::RECOVER:     return "RECOVER WORK?";
         case ConfirmDialogState::Kind::COLLECT_EXISTS: return "ALREADY IN SONGS";
+        case ConfirmDialogState::Kind::SAVE_EXISTS:    return "NAME ALREADY SAVED";
         case ConfirmDialogState::Kind::FIRST_BEAT:  return "DISCARD WORK?";
-        case ConfirmDialogState::Kind::LOAD_DISCARD:   return "UNSAVED CHANGES - LOAD ANYWAY?";
         case ConfirmDialogState::Kind::SAVE_OVERWRITE:
             switch (static_cast<QwertyContext>(arg)) {
                 case QwertyContext::INSTRUMENT_SAVE: return "INSTRUMENT EXISTS - OVERWRITE?";
@@ -115,7 +116,7 @@ void draw_confirm_dialog(Canvas& c, const ConfirmDialogState& s, const Theme& t)
         for(size_t i=0;i<s.details.size()&&i<10;++i)c.draw_text(Canvas::clip_text(s.details[i],52),30,90+static_cast<int>(i)*31,i==0?t.textTitle:t.textValue,1,2);
         return;
     }
-    if (s.kind == ConfirmDialogState::Kind::COLLECT_EXISTS)
+    if (s.is_choice())
         draw_choice_box(c, confirm_dialog_title(s.kind), {"REPLACE", "NEW COPY", "CANCEL"}, s.arg, t);
     else
         draw_confirm_box(c, confirm_dialog_title(s.kind, s.arg), t);

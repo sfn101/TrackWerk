@@ -1,0 +1,58 @@
+{
+  "version": "1.2.0",
+  "application_commit": "b24ad7abe43f6784cb8ef34dee7661db0d02dade",
+  "host_checks": 88,
+  "host_passed": true,
+  "arm_profiles": [
+    "brick",
+    "miyoo-mini",
+    "miyoo-plus",
+    "amberelec"
+  ],
+  "arm_guest_passed": true,
+  "physical_device_acceptance": false,
+  "android_upgrade_passed": true,
+  "android_version_code": 102000,
+  "package_qa_passed": true,
+  "generated_miyoo_layouts": 4,
+  "media": [
+    {
+      "name": "video",
+      "file": "TrackWerk-Handheld-Update-Review.mp4",
+      "seconds": 120,
+      "frames": 2880,
+      "decodePassed": true,
+      "faststart": true,
+      "sha256": "fdc8df82a3ab71ec83b5b6787f3290a93e3fb2d87fe39ab0fe1d055b86c12298",
+      "loudnessLUFS": -16.85,
+      "truePeakDBTP": -1.18
+    },
+    {
+      "name": "short",
+      "file": "TrackWerk-Update-YouTube-Short.mp4",
+      "seconds": 60,
+      "frames": 1440,
+      "decodePassed": true,
+      "faststart": true,
+      "sha256": "4ec45502b0c918416e81b82b1e17afe630182884a60d391eab9b3f3a5de4da52",
+      "loudnessLUFS": -16.44,
+      "truePeakDBTP": -1.18
+    },
+    {
+      "name": "reel",
+      "file": "TrackWerk-Update-Instagram-Reel.mp4",
+      "seconds": 60,
+      "frames": 1440,
+      "decodePassed": true,
+      "faststart": true,
+      "sha256": "299b50abfcc2da331bee554410317836b5c7bea974f8b51e101eea7092669db6",
+      "loudnessLUFS": -16.44,
+      "truePeakDBTP": -1.18
+    }
+  ],
+  "limitations": [
+    "Physical USB/iPhone remains unconfirmed",
+    "Linux final desktop UI Save/Open/Export and x86-64 execution remain unconfirmed",
+    "Guest tests do not prove physical display/input/audio or performance"
+  ]
+}

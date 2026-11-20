@@ -1,4 +1,7 @@
 #include "linux/sample-recorder.h"
+#include "linux/monitor-ring.h"
+#include "studio/pitch_track.h"
+#include "studio/mic_pitch.h"
 #include "linux/usb-audio-diagnosis.h"
 
 #include <SDL.h>
@@ -149,6 +152,12 @@ struct SdlSampleRecorder::Impl {
         if (inputWorker.joinable()) inputWorker.join();
         std::fprintf(stderr, "capture: shutdown discovery worker returned\n");
     }
+    // Monitoring: see monitor-ring.h (a lock-free ring from this worker to the output callback, with
+    // drift following so a late chunk does not leave a gap).
+    MonitorRing monitor;
+    studio::PitchTracker pitch;   // the pitch of what is heard, for FROGGY's Mic pitch source
+    std::vector<float> pitchScratch;
+
     std::filesystem::path directory;
     std::mutex lifecycle, stateMutex, inputMutex, probeMutex;
     std::condition_variable inputWake;
@@ -315,7 +324,7 @@ struct SdlSampleRecorder::Impl {
         SDL_AudioDeviceID device = 0;
         std::unique_ptr<WavWriter> writer;
         std::string name;
-        std::string failure, finishMessage = "Recording ready; no input monitoring";
+        std::string failure, finishMessage = "Recording ready";
         try {
             if (!stopRequested.load()) {
                 std::error_code ec;
@@ -330,7 +339,8 @@ struct SdlSampleRecorder::Impl {
                 if (!found) throw std::runtime_error("Selected input is no longer connected; refresh inputs (USB requires OS support)");
                 SDL_AudioSpec want{}, got{};
                 want.freq = rate; want.format = AUDIO_S16LSB;
-                want.channels = static_cast<Uint8>(channels); want.samples = 1024;
+                // 512 frames ≈ 10.7 ms: the monitor should not add a second period of its own.
+                want.channels = static_cast<Uint8>(channels); want.samples = 512;
                 beginDriver("open", requestedId);
                 device = SDL_OpenAudioDevice(name.empty() ? nullptr : name.c_str(), SDL_TRUE, &want, &got, 0);
                 endDriver("open", requestedId);
@@ -358,6 +368,19 @@ struct SdlSampleRecorder::Impl {
                     const size_t aligned = gotBytes - gotBytes % frameBytes;
                     if (aligned) {
                         lastFramesAt = now;
+                        // Monitoring sees every captured frame, including those past the WAV limit.
+                        monitor.push(buffer.data(), aligned / frameBytes, channels, rate);
+                        {   // the first channel, as float, into the pitch tracker (cheap: one small window every 21 ms)
+                            const size_t frames = aligned / frameBytes;
+                            pitchScratch.resize(frames);
+                            for (size_t f = 0; f < frames; ++f) {
+                                int v = buffer[f * frameBytes] | (static_cast<int>(buffer[f * frameBytes + 1]) << 8);
+                                if (v >= 32768) v -= 65536;
+                                pitchScratch[f] = static_cast<float>(v) / 32768.f;
+                            }
+                            const auto heard = pitch.feed(pitchScratch.data(), frames, rate);
+                            if (heard.fresh) studio::mic_pitch_publish(heard.confidence > .7f ? heard.hz : 0.f);
+                        }
                         if (!writer) writer = std::make_unique<WavWriter>(directory, rate, channels);
                         const uint64_t left = static_cast<uint64_t>(rate) * kMaxSeconds - writer->frames;
                         const size_t used = static_cast<size_t>(std::min<uint64_t>(aligned, left * frameBytes));
@@ -372,7 +395,9 @@ struct SdlSampleRecorder::Impl {
                         }
                         update([&](Status& s) {
                             s.state = stopRequested.load() ? "stopping" : "recording";
-                            s.message = "Recording PCM16; software monitoring off";
+                            s.message = monitor.enabled()
+                                            ? "Recording PCM16; monitoring on"
+                                            : "Recording PCM16";
                             s.path = writer->path; s.frames = writer->frames;
                             s.routedId = requestedId;
                             s.routedName = name.empty() ? "System default (route managed by SDL)" : name;
@@ -419,6 +444,11 @@ struct SdlSampleRecorder::Impl {
             endDriver("close", requestedId);
         }
         if (driverTimedOut.load() && failure.empty()) failure = "Input driver timed out; recording stopped and any valid partial take was kept";
+        // No monitor audio outlives its take: the next recording starts from a flushed ring.
+        monitor.disable();
+        monitor.producer_reset();
+        studio::mic_pitch_publish(0.f);
+        pitch.reset();
         {
             // Publishing a completed take and allowing the next start are one
             // transition. A UI poll must not see READY then have start refused
@@ -465,7 +495,7 @@ bool SdlSampleRecorder::start(int id, int channels, int rate) {
     s.driverTimedOut.store(false);
     s.update([&](Status& status) {
         status = Status{}; status.state = "starting";
-        status.message = "Checking selected input in background; software monitoring off";
+        status.message = "Opening the selected input";
         status.rate = rate; status.channels = channels; status.requestedId = id;
     });
     s.running.store(true);
@@ -483,5 +513,16 @@ void SdlSampleRecorder::stop() {
             status.state = "stopping"; status.message = "Finishing WAV recording";
         }
     });
+}
+bool SdlSampleRecorder::set_monitor(bool on) {
+    auto& m = impl_->monitor;
+    if (m.enabled() != on) std::fprintf(stderr, "capture: monitor %s\n", on ? "on" : "off");
+    // The indices belong to the worker and the output callback; this (UI) thread only flips the switch.
+    if (on) m.enable(); else m.disable();
+    return true;
+}
+void SdlSampleRecorder::render_monitor(float* stereo, int frames, int sampleRate) {
+    if (!impl_ || !stereo || frames <= 0) return;
+    impl_->monitor.render(stereo, frames, sampleRate);
 }
 } // namespace ptshell

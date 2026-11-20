@@ -1,0 +1,33 @@
+{
+  "version": 4,
+  "name": "TrackWerk-1.3.0-Anbernic-H700-KNULLI-Community-Test.zip",
+  "items": [
+    "TrackWerk.sh",
+    "trackwerk"
+  ],
+  "items_opt": [],
+  "attr": {
+    "title": "TrackWerk",
+    "porter": [
+      "Kid Bunka"
+    ],
+    "desc": "TrackWerk 1.3.0 community test for Anbernic H700 handhelds (RG40XX V first) with KNULLI. Not yet run on a device.",
+    "desc_md": null,
+    "inst": "Extract the full ZIP into roms/ports. No PortMaster startup dependency. Needs KNULLI Scarab or newer.",
+    "inst_md": null,
+    "genres": [
+      "other"
+    ],
+    "image": null,
+    "rtr": true,
+    "exp": true,
+    "runtime": [],
+    "store": [],
+    "availability": "full",
+    "reqs": [],
+    "arch": [
+      "aarch64"
+    ],
+    "min_glibc": "2.31"
+  }
+}

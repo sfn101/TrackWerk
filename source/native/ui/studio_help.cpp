@@ -16,6 +16,8 @@ constexpr const char* pages[]={"Workflow","Controls","Current context"};
 std::string short_text(const std::string& s,int chars=74){return Canvas::clip_text(s,chars);}
 std::string control_hint(std::string name,int model=-1) {
     for(char& c:name)c=static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    // XY pad page: the cards are named "X  <macro>" and "Y  <macro>".
+    if(name.size()>3&&(name[0]=='x'||name[0]=='y')&&name[1]==' '&&name[2]==' ')return "Hold L + D-pad to move the dot: X and Y are the first two macros.";
     // FM SYSEX: its own meanings of Brightness, Envelope, Velocity, Bank and Voice.
     if(model==studio::kFmSysexModel){
         if(name=="brightness")return "Brightness turns the modulators up or down. As stored at the centre.";
@@ -23,6 +25,62 @@ std::string control_hint(std::string name,int model=-1) {
         if(name=="velocity")return "Velocity is the key strength the voice responds to, as on the original keyboard.";
         if(name=="bank")return "Bank: three built-in banks, then the .syx files of the SysEx folder (DX7 format).";
         if(name=="voice")return "Voice picks one of the bank's 32 voices. The song keeps a copy of it.";
+    }
+    // ACID BOX and REESE BASS: the two bass engines.
+    if(model==studio::kAcidBoxModel){
+        if(name=="cutoff")return "Cutoff is where the filter starts. The envelope sweeps up from here.";
+        if(name=="resonance")return "Resonance makes the filter squelch. High values ring and whistle.";
+        if(name=="env mod")return "Env mod is how far each note sweeps the filter. Zero is a plain bass.";
+        if(name=="wave")return "Wave: saw is bright and buzzy, square is hollow and round.";
+        if(name=="decay")return "Decay is how fast the sweep falls back after each note.";
+        if(name=="accent")return "Accent makes the note louder and its sweep wider. Pair it with steps.";
+        if(name=="squash")return "Squash saturates the sound before the filter. More means more bite.";
+        if(name=="sub")return "Sub adds a soft sine an octave below to fill out the bottom.";
+    }
+    if(model==studio::kReeseBassModel){
+        if(name=="detune")return "Detune spreads the saws apart. The wider, the slower the beating.";
+        if(name=="cutoff")return "Cutoff sets how dark the bass is. Low values give a growl.";
+        if(name=="movement")return "Movement makes the filter and the detune breathe with the drift.";
+        if(name=="voices")return "Voices: two saws for a tight sound, three for a thick one.";
+        if(name=="sub")return "Sub adds a sine an octave below. Keep it up for a heavy floor.";
+        if(name=="squash")return "Squash saturates the saws before the filter for grit.";
+        if(name=="drift speed")return "Drift speed is how fast the movement turns, from slow tides to wobble.";
+    }
+    // FROGGY: the singer. Each line stays within the help width and uses no apostrophes.
+    if(model==studio::kSingFrogModel){
+        if(name=="mouth")return "Mouth opens the jaw: more of the first formant, a rounder ah.";
+        if(name=="breath")return "Breath adds a whisper of air to the voice, up to a full whisper.";
+        if(name=="throat")return "Throat makes the whole voice bigger and deeper, or small and bright.";
+        if(name=="voice")return "Voice picks frog, man, woman or child: the size of the throat.";
+        if(name=="croak")return "Croak chops the sound into quacks and dips the pitch. Frog likes it.";
+        if(name=="vibrato")return "Vibrato wobbles the pitch a little once the note has settled.";
+        if(name=="glide")return "Glide is how slowly the mouth moves from one sound to the next.";
+        if(name=="coda")return "Coda is when the last consonants arrive. Off keeps the vowel held.";
+        if(name=="syllable")return "Syllable: Auto sings the next one each note. A number pins one.";
+        if(name=="lyrics")return "Lyrics: A+Right opens the keyboard. Spell it the way it sounds.";
+        if(name=="pitch source")return "Pitch source: Note uses the key you play. Mic sings the pitch you hum into the recorder.";
+    }
+    // CROAKER: the croaker.
+    if(model==studio::kFrogVoiceModel){
+        if(name=="croak")return "Croak sets how fast the frog croaks, from slow ribbits to a rattle.";
+        if(name=="throat")return "Throat sets the size of the throat: small and bright, or big and deep.";
+        if(name=="dip")return "Dip bends the pitch down inside every pulse of the croak.";
+        if(name=="species")return "Species: tree frog, bullfrog, toad or peeper. Each has its own throat.";
+        if(name=="pulses")return "Pulses is how many pops one croak has: ri-bbit has two.";
+        if(name=="croak depth")return "Croak depth is how deep the gaps between the pops are cut.";
+        if(name=="chirp")return "Chirp adds a short pitch swoop to each pop.";
+        if(name=="bubble")return "Bubble blows noise through the throat, like air under water.";
+    }
+    // DUB SIREN: the wail. Every line stays within the help width and uses no apostrophes.
+    if(model==studio::kDubSirenModel){
+        if(name=="lfo rate")return "LFO rate sets how fast the pitch wails: a slow swell to a quick trill.";
+        if(name=="lfo depth")return "LFO depth sets how far the LFO bends the pitch, up to 1.5 octaves.";
+        if(name=="sweep")return "Sweep slides the pitch while held: down below the centre, up above.";
+        if(name=="wave")return "Wave picks sine, square, falling saw or triangle for the siren tone.";
+        if(name=="lfo shape")return "LFO shape: triangle, square, saws, warble, pulse, steps or random.";
+        if(name=="sweep time")return "Sweep time is how long the slide takes to reach its full octave.";
+        if(name=="fine tune")return "Fine tune detunes the siren by up to half a semitone either way.";
+        if(name=="ping")return "Ping adds a short sonar blip at the start of every note. Off at zero.";
     }
     if(name=="attack")return "Attack sets the fade-in time after the note starts.";
     if(name=="decay")return "Decay sets the transition from the peak to sustain.";

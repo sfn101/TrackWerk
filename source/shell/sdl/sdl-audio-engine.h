@@ -49,6 +49,10 @@ class SdlAudioEngine : public AudioBackend {
     using ExternalAudio = void (*)(void*, float*, int, int);
     void set_external_audio(ExternalAudio hook, void* userdata);
 
+    // A second mixer, after the external one: input monitoring (the recorder's ring). Separate so a
+    // source preview and a live input can sound at once; both must only add to the buffer.
+    void set_monitor_audio(ExternalAudio hook, void* userdata);
+
     // Strict: an AUDIODEV that will not open fails the open, instead of the usual quiet retry on the
     // default device (Linux USB outputs: a USB card that fails must not look like it plays).
     void set_strict_route(bool strict) { strictRoute_ = strict; }
@@ -66,6 +70,8 @@ class SdlAudioEngine : public AudioBackend {
     int               pinnedRate_   = 0;
     ExternalAudio     externalAudio_ = nullptr;
     void*             externalUser_ = nullptr;
+    ExternalAudio     monitorAudio_  = nullptr;
+    void*             monitorUser_   = nullptr;
     bool              strictRoute_  = false;
     std::string       openedAudiodev_;
 };

@@ -1,9 +1,6 @@
 {
-  "version": "1.2.0",
-  "version_code": 102000,
-  "reviewed_application_commit": "b24ad7abe43f6784cb8ef34dee7661db0d02dade",
-  "compiled_files_changed_after_compile": false,
-  "files": 8273,
-  "manifest_sha256": "24beacbf8828cdf052a4e707faf2030364fc46e6fb7ada55b1120e02b1758fd9",
-  "scope": "source/ subtree; packaging recipes are in release-tools/1.2"
+  "version": "1.3.0",
+  "code_tree": "118becf0cee4939e83c437a5bda9d02a7ae8542f",
+  "program_code_matches_frozen_tree": true,
+  "source_archive": "TrackWerk-1.3.0-Source.zip"
 }

@@ -186,6 +186,11 @@ void handle_button(const ButtonEvent& e, Dispatcher& d, MapperState& ms, uint64_
 
     if (e.button != Button::SELECT) ms.selectPressedAlone = false;
 
+    // A cursor move ends the A,A window: an A on the next cell is a new A, not a double-tap. Without
+    // this, A · DOWN · A within 300 ms arrived as A_A on another cell, which every A_A handler drops
+    // (`take_double_tap` wants the same cell; the browser has none) — fast row-by-row entry lost input.
+    if (direction && !m.a && !m.b && !m.l && !m.r && !m.select) ms.lastAPress = 0;
+
     // SELECT may open help; leave the current audition alone while reading it.
     if (e.button != Button::START && e.button != Button::SELECT && !m.a) d.on_stop_preview();
 

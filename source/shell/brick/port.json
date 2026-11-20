@@ -1,6 +1,6 @@
 {
   "version": 4,
-  "name": "TrackWerk-0.9-Brick-KNULLI.zip",
+  "name": "TrackWerk-1.3.0-Brick-KNULLI-First-Install.zip",
   "items": [
     "TrackWerk.sh",
     "trackwerk"
@@ -11,7 +11,7 @@
     "porter": [
       "Kid Bunka"
     ],
-    "desc": "TrackWerk 0.2.0-beta.3: native TrimUI Brick/KNULLI music studio with project swing, internal post-FX resampling, categorized effect/master libraries, expanded synthesis and 40 designs. Direct iPhone USB recording failed in current user tests; class-compliant interfaces remain separately untested.",
+    "desc": "TrackWerk 1.3.0: native TrimUI Brick/KNULLI music studio with project swing, internal post-FX resampling, categorized effect/master libraries, expanded synthesis and 40 designs. Direct iPhone USB recording failed in current user tests; class-compliant interfaces remain separately untested.",
     "desc_md": null,
     "inst": "New installs: extract the full ZIP into roms/ports. Existing installs: use the verified Program-Factory-Update kit to preserve launcher, helpers, settings, controls and all user data. Factory additions copy only missing presets. No PortMaster startup dependency.",
     "inst_md": null,

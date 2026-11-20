@@ -17,6 +17,7 @@
 namespace pt::ui {
 namespace {
 int extra_pages(const AppState& s){return (studio::synth_param_count(s.studioModel)+2)/3;}
+// 0 oscillator, 1 engine pages, 2 filter, 3 amplifier, 4 ADSR, 5 XY pad (the first two macros on one surface).
 int kind(const AppState& s){const int n=extra_pages(s);return s.studioSynthPage==0?0:s.studioSynthPage<=n?1:s.studioSynthPage-n+1;}
 int extra_index(const AppState& s,int i){return (s.studioSynthPage-1)*3+i;}
 std::string patch_uri(const AppState& s){return s.studioSynthCustom?studio::custom_uri(s.studioModel,s.studioHarmonics,s.studioTimbre,s.studioMorph):studio::uri(studio::preset_code(s.studioModel,s.studioVariation));}
@@ -34,6 +35,39 @@ songcore::ModSlot* edit_envelope(songcore::Instrument& ins){
  if(auto* m=const_cast<songcore::ModSlot*>(envelope(ins))){m->type=songcore::ModType::ADSR;return m;}
  for(auto& m:ins.modSlots)if(m.type==songcore::ModType::NONE){m=songcore::ModSlot{};m.type=songcore::ModType::ADSR;m.dest=songcore::ModDest::VOLUME;return &m;}
  return nullptr;
+}
+// FROGGY's lyric templates: the .txt files of Presets/Lyrics, by name. The first look at an empty folder writes a few
+// starter lines (public domain or our own); nothing is ever overwritten. A file's first 120 characters count.
+struct LyricTemplate{std::string name,text;};
+std::vector<LyricTemplate> lyric_templates(FileSystem* fs){
+ std::vector<LyricTemplate> out;
+ if(!fs)return out;
+ const std::string dir=fs->make_app_folder("Presets/Lyrics");
+ if(dir.empty())return out;
+ auto entries=fs->list_files(dir);
+ const auto is_txt=[](const FileInfo& f){
+  if(f.isDirectory||f.isAction||f.isRoot)return false;
+  std::string e=f.extension;for(auto& ch:e)ch=char(std::tolower(static_cast<unsigned char>(ch)));
+  return e=="txt";};
+ bool any=false;for(const auto& e:entries)if(is_txt(e))any=true;
+ if(!any){
+  static const char* starters[][2]={{"Pond Song","la la ribbit ribbit quack la la"},{"Hello Frog","hello hello i am a frog"},
+   {"Counting","one two three four five six seven eight"},{"Do Re Mi","do re mi fa so la ti do"},
+   {"Row Boat","row row row your boat gently down the stream"},{"Rain","rain rain go away come again another day"}};
+  for(const auto& st:starters)fs->write_file(dir+"/"+st[0]+".txt",std::string(st[1])+"\n");
+  entries=fs->list_files(dir);
+ }
+ for(const auto& e:entries){
+  if(!is_txt(e)||e.size>4096)continue;
+  std::string content;if(!fs->read_file(e.path,content))continue;
+  for(auto& ch:content)if(ch=='\n'||ch=='\r'||ch=='\t')ch=' ';
+  while(!content.empty()&&content.back()==' ')content.pop_back();
+  size_t first=content.find_first_not_of(' ');if(first==std::string::npos)continue;
+  content=studio::sing::utf8_cut(content.substr(first),size_t(studio::sing::kMaxTextChars));
+  out.push_back({e.name_without_extension(),content});
+ }
+ std::sort(out.begin(),out.end(),[](const LyricTemplate& a,const LyricTemplate& b){return a.name<b.name;});
+ return out;
 }
 // FM SYSEX: the bank and voice the draft plays — its parameters, else its named sound's.
 std::array<int,2> fm_selection(const AppState& s){
@@ -86,7 +120,7 @@ bool publish(AppState& s,songcore::SongcoreHost& host,AudioEngine& engine,bool c
   const auto oldAutoName=(oldCode&studio::kCustomFlag)?std::string(studio::model_name(studio::preset_model(oldCode)))+" / CUSTOM":studio::preset_name(oldCode);
   const bool autoName=before.name==oldAutoName||songcore::instrument_has_default_name(before);
   const auto uri=patch_uri(s);
-  if(!host.update_studio_synth(s.currentInstrument,uri,s.studioDraft.studioSynthParams,&s.studioDraft.fmVoice)){
+  if(!host.update_studio_synth(s.currentInstrument,uri,s.studioDraft.studioSynthParams,&s.studioDraft.fmVoice,&s.studioDraft.lyric)){
    s.studioLiveBound=false;s.studioBoundUri.clear();
    s.studioMessage="Synth source unavailable. Apply the draft to reload the slot.";return false;
   }
@@ -168,7 +202,7 @@ void select_preset(AppState& s,songcore::SongcoreHost& host,AudioEngine& engine,
 void preview_picker_choice(AppState& s,songcore::SongcoreHost& host){
  auto& picker=s.studioSynthPicker;
  const bool modelPicker=picker.mode==StudioSynthPickerMode::Model;
- const int model=modelPicker?studio_synth_model_groups()[picker.group].firstModel+picker.item:s.studioModel;
+ const int model=modelPicker?studio_synth_group_model(studio_synth_model_groups()[picker.group],picker.item):s.studioModel;
  if(model==kSampleGranularModel){
   if(picker.previewSounding)host.stop_preview(true);
   picker.previewSounding=false;
@@ -252,38 +286,40 @@ void follow_slot(AppState& s){
 }
 }
 
-const std::array<StudioSynthModelGroup,11>& studio_synth_model_groups(){
+const std::array<StudioSynthModelGroup,12>& studio_synth_model_groups(){
  constexpr int gravityStart=studio::kOctaveOrbitModel+1;
  constexpr int spectralStart=studio::kSpectralFirstModel;
- constexpr int voiceStart=studio::kVoiceFirstModel;
- constexpr int vintageStart=studio::kVintageFirstModel;
- static const std::array<StudioSynthModelGroup,11> groups{{
+ // The tabs are for finding a sound, not for remembering where it came from: a sung voice and a croaking frog sit
+ // together under Voices, the bass engines under Low End. The model IDs never move; a tab lists them.
+ static constexpr int voices[]={studio::kFormantChoirModel,studio::kFrogVoiceModel,studio::kSingFrogModel};
+ static constexpr int lowEnd[]={studio::kDubSirenModel,studio::kAcidBoxModel,studio::kReeseBassModel};
+ static const std::array<StudioSynthModelGroup,12> groups{{
   {"Sample Granular",kSampleGranularModel,1},
-  {"Plaits",0,24},
-  {"Braids",24,48},
-  {"Rings",72,6},
-  {"Elements",78,16},
+  {"Plaits: Macro",0,24},
+  {"Braids: Digital",24,48},
+  {"Rings: Strings",72,6},
+  {"Elements: Modal",78,16},
   {"Grain Oscillators",94,8},
   {"Studio DSP",102,std::min(studio::model_count(),gravityStart)-102},
   {"Gravity",gravityStart,std::max(0,std::min(studio::model_count(),spectralStart)-gravityStart)},
-  {"Spectral",spectralStart,std::max(0,std::min(studio::model_count(),voiceStart)-spectralStart)},
-  {"Voice",voiceStart,std::max(0,std::min(studio::model_count(),vintageStart)-voiceStart)},
-  // New engines register after the Vintage models; the tab appears once the first one exists.
-  {"Vintage",vintageStart,std::max(0,studio::model_count()-vintageStart)},
+  {"Spectral",spectralStart,std::max(0,std::min(studio::model_count(),studio::kVoiceFirstModel)-spectralStart)},
+  {"Voices and Frogs",studio::kFormantChoirModel,3,voices},
+  {"Vintage Chips",studio::kSidChipModel,3},
+  {"Low End and Sirens",studio::kDubSirenModel,3,lowEnd},
  }};
  return groups;
 }
 
 int studio_synth_model_group_count(){
  const auto& groups=studio_synth_model_groups();
- return static_cast<int>(groups.size())-(groups.back().count==0?1:0);
+ return static_cast<int>(groups.size())-(groups.back().count==0?1:0);   // an empty last tab stays hidden
 }
 
 int studio_synth_model_group(int model){
  const auto& groups=studio_synth_model_groups();
  for(std::size_t i=0;i<groups.size();++i){
   const auto& g=groups[i];
-  if(model>=g.firstModel&&model<g.firstModel+g.count)return static_cast<int>(i);
+  if(studio_synth_group_index(g,model)>=0)return static_cast<int>(i);
  }
  return 1;
 }
@@ -316,7 +352,7 @@ bool studio_synth_open_picker_for_row(AppState& s,songcore::SongcoreHost& host){
   const int current=granular?kSampleGranularModel:s.studioModel;
   picker.group=studio_synth_model_group(current);
   const auto& group=studio_synth_model_groups()[picker.group];
-  picker.item=std::clamp(current-group.firstModel,0,group.count-1);
+  picker.item=std::clamp(studio_synth_group_index(group,current),0,group.count-1);
  }else{
   picker.mode=StudioSynthPickerMode::Preset;
   picker.item=std::clamp(s.studioVariation,0,studio::variation_count()-1);
@@ -450,7 +486,7 @@ bool studio_synth_picker_button(const ButtonEvent& e,AppState& s,songcore::Songc
    if(factory){use_sound(s,host,fs);return true;}
    const auto mode=picker.mode;
    const int chosen=mode==StudioSynthPickerMode::Model?
-    studio_synth_model_groups()[picker.group].firstModel+picker.item:picker.item;
+    studio_synth_group_model(studio_synth_model_groups()[picker.group],picker.item):picker.item;
    studio_synth_stop_audition(s,host);
    if(browser)close_browser(s);else studio_synth_close_picker(s);
    if(mode==StudioSynthPickerMode::Model){
@@ -519,17 +555,23 @@ bool studio_synth_live(const AppState& s){
  return ins.instrumentType==songcore::InstrumentType::SAMPLER&&ins.sampleId>=0&&ins.sampleId<256&&
   ins.sampleFilePath&&*ins.sampleFilePath==s.studioBoundUri;
 }
-int studio_synth_page_count(const AppState& s){return sample_granular_studio(s)?sample_granular_page_count():1+extra_pages(s)+3;}
+int studio_synth_page_count(const AppState& s){return sample_granular_studio(s)?sample_granular_page_count():1+extra_pages(s)+4;}
 std::string studio_synth_page_name(const AppState& s){
  if(sample_granular_studio(s))return sample_granular_page_name(s);
- switch(kind(s)){case 0:return "Oscillator";case 1:return "Engine "+std::to_string(s.studioSynthPage)+" / "+std::to_string(extra_pages(s));case 2:return "Filter / Drive";case 3:return "Amplifier / Tune";default:return "ADSR envelope";}
+ // The frog models name their pages by what is on them, not by the engine's anatomy.
+ if(studio_synth_frog_model(s)){
+  static const char* sing[]={"Words","Voice","Timing"};static const char* frog[]={"Frog","Croak","Air"};
+  if(kind(s)==0)return "Stage";
+  if(kind(s)==1&&s.studioSynthPage>=1&&s.studioSynthPage<=3)return std::string(s.studioModel==studio::kSingFrogModel?sing[s.studioSynthPage-1]:frog[s.studioSynthPage-1])+"   "+std::to_string(s.studioSynthPage)+" / "+std::to_string(extra_pages(s));
+ }
+ switch(kind(s)){case 0:return "Oscillator";case 1:return "Engine "+std::to_string(s.studioSynthPage)+" / "+std::to_string(extra_pages(s));case 2:return "Filter / Drive";case 3:return "Amplifier / Tune";case 5:return "XY pad";default:return "ADSR envelope";}
 }
-int studio_synth_control_count(const AppState& s){if(sample_granular_studio(s))return sample_granular_control_count(s);switch(kind(s)){case 0:return studio::macro_count(s.studioModel);case 1:return std::clamp(studio::synth_param_count(s.studioModel)-extra_index(s,0),0,3);case 3:return 3;default:return 4;}}
+int studio_synth_control_count(const AppState& s){if(sample_granular_studio(s))return sample_granular_control_count(s);switch(kind(s)){case 0:return studio::macro_count(s.studioModel);case 1:return std::clamp(studio::synth_param_count(s.studioModel)-extra_index(s,0),0,3);case 3:return 3;case 5:return 2;default:return 4;}}
 int studio_synth_apply_row(const AppState& s){return std::max(6,3+studio_synth_control_count(s));}
 std::string studio_synth_control_label(const AppState& s,int i){
  if(sample_granular_studio(s))return sample_granular_control_label(s,i);
  if(i<0||i>=studio_synth_control_count(s))return {};
- switch(kind(s)){case 0:return studio::macro_name(s.studioModel,i);case 1:return studio::synth_param_name(s.studioModel,extra_index(s,i));case 2:{const char* n[]={"Filter type","Cutoff","Resonance","Drive"};return n[i];}case 3:{const char* n[]={"Level","Pan","Fine tune"};return n[i];}default:{const char* n[]={"Attack","Decay","Sustain","Release"};return n[i];}}
+ switch(kind(s)){case 0:return studio::macro_name(s.studioModel,i);case 1:return studio::synth_param_name(s.studioModel,extra_index(s,i));case 2:{const char* n[]={"Filter type","Cutoff","Resonance","Drive"};return n[i];}case 3:{const char* n[]={"Level","Pan","Fine tune"};return n[i];}case 5:return std::string(i==0?"X  ":"Y  ")+studio::macro_name(s.studioModel,i);default:{const char* n[]={"Attack","Decay","Sustain","Release"};return n[i];}}
 }
 int studio_synth_control_level(const AppState& s,int i){
  if(sample_granular_studio(s))return sample_granular_control_level(s,i);
@@ -538,6 +580,7 @@ int studio_synth_control_level(const AppState& s,int i){
  case 1:{const int x=extra_index(s,i),v=p.studioSynthParams[x];return v<0?studio::synth_param_default(s.studioModel,x):v;}
  case 2:{const int v[]={filter_index(p)*85,p.filterCut,p.filterRes,p.drive};return v[i];}
  case 3:{const int v[]={p.volume,p.pan,p.detune};return v[i];}
+ case 5:{const int v[]={s.studioHarmonics,s.studioTimbre};return v[i];}
  default:{const auto* m=envelope(p);if(!m)return 0;const int v[]={m->attack,m->decay,m->sustain,m->release};return v[i];}}
 }
 std::string studio_synth_control_value(const AppState& s,int i){
@@ -551,6 +594,11 @@ std::string studio_synth_control_value(const AppState& s,int i){
  }
  if(kind(s)==1&&s.studioModel==studio::kFmSysexModel&&extra_index(s,i)==studio::kFmBankParam)return fm_bank_label(s);
  if(kind(s)==1&&s.studioModel==studio::kFmSysexModel&&extra_index(s,i)==studio::kFmVoiceParam)return fm_voice_label(s);
+ if(kind(s)==1&&s.studioModel==studio::kSingFrogModel&&extra_index(s,i)==studio::kSingLyricParam){
+  const std::string& text=s.studioDraft.lyric;
+  if(text.empty())return "ribbit ribbit quack...";
+  return text.size()>22?text.substr(0,21)+"~":text;
+ }
  if(kind(s)==1)return studio::synth_param_value(s.studioModel,extra_index(s,i),s.studioDraft.studioSynthParams[extra_index(s,i)]);
  if(kind(s)==2&&i==0){const char* n[]={"Off","Low pass","High pass","Band pass"};return n[filter_index(s.studioDraft)];}
  if(kind(s)==3&&i==1){if(std::abs(v-128)<=1)return "Center";return std::to_string(std::abs(v-128)*100/128)+(v<128?" % L":" % R");}
@@ -584,6 +632,49 @@ void studio_synth_sync_target(AppState& s){
   open_studio_synth(s,s.project->instruments[s.currentInstrument]);s.studioRow=std::clamp(row,0,studio_synth_apply_row(s));
   s.studioAUsed=a;s.studioBUsed=b;s.studioShortcutRelease=shortcut;s.studioHelp=help;
  }
+}
+// The frog models show their stage on the FIRST page too (it is their gimmick), so the firefly moves there as well.
+bool studio_synth_frog_model(const AppState& s){return s.studioModel==studio::kFrogVoiceModel||s.studioModel==studio::kSingFrogModel;}
+bool studio_synth_xy_page(const AppState& s){return !sample_granular_studio(s)&&(kind(s)==5||(kind(s)==0&&studio_synth_frog_model(s)));}
+// Hold L (the audition) and press the D-pad: the dot moves, the sound follows at once. X is the first
+// macro and Y the second; up raises Y. Each press is one step, and holding repeats it.
+void studio_synth_xy_move(AppState& s,songcore::SongcoreHost& host,AudioEngine& engine,Button button){
+ if(!studio_synth_xy_page(s))return;
+ studio_synth_sync_target(s);s.studioConfirm=false;
+ constexpr int step=4;
+ const int dx=button==Button::DPAD_RIGHT?1:button==Button::DPAD_LEFT?-1:0,dy=button==Button::DPAD_UP?1:button==Button::DPAD_DOWN?-1:0;
+ s.studioHarmonics=std::clamp(s.studioHarmonics+dx*step,0,255);s.studioTimbre=std::clamp(s.studioTimbre+dy*step,0,255);
+ s.studioSynthCustom=true;publish(s,host,engine,false);
+}
+// Where the pad is drawn (studio_view.cpp keeps the same numbers): the plain pad, or the frog stage beside three cards
+// on the first page, or wide beside two on the last.
+static bool pad_rect(const AppState& s,int& x,int& y,int& w,int& h,bool& frog){
+ y=254;h=92;frog=studio_synth_frog_model(s);
+ if(frog&&s.studioSynthPage==0){x=304;w=312;}
+ else if(frog){x=224;w=392;}
+ else{x=398;w=218;}
+ return true;
+}
+bool studio_touch_canvas(AppState& s,songcore::SongcoreHost& host,AudioEngine& engine,int cx,int cy,int phase,uint64_t finger){
+ if(phase!=0&&s.canvasTouchActive&&finger!=s.canvasFinger)return false;   // another finger: not ours
+ if(phase==2){const bool was=s.canvasTouchActive;s.canvasTouchActive=false;return was;}
+ if(!s.studioOpen||s.studioTab!=0||s.qwerty.isOpen||!studio_synth_xy_page(s)||studio_synth_picker_open(s)){s.canvasTouchActive=false;return false;}
+ int x,y,w,h;bool frog;pad_rect(s,x,y,w,h,frog);
+ if(phase==0){
+  if(cx<x||cx>=x+w||cy<y||cy>=y+h)return false;
+  s.canvasTouchActive=true;s.canvasFinger=finger;
+ }else if(!s.canvasTouchActive)return false;
+ float gx,gy;
+ if(frog){   // the firefly: x from x+10 over w-20; y from y+8 over h-43 (studio_view.cpp frog_stage)
+  gx=(cx-(x+10))/float(w-20);gy=1.f-(cy-(y+8))/float(h-43);
+ }else{      // the plain pad: an 8 px margin, up is more
+  gx=(cx-(x+8))/float(w-17);gy=1.f-(cy-(y+8))/float(h-17);
+ }
+ const int nx=std::clamp(int(std::lround(gx*255.f)),0,255),ny=std::clamp(int(std::lround(gy*255.f)),0,255);
+ if(nx==s.studioHarmonics&&ny==s.studioTimbre)return true;
+ studio_synth_sync_target(s);s.studioConfirm=false;
+ s.studioHarmonics=nx;s.studioTimbre=ny;s.studioSynthCustom=true;publish(s,host,engine,false);
+ return true;
 }
 void studio_synth_navigate(AppState& s,Button button){
  if(sample_granular_studio(s)){sample_granular_navigate(s,button);return;}
@@ -642,11 +733,29 @@ void studio_synth_edit(AppState& s,songcore::SongcoreHost& host,AudioEngine& eng
  if(k==0){int* v[]={&s.studioHarmonics,&s.studioTimbre,&s.studioMorph};value=v[i];s.studioSynthCustom=true;}
  else if(k==1&&s.studioModel==studio::kFmSysexModel&&(extra_index(s,i)==studio::kFmBankParam||extra_index(s,i)==studio::kFmVoiceParam)){
   fm_step(s,fs,extra_index(s,i),direction,coarse);publish(s,host,engine,false);return;}
+ else if(k==1&&s.studioModel==studio::kSingFrogModel&&extra_index(s,i)==studio::kSingLyricParam&&coarse){
+  // A + Up / Down: the next or previous template of Presets/Lyrics replaces the words.
+  const auto templates=lyric_templates(fs);
+  if(templates.empty()){s.studioMessage="No lyric templates: put .txt files in Presets/Lyrics";return;}
+  int at=-1;for(size_t n=0;n<templates.size();++n)if(templates[n].text==s.studioDraft.lyric)at=int(n);
+  const int count=int(templates.size());
+  const int next=at<0?(direction>0?0:count-1):((at+direction)%count+count)%count;
+  s.studioDraft.lyric=templates[size_t(next)].text;
+  publish(s,host,engine,false);
+  s.studioMessage="Lyrics: "+templates[size_t(next)].name+"   ("+std::to_string(next+1)+" / "+std::to_string(count)+")";return;}
+ else if(k==1&&s.studioModel==studio::kSingFrogModel&&extra_index(s,i)==studio::kSingLyricParam){
+  // The words are typed on the keyboard; A+D-pad on this row opens it with the current text.
+  auto& k2=s.qwerty;k2=QwertyKeyboardState{};k2.isOpen=true;
+  k2.text=s.studioDraft.lyric.empty()?std::string("ribbit ribbit quack la la"):s.studioDraft.lyric;
+  k2.maxLength=studio::sing::kMaxTextChars;k2.textCursor=static_cast<int>(k2.text.size());
+  k2.fieldLabel="LYRICS:";k2.context=QwertyContext::LYRIC_EDIT;k2.insertBefore=s.settings.insertBefore;
+  s.studioMessage="Type the words. Each note sings the next syllable.";return;}
  else if(k==1){const int x=extra_index(s,i);p.studioSynthParams[x]=studio::synth_param_adjust(s.studioModel,x,p.studioSynthParams[x],direction,coarse);publish(s,host,engine,false);return;}
  else if(k==2){if(i==0){const char* n[]={"off","lp","hp","bp"};p.filterType=n[std::clamp(filter_index(p)+direction,0,3)];if(p.filterType!="off"&&!p.filterCut)p.filterCut=255;}else{int* v[]={&p.filterCut,&p.filterRes,&p.drive};value=v[i-1];}}
  else if(k==3){int* v[]={&p.volume,&p.pan,&p.detune};value=v[i];}
+ else if(k==5){int* v[]={&s.studioHarmonics,&s.studioTimbre};value=v[i];s.studioSynthCustom=true;}
  else{auto* m=edit_envelope(p);if(!m){s.studioMessage="All modulation slots are used - free one in MODS for ADSR";return;}int* v[]={&m->attack,&m->decay,&m->sustain,&m->release};value=v[i];}
- if(value)*value=std::clamp(*value+direction*(coarse?16:1),0,255);publish(s,host,engine,k>=2,&previousDraft);
+ if(value)*value=std::clamp(*value+direction*(coarse?16:1),0,255);publish(s,host,engine,k>=2&&k!=5,&previousDraft);
 }
 
 bool studio_synth_compare(AppState& s,songcore::SongcoreHost& host,AudioEngine& engine){

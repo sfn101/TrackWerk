@@ -117,7 +117,7 @@ void restore_appearance_context(AppState& s) {
 }
 const char* controls[]={"ACTIVE","MUTABLE EFFECT","WET / DRY","COLOR","TEXTURE","FEEDBACK","SATURATION","COMP THRESHOLD","COMP RATIO","ATTACK","RELEASE","STEREO WIDTH","OUTPUT GAIN","PEAK CEILING","HIGH PASS"};
 int masterKey(int row){static const int keys[]={studio::ENABLE,studio::DRIVE,studio::THRESHOLD,studio::RATIO,studio::ATTACK,studio::RELEASE,studio::WIDTH,studio::OUTPUT,studio::CEILING,studio::HIGH_PASS};return keys[std::clamp(row-1,0,9)];}
-int rows(int tab){return tab==0?7:tab==1?11:tab==2?15:tab==4?7:tab==5?20:tab==6?4:tab==7?source_sampler_row_count():2;}
+int rows(int tab){return tab==0?7:tab==1?11:tab==2?15:tab==4?8:tab==5?20:tab==6?4:tab==7?source_sampler_row_count():2;}
 void changed(AppState& s,songcore::SongcoreHost& host,AudioEngine& engine){++s.projectVersion;auto& p=host.edit_project();for(int i=0;i<studio::COUNT;++i)engine.setStudioControl(i,p.studioMaster[i]);engine.studioRack.tempo.store(p.tempo);}
 // FX and mastering have independent parameter groups. Loading one must not erase the other.
 void apply_preset(bool effect,const std::array<int,studio::COUNT>& source,songcore::Project& project){
@@ -445,6 +445,8 @@ bool studio_button(const ButtonEvent& e,AppState& s,songcore::SongcoreHost& host
    if(s.studioAppearanceSettings||repeated||e.mods.a)return true;
    change_studio_tab(s,host,engine,studio_next_music_tab(s.studioTab,dir));return true;
   }
+  // XY pad page: hold L (the audition) and the D-pad moves the dot instead of the cursor.
+  if(s.studioTab==0&&e.mods.l&&!e.mods.a&&!e.mods.r&&!e.mods.b&&studio_synth_xy_page(s)){studio_synth_xy_move(s,host,engine,e.button);return true;}
   if(!e.mods.a&&s.studioTab==0){studio_synth_navigate(s,e.button);return true;}
   if(!e.mods.a&&s.studioTab==4&&(e.button==Button::DPAD_LEFT||e.button==Button::DPAD_RIGHT)){studio_capture_edit(s,e.button==Button::DPAD_RIGHT?1:-1);return true;}
   if(!e.mods.a){if(e.button==Button::DPAD_UP||e.button==Button::DPAD_DOWN){s.studioConfirm=false;s.studioMessage.clear();const int delta=e.button==Button::DPAD_UP?-1:1;s.studioRow=std::clamp(s.studioRow+delta,0,(s.studioTab==0?studio_synth_apply_row(s)+1:rows(s.studioTab))-1);if(s.studioTab==0&&s.studioRow>=3+studio_synth_control_count(s)&&s.studioRow<studio_synth_apply_row(s))s.studioRow=delta>0?studio_synth_apply_row(s):2+studio_synth_control_count(s);}return true;}

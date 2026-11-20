@@ -1,0 +1,91 @@
+name: TrackWerk 1.3 desktop release verification
+on:
+  push:
+    branches: [codex/release-1.3.0]
+    paths: ['.github/workflows/release-13-desktop.yml', 'source/native/**', 'source/shell/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    container: debian:13-slim
+    steps:
+      - run: apt-get update && apt-get install -y git cmake g++ make libsdl2-dev libcurl4-openssl-dev python3 ffmpeg xvfb xauth
+      - uses: actions/checkout@v7.0.1
+      - name: Build the frozen native application
+        run: |
+          cmake -S source/shell -B build/desktop -DCMAKE_BUILD_TYPE=Release -DPT_STUDIO_CHECK=ON -DPT_HANDHELD=OFF
+          cmake --build build/desktop --target pockettracker-sdl ptfile-validation-check ptfm-sysex-check ptsing-frog-check ptbass-synths-check ptmidi-export-check -j3
+      - name: Test new synths, MIDI and file loading
+        run: |
+          mkdir -p evidence/out
+          for test in ptfile-validation-check ptfm-sysex-check ptsing-frog-check ptbass-synths-check ptmidi-export-check; do build/desktop/native/$test evidence/out; done
+      - name: Run the native window under Xvfb
+        run: |
+          mkdir -p evidence/data
+          set +e
+          SDL_AUDIODRIVER=dummy POCKETTRACKER_HOME="$PWD/evidence/data" xvfb-run -a timeout --signal=TERM 12s build/desktop/pockettracker-sdl > evidence/startup-console.txt 2>&1
+          rc=$?
+          set -e
+          test "$rc" = 124 -o "$rc" = 0
+          cat evidence/startup-console.txt
+          if test -f evidence/data/trackwerk-log.txt; then cat evidence/data/trackwerk-log.txt; fi
+          grep -q '1.3.0' evidence/startup-console.txt
+          cp build/desktop/pockettracker-sdl evidence/trackwerk.bin
+          chmod +x evidence/trackwerk.bin
+          ldd evidence/trackwerk.bin > evidence/ldd.txt
+          test -z "$(grep 'not found' evidence/ldd.txt)"
+          printf '%s\n' '${{ github.sha }}' > evidence/SOURCE-COMMIT.txt
+          printf '%s\n' 'Debian 13 native build; Xvfb window startup; dummy audio, no audible hardware test.' > evidence/TEST-SCOPE.txt
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: linux-${{ matrix.arch }}-release-evidence
+          path: evidence/
+          if-no-files-found: error
+  windows:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Build with MSVC and static SDL
+        shell: pwsh
+        run: |
+          cmake -S source/shell -B source/shell/build -G "Visual Studio 17 2022" -A x64 -DCMAKE_DISABLE_FIND_PACKAGE_SDL2=ON
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake --build source/shell/build --config Release --target pockettracker-sdl --parallel 3
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          powershell -ExecutionPolicy Bypass -File source/shell/build-windows.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Start the native Windows application
+        shell: pwsh
+        run: |
+          New-Item evidence -ItemType Directory -Force | Out-Null
+          $env:POCKETTRACKER_HOME = "$PWD\evidence\data"
+          $env:SDL_AUDIODRIVER = "dummy"
+          New-Item $env:POCKETTRACKER_HOME -ItemType Directory -Force | Out-Null
+          $p = Start-Process "$PWD\source\shell\build\Release\pockettracker-sdl.exe" -PassThru
+          Start-Sleep -Seconds 10
+          $p.Refresh()
+          if ($p.HasExited) { throw "The native application exited during startup ($($p.ExitCode))" }
+          $handle = $p.MainWindowHandle
+          Stop-Process -Id $p.Id
+          if ($handle -eq 0) { throw "No native Windows window was created" }
+          Get-Content evidence/data/trackwerk-log.txt | Select-String '1.3.0' -Quiet | ForEach-Object { if (-not $_) { throw 'Version missing' } }
+          Copy-Item source/shell/build/Release/pockettracker-sdl.exe evidence/TrackWerk.exe
+          git rev-parse HEAD | Out-File evidence/SOURCE-COMMIT.txt
+          "MSVC Release; static SDL and CRT package checks; native window handle $handle; dummy audio, audible device test pending." | Out-File evidence/TEST-SCOPE.txt
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: windows-x64-release-evidence
+          path: |
+            evidence/
+            source/build/windows/*.zip
+          if-no-files-found: error

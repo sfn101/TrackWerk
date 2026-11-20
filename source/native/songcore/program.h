@@ -162,9 +162,24 @@ inline float program_base_frequency(const Program& p) {
 
 // Shift a (pitch, octave) pair by semitones, clamped to the MIDI range.
 inline void shift_note(int& pitch, int& octave, int semitones) {
-    const int midi = clampi((octave + 1) * 12 + pitch + semitones, 0, 127);
+    const int midi = static_cast<int>(std::clamp<int64_t>((int64_t(octave) + 1) * 12 + pitch + semitones, 0, 127));
     pitch  = midi % 12;
     octave = midi / 12 - 1;
+}
+
+// Integer-exact marker scaling without overflowing on malformed int64 project markers.
+inline int slice_point_byte(int64_t point, int64_t length) {
+    if (length <= 0 || point <= 0) return 0;
+    if (point >= length) return 255;
+    // Engine samples are int-sized; retain their exact historical integer rounding.
+    if (length <= INT64_MAX / 255) return static_cast<int>(point * 255 / length);
+    // Extreme non-file callers: bounded binary long division of the fractional part.
+    uint64_t remainder=0;int result=0;
+    for (int i=0;i<255;++i) {
+        if (remainder >= uint64_t(length-point)) { remainder-=uint64_t(length-point);++result; }
+        else remainder+=uint64_t(point);
+    }
+    return result;
 }
 
 // `sampleLength` is the engine's, asked by the caller so this stays pure.
@@ -195,7 +210,7 @@ inline SamplerNoteArgs derive_sampler_note(const NoteOnPayload& n, int64_t frame
 
         if (sampleLength > 0) {
             const int64_t sliceStart = (sliceIndex == 0) ? 0 : p.sliceMarkers[sliceIndex - 1];
-            effStart = clampi(static_cast<int>((sliceStart * 255LL) / sampleLength), 0, 255);
+            effStart = slice_point_byte(sliceStart, sampleLength);
 
             const int rootMidi = clampi(p.rootMidi + n.transpose, 0, 127);
             notePitch  = rootMidi % 12;
@@ -209,7 +224,7 @@ inline SamplerNoteArgs derive_sampler_note(const NoteOnPayload& n, int64_t frame
             if (p.slicingMode == 1) {
                 const int64_t sliceEnd = (sliceIndex < markerCount) ? p.sliceMarkers[sliceIndex]
                                                                     : sampleLength;
-                effEnd = clampi(static_cast<int>((sliceEnd * 255LL) / sampleLength), 0, 255);
+                effEnd = slice_point_byte(sliceEnd, sampleLength);
             }
         }
     }

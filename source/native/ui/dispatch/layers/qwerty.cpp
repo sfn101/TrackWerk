@@ -9,6 +9,8 @@
 #include "ui/groove_io.h"        // GROOVE_FILE_EXT
 #include "ui/scale_io.h"         // SCALE_FILE_EXT
 #include "ui/project_actions.h"  // project_save_path / save_would_replace_other_song
+#include "ui/studio.h"
+#include "studio/sing_text.h"
 
 #include <string>
 
@@ -120,7 +122,7 @@ void InputDispatcher::run_typed_save(QwertyContext c, const std::string& dir, co
                 host_.edit_project().name = text;
                 mark_modified();
             }
-            save_project_now();
+            save_now();
             break;
         default: break;
     }
@@ -215,6 +217,21 @@ void InputDispatcher::qwerty_apply() {
             Instrument& ins = host_.edit_project().instruments[static_cast<size_t>(s_.currentInstrument)];
             // A cleared name reverts to "INSTxx": an unnamed instrument must still be identifiable.
             ins.name = text.empty() ? songcore::default_instrument_name(ins.id) : text;
+            mark_modified();
+            break;
+        }
+
+        case QwertyContext::LYRIC_EDIT: {
+            // The words belong to the instrument. A linked instrument takes them at once; otherwise the draft
+            // keeps them until APPLY.
+            s_.studioDraft.lyric = studio::sing::utf8_cut(text, size_t(studio::sing::kMaxTextChars));
+            if (studio_synth_live(s_))
+                host_.update_studio_synth(s_.currentInstrument, s_.studioBoundUri, s_.studioDraft.studioSynthParams,
+                                          nullptr, &s_.studioDraft.lyric);
+            uint8_t packed[studio::sing::kPackedSize];
+            const int syllables = studio::sing::pack_lyric(text.c_str(), packed);
+            s_.studioMessage = text.empty() ? "Built-in words" : syllables == 0 ? "No words found: built-in words sing" :
+                               std::to_string(syllables) + (syllables == 1 ? " syllable" : " syllables");
             mark_modified();
             break;
         }

@@ -55,6 +55,7 @@ class StdFileSystem : public FileSystem {
     // ── Writing ─────────────────────────────────────────────────────────────────────────────────
     bool write_file(const std::string& path, const std::string& content) override;
     bool write_bytes(const std::string& path, const void* data, size_t len) override;
+    bool write_file_relaxed(const std::string& path, const std::string& content) override;
     bool delete_path(const std::string& path) override;
     bool rename_file(const std::string& path, const std::string& new_base_name) override;
     std::string create_folder(const std::string& parent, const std::string& folder_name) override;
@@ -64,6 +65,7 @@ class StdFileSystem : public FileSystem {
 
   private:
     std::string ensure_dir(const char* sub);
+    bool write_bytes_impl(const std::string& path, const void* data, size_t len, bool sync);
 
     std::string root_;         // the user's media tree and config.json
     std::string privateRoot_;  // the app's own files
@@ -80,6 +82,10 @@ std::string path_stem(const std::string& path);        // "/a/b/c.wav" → "c"
 std::string path_sanitize(const std::string& name, bool allow_dot);
 
 std::string to_lower(std::string s);
+
+// Is `path` `ancestor` itself or somewhere below it? Lexical, either slash, ASCII case folded — a
+// FAT card or Windows does not tell "Kit" from "kit".
+bool path_is_within(const std::string& path, const std::string& ancestor);
 
 // TRACKWERK_HOME is preferred; the older environment spelling remains compatible.
 // Otherwise use Documents/TrackWerk (Windows/macOS) or the XDG TrackWerk folder (Linux).

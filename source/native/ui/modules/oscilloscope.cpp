@@ -18,6 +18,7 @@ void OscilloscopeModule::draw_sized(Canvas& c, int x, int y, int w, int h, const
     const Theme& t = s.theme;
     w_ = std::min(w, int(MAX_WIDTH));   // the phosphor history holds at most MAX_WIDTH/N blocks
     h_ = h;
+    if (s.playing) demoMs_ = s.animationMs;   // stopped: COPPER, STARFIELD and PLASMA hold still
 
     // OCTA fills the strip with `background`, so the gaps between lanes read as it, then paints each
     // lane's `vizBackground`; every other mode fills with `vizBackground`.
@@ -86,7 +87,7 @@ void OscilloscopeModule::draw_demo(Canvas& c, int x, int y, const OscilloscopeSt
     const Theme& t = s.theme;
     Canvas::ClipScope clip(c, x, y, w_, h_);
     c.fill_rect(x, y, w_, h_, t.vizBackground);
-    const uint64_t ms = s.animationMs;
+    const uint64_t ms = demoMs_;
     switch (t.visualizerType) {
         case VisualizerType::COPPER: {
             float bars[8] = {};

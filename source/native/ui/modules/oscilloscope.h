@@ -102,6 +102,10 @@ private:
     static constexpr int SCOPE_BLOCKS = MAX_WIDTH / SCOPE_PIXEL_BLOCK;
     int16_t phosphor_[2][SCOPE_BLOCKS] = {};   // dot rows relative to the strip's top
     int     phosphorFrames_ = 0;
+    // The demo visualizers' clock: it runs only while a song plays (with Motion on) and holds still
+    // otherwise. A stopped app draws only when something changes, so a running clock made the picture
+    // jump between those redraws.
+    uint64_t demoMs_ = 0;
     int     phosphorX_ = -1, phosphorY_ = -1;  // where the history was drawn; a move discards it
 
     int w_ = WIDTH, h_ = HEIGHT;   // this call's area (draw_sized)

@@ -229,6 +229,7 @@ int main(int argc, char** argv) {
     assert(std::filesystem::exists(saved));
 
     // 10 · LOAD, then A on FIRSTBEAT.ptp in the browser.
+    r.tap(Button::DPAD_RIGHT);   // COPY
     r.tap(Button::DPAD_RIGHT);   // LOAD
     r.tap(Button::A);
     assert(r.state.currentScreen == ScreenType::FILE_BROWSER);

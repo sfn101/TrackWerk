@@ -104,15 +104,17 @@ int main(int argc, char** argv) {
     r.host.edit_project().name = "OTHER";
     r.state.projectPath.clear();   // the open song never came from that file
     r.project_cell(1);
-    check(r.state.confirm.kind == ConfirmDialogState::Kind::SAVE_OVERWRITE, "SAVE onto another song asks first");
-    r.tap(Button::B);
-    check(r.state.qwerty.isOpen && r.state.qwerty.text == "OTHER-COPY", "B offers the keyboard on OTHER-COPY");
-    r.dispatch.on_select_b();   // cancel the keyboard
-    check(!r.state.qwerty.isOpen && read(r.fs, other) == "{\"name\":\"OTHER\"}" &&
-          r.host.project().name == "OTHER", "cancelling it leaves the other file and the song alone");
+    // Upstream's three-way question, the cursor on CANCEL: a double press decides nothing.
+    check(r.state.confirm.kind == ConfirmDialogState::Kind::SAVE_EXISTS &&
+          r.state.confirm.arg == ConfirmDialogState::COLLECT_CANCEL, "SAVE onto another song asks first, on CANCEL");
+    r.tap(Button::A);   // CANCEL
+    check(!r.state.confirm.is_open() && read(r.fs, other) == "{\"name\":\"OTHER\"}" &&
+          r.host.project().name == "OTHER", "CANCEL leaves the other file and the song alone");
     r.project_cell(1);
+    r.tap(Button::DPAD_LEFT);
+    r.tap(Button::DPAD_LEFT);   // → REPLACE
     r.tap(Button::A);
-    check(read(r.fs, other) != "{\"name\":\"OTHER\"}" && r.state.projectPath == other, "A overwrites it");
+    check(read(r.fs, other) != "{\"name\":\"OTHER\"}" && r.state.projectPath == other, "REPLACE overwrites it");
 
     // ── 3 · re-saving the open song does not ask ──
     r.state.projectVersion++;
@@ -153,13 +155,14 @@ int main(int argc, char** argv) {
     check(r.state.project_dirty() && r.state.projectPath == damaged, "...unsaved, keeping its path");
     check(r.state.statusMessage == "REPAIRED: 1 FIX", "...and says REPAIRED: 1 FIX");
     r.project_cell(1);
-    check(r.state.confirm.kind == ConfirmDialogState::Kind::SAVE_OVERWRITE, "its first SAVE asks before overwriting");
-    r.tap(Button::B);
-    r.dispatch.on_select_b();   // the -COPY keyboard, cancelled
-    check(read(r.fs, damaged) == damagedText, "B leaves the damaged file on disk");
+    check(r.state.confirm.kind == ConfirmDialogState::Kind::SAVE_EXISTS, "its first SAVE asks before overwriting");
+    r.tap(Button::A);   // CANCEL
+    check(read(r.fs, damaged) == damagedText, "CANCEL leaves the damaged file on disk");
     r.project_cell(1);
+    r.tap(Button::DPAD_LEFT);
+    r.tap(Button::DPAD_LEFT);   // → REPLACE
     r.tap(Button::A);
-    check(read(r.fs, damaged) != damagedText && !r.state.project_dirty(), "A saves the repaired song");
+    check(read(r.fs, damaged) != damagedText && !r.state.project_dirty(), "REPLACE saves the repaired song");
     r.state.projectVersion++;
     r.project_cell(1);
     check(!r.state.confirm.is_open(), "later saves don't ask");

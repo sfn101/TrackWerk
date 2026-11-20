@@ -200,6 +200,10 @@ std::string StdFileSystem::ensure_dir(const char* sub) {
 }
 
 bool StdFileSystem::read_file(const std::string& path, std::string& out) {
+    // A folder is not a file: libstdc++ opens it and then throws on the first read (SAVE's backup step
+    // met one where a song should be, and aborted on Linux).
+    std::error_code ec;
+    if (fs::is_directory(path, ec)) return false;
     std::ifstream f(path, std::ios::binary);
     if (!f) return false;
     out.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());

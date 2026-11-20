@@ -21,7 +21,7 @@ Fill wide screens: RG505, Odin, TrimUI Smart Pro, laptops and tablets. 4:3 stays
   - `DESIGN_H` stays 480.
 - **Screens stay anchored and never jump between screens.**
   - The right bar (BPM, note monitor, navigation map) sits at the far right edge: `RIGHT_BAR_X` follows the width.
-  - Editors stay where they are on the left.
+  - Editors stay where they are on the left, beside the rail. The spare space is always on the editor's right, whichever side the rail is on: rail, editor, spare space, or editor, spare space, rail.
 - **The navigation side panel is always shown.** No screen is a true full-screen view.
 - **The oscilloscope band at the top stretches to the full width.**
 
@@ -30,9 +30,12 @@ Fill wide screens: RG505, Odin, TrimUI Smart Pro, laptops and tablets. 4:3 stays
 | PHRASE | The other 7 tracks' notes beside the phrase (below) |
 | File browser | Stretched and reorganised to show more files at once |
 | Sample editor | Stretched and reorganised. The waveform is larger with usable proportions, not thin and wide; the screen may scroll down |
-| INSTRUMENT, Studio | Centred. The side space is kept for later: INSTRUMENT with More mod targets, the Studio with Advanced Synth Studio |
-| SONG, MIXER | Extra space empty. The 16-track item uses it (greyed tracks 9-16 under 8 tracks) |
-| CHAIN, everything else | Extra space empty |
+| INSTRUMENT | Beside the rail like the other editors; the space on its right is kept for More mod targets |
+| Studio | Centred; the side space is kept for Advanced Synth Studio |
+| SONG | Peek: the chain under the cursor (PH, TSP) beside the song, view only. The 16-track item takes the space later |
+| CHAIN | Peek: the phrase under the cursor (NOTE, VOL, INST) beside the chain, view only |
+| MIXER | Extra space empty. The 16-track item uses it (greyed tracks 9-16 under 8 tracks) |
+| Everything else | Extra space empty |
 
 **PHRASE side view:**
 - Shows the note (only the note) that each of the other 7 tracks plays on the same step.

@@ -187,7 +187,26 @@ or FLAT leaves the most room for the audio.
 
 **Main editor** — the active screen (PHRASE, CHAIN, SONG, etc.).
 
-**Navigation map** — a miniature 5×5 grid in the top-right showing your position in the screen layout.
+**Side panel** — the column beside the editor (on the right, or on the left with some scenes). It only
+shows; nothing in it is edited. From top to bottom:
+
+```
+┌─────────────┐
+│ ● READY     │  play status: PLAYING while the song plays, READY when stopped
+│ T> 120      │  the tempo playing now, tempo effect commands included
+│ 1  C-4      │  the 8 tracks: the note each is playing now, --- when silent.
+│ 2  ---      │  While playing, a row's left edge takes the colour of its
+│ …           │  instrument, and the row flashes on every new note.
+│ 8  ---      │
+│ [logo] ▪▪▫  │  some scenes only: a decoration that moves in time while playing
+│  S C P I T  │  the navigation map: where you are, and where R + D-pad goes
+└─────────────┘
+```
+
+With the side panel on the left, the navigation map is at the top and the rest follows below it.
+
+**Navigation map** — a miniature 5×5 grid showing your position in the screen layout. Only the main row
+and your current column are drawn; on arrival the screen's full name shows for a moment.
 
 **Status line** — brief messages (e.g., `SAVED`, `RESAMPLED TO INST 0C`) that auto-dismiss after a few seconds.
 
@@ -1648,15 +1667,19 @@ changing it.
 
 - **What moves:** the side panel (BPM, track meters, screen map) goes to the right edge, the
   visualizer band stretches across the whole width, and dialogs open in the middle. The editors stay
-  where they are on the left; the space between them and the side panel stays empty for now. With a
-  scene that puts the side panel on the left, everything is mirrored.
+  where they are, right beside the side panel, and the extra space is always on the editor's right.
+  A scene that puts the side panel on the left keeps that order: side panel, editor, extra space.
 - **PHRASE** shows, beside the phrase, the note each of the other seven tracks plays on the same step,
   greyed, with `---` where nothing plays. It only shows, the cursor never goes there, and it needs
   NAV = SONG (with NAV = POOL there is no song row to line up with, so every step shows `---`).
 - **The file browser** lists two columns of 19 files: down the left, then down the right. LEFT and
   RIGHT jump to the file beside you, and the list moves a whole column at a time.
 - **The sample editor's** waveform spans the full width; its controls stay in the middle.
-- **INSTRUMENT**, the Studio and the scene picker sit in the middle. The scene picker's preview
+- **SONG** shows, beside the song, the chain under the cursor: its phrases (PH) and transposes (TSP).
+  **CHAIN** shows the phrase under the cursor: its notes, volumes and instruments. Both only show; the
+  cursor never goes there, and they make way when the 16-track version needs the space.
+- **INSTRUMENT** starts beside the side panel like the other editors. The Studio and the scene
+  picker sit in the middle. The scene picker's preview
   shows the wide layout.
 - **On Android** wide mode is always landscape, whichever way you hold the phone. The on-screen
   buttons are drawn over the edges of the picture, partly see-through, and solid while you press

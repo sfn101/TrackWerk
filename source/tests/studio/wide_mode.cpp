@@ -134,8 +134,40 @@ int main(int argc, char** argv) {
     check(differing(*canvas, side, row5, row5 + 2 * ROW_HEIGHT, 28, ROW_HEIGHT) == 0,
           "NAV = POOL: the side view shows --- on every step");
 
-    // The other screens draw without the side view; write a few to look at.
     state.settings.navSongRelative = true;
+
+    // A rail-left look: the editor still starts beside the rail and the side view is on its right.
+    for (int look = 0; look < kSceneCount; ++look) {
+        state.theme = scene_preset(look, VisualizerType::SCOPE);
+        if (!scene_layout(state.theme).railLeft) continue;
+        layout.draw(*canvas, state);
+        const int sideLeft = DESIGN_W_4_3 - SIDE_SPACER + 6;   // the editor ends where 4:3's does
+        check(differing(*canvas, sideLeft, row5, row5 + ROW_HEIGHT, 28, ROW_HEIGHT) > 0,
+              "rail on the left: the side view is right of the phrase, D-4 on step 5");
+        write_bmp(*canvas, dir / "phrase-wide-rail-left.bmp");
+        break;
+    }
+    state.theme = theme_classic();
+
+    // SONG's peek: the chain under the cursor (track 1, row 0 = chain 00: phrase 00, then --).
+    const int peekPh = side + 34, peekRow0 = 82 + ROW_HEIGHT + 14 + ROW_HEIGHT;
+    state.currentScreen = ScreenType::SONG;
+    state.cursorRow = 0;
+    state.cursorColumn = 1;
+    layout.draw(*canvas, state);
+    check(differing(*canvas, peekPh, peekRow0, peekRow0 + ROW_HEIGHT, 24, ROW_HEIGHT) > 0 &&
+              differing(*canvas, peekPh, peekRow0 + ROW_HEIGHT, peekRow0 + 2 * ROW_HEIGHT, 24, ROW_HEIGHT) == 0,
+          "SONG peek: chain 00's phrase on its row 0, -- under it");
+    write_bmp(*canvas, dir / "song-peek.bmp");
+    // CHAIN's peek: the phrase under the cursor (chain 00 row 0 = phrase 00: C-4 on step 5).
+    state.currentScreen = ScreenType::CHAIN;
+    layout.draw(*canvas, state);
+    check(differing(*canvas, peekPh, row5, row5 + ROW_HEIGHT, 28, ROW_HEIGHT) > 0 &&
+              differing(*canvas, peekPh, row5 + ROW_HEIGHT, row5 + 2 * ROW_HEIGHT, 28, ROW_HEIGHT) == 0,
+          "CHAIN peek: phrase 00's C-4 on step 5, --- under it");
+    write_bmp(*canvas, dir / "chain-peek.bmp");
+
+    // The other screens draw without the side view; write a few to look at.
     for (ScreenType screen : {ScreenType::SONG, ScreenType::CHAIN, ScreenType::INSTRUMENT, ScreenType::MIXER,
                               ScreenType::PROJECT, ScreenType::SETTINGS}) {
         state.currentScreen = screen;
@@ -171,19 +203,20 @@ int main(int argc, char** argv) {
 
     // ── Every look at 854×480: nothing drawn into the space between the editor and the rail ──
     // That space must look the same whatever screen is up; an editor spilling into it would differ.
-    // (PHRASE's side view and the centred INSTRUMENT use it on purpose, so they are not among these.)
+    // (PHRASE's side view and SONG / CHAIN's peek use it on purpose, so they are not among these.)
+    // Whichever side the rail is on, the editor starts beside it and the space is on its right.
     b.items.clear();
     int spills = 0;
     for (int look = -1; look < kSceneCount; ++look) {
         state.theme = look < 0 ? theme_classic() : scene_preset(look, VisualizerType::SCOPE);
         const SceneLayout scene = scene_layout(state.theme);
-        const int railW = NavigationMapModule::WIDTH, editorW = EDITOR_CLIP_RIGHT - SIDE_SPACER;
-        const int editorX = scene.railLeft ? DESIGN_W - SIDE_SPACER - editorW : SIDE_SPACER;
-        const int gapX = scene.railLeft ? SIDE_SPACER + railW + 4 : editorX + editorW + 4;
-        const int gapW = scene.railLeft ? editorX - 8 - gapX : right_bar_x() - 4 - gapX;
+        const int editorW = EDITOR_CLIP_RIGHT - SIDE_SPACER;
+        const int editorX = scene.railLeft ? DESIGN_W_4_3 - SIDE_SPACER - editorW : SIDE_SPACER;
+        const int gapX = editorX + editorW + 4;
+        const int gapW = (scene.railLeft ? DESIGN_W - SIDE_SPACER : right_bar_x()) - 4 - gapX;
         std::vector<uint32_t> first;
-        for (ScreenType screen : {ScreenType::SONG, ScreenType::CHAIN, ScreenType::TABLE, ScreenType::GROOVE,
-                                  ScreenType::SCALE, ScreenType::MIXER, ScreenType::INST_POOL}) {
+        for (ScreenType screen : {ScreenType::TABLE, ScreenType::GROOVE, ScreenType::SCALE, ScreenType::MIXER,
+                                  ScreenType::INST_POOL, ScreenType::INSTRUMENT}) {
             state.currentScreen = screen;
             layout.draw(*canvas, state);
             std::vector<uint32_t> gap;
@@ -211,8 +244,8 @@ int main(int argc, char** argv) {
         };
         struct Ref { ScreenType screen; uint64_t hash; };
         const Ref refs[] = {
-            {ScreenType::SONG, 0xe28de95e4698d5dcull}, {ScreenType::PHRASE, 0xaaab766da386c55aull},
-            {ScreenType::INSTRUMENT, 0x975b80f79f44e3a3ull}, {ScreenType::MIXER, 0x18bd0f3a016a447eull},
+            {ScreenType::SONG, 0x01875155a25a4e50ull}, {ScreenType::PHRASE, 0xaaab766da386c55aull},
+            {ScreenType::INSTRUMENT, 0xcb1a79e96342aca1ull}, {ScreenType::MIXER, 0x18bd0f3a016a447eull},
             {ScreenType::SETTINGS, 0xb002fc343b44b6faull},
         };
         for (const Ref& r : refs) {

@@ -1006,6 +1006,8 @@ if(PT_STUDIO_CHECK OR PT_SAFETY_CHECK)
  target_link_libraries(ptvisualizer-check PRIVATE pt-ui)
  add_executable(ptsharp-scaling-check ../tests/studio/sharp_scaling.cpp)
  target_link_libraries(ptsharp-scaling-check PRIVATE pt-ui)
+ add_executable(ptwide-mode-check ../tests/studio/wide_mode.cpp)
+ target_link_libraries(ptwide-mode-check PRIVATE pt-ui)
  if(NOT PT_STUDIO_CHECK)   # upstream's file-validation check; the Linux build adds it in its own block
   add_executable(ptfile-validation-check ../tests/studio/file_validation.cpp)
   target_link_libraries(ptfile-validation-check PRIVATE songcore)

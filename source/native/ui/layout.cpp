@@ -186,6 +186,58 @@ void TrackerLayout::apply_selector_glide(Canvas& c, const AppState& s) {
     c.fill_rect(r.x, r.y + r.h - 2, r.w, 2, with_alpha(ink, .9f * fade));
 }
 
+namespace {
+
+// The phrase, if any, track `track` plays at `songRow` / `chainRow`: −1 when there is none.
+int phrase_at(const songcore::Project& p, int track, int songRow, int chainRow) {
+    if (track < 0 || track >= static_cast<int>(p.tracks.size())) return -1;
+    const auto& refs = p.tracks[static_cast<size_t>(track)].chainRefs;
+    if (songRow < 0 || songRow >= static_cast<int>(refs.size())) return -1;
+    const int chain = refs[static_cast<size_t>(songRow)];
+    if (chain < 0 || chain >= static_cast<int>(p.chains.size())) return -1;
+    const int phrase = songcore::chain_phrase_ref(p.chains[static_cast<size_t>(chain)], chainRow);
+    return phrase < static_cast<int>(p.phrases.size()) ? phrase : -1;
+}
+
+// Wide mode's PHRASE side view (specs/wide-mode.md): the note each other track plays on the same
+// step, greyed, row by row beside the phrase, in `x`..`x + w`. View only: the cursor never enters.
+// Without a song cell (NAV = POOL) there is nothing to line up with, so every row shows `---`.
+void draw_phrase_side_view(Canvas& c, const AppState& s, int x, int w, int y) {
+    const Theme& t = s.theme;
+    const songcore::Project& p = *s.project;
+    const songcore::Phrase& phrase = p.phrases[static_cast<size_t>(s.currentPhrase)];
+    const bool songCell = s.settings.navSongRelative;
+    const int mine = songCell ? pointer_track(s) : -1;
+    const int songRow = songCell ? pointer_song_row(s) : -1;
+    const int chainRow = songCell ? pointer_chain_row(s) : -1;
+
+    int tracks[7];
+    int count = 0;
+    for (int track = 0; track < 8 && count < 7; ++track)
+        if (track != mine) tracks[count++] = track;
+    const int stride = w / 7;
+    const int headerY = y + ROW_HEIGHT + 14 + TEXT_PADDING + 1;   // the phrase's own header row
+    const int firstRowY = y + ROW_HEIGHT + 14 + ROW_HEIGHT;
+    const Argb ink = with_alpha(t.textValue, .55f);
+
+    for (int k = 0; k < count; ++k) {
+        const int colX = x + k * stride;
+        c.draw_label(std::to_string(tracks[k] + 1), colX + 4, headerY, t.textParam, 12);
+        const int other = phrase_at(p, tracks[k], songRow, chainRow);
+        for (int i = 0; i < static_cast<int>(phrase.steps.size()); ++i) {
+            const int rowY = firstRowY + i * ROW_HEIGHT;
+            if (k == 0) c.fill_rect(x, rowY, w, ROW_HEIGHT, row_bg_color(i, t));
+            const songcore::Phrase* op = other >= 0 ? &p.phrases[static_cast<size_t>(other)] : nullptr;
+            const bool plays = op && i < static_cast<int>(op->steps.size()) &&
+                               op->steps[static_cast<size_t>(i)].note.pitch != -1;
+            c.draw_label(plays ? note_name(op->steps[static_cast<size_t>(i)].note) : std::string("---"),
+                         colX + 4, rowY + TEXT_PADDING + 2, plays ? ink : t.textEmpty, 12);
+        }
+    }
+}
+
+}  // namespace
+
 void TrackerLayout::draw_frame(Canvas& c, const AppState& s) {
     c.surface_rect(0, 0, DESIGN_W, DESIGN_H, s.theme.background);
 
@@ -206,6 +258,14 @@ void TrackerLayout::draw_frame(Canvas& c, const AppState& s) {
 
     draw_scope_strip(c, s, scopeY);
     draw_editor(c, s, editorX, editorY);
+    // Wide mode's PHRASE side view, in the space between the editor and the track rail.
+    if (DESIGN_W > DESIGN_W_4_3 && s.currentScreen == ScreenType::PHRASE && !s.eq.isOpen &&
+        !s.themeEditor.isOpen) {
+        constexpr int gap = 6, railW = NavigationMapModule::WIDTH;
+        const int sideX = scene.railLeft ? SIDE_SPACER + railW + gap : editorX + editorWidth + gap;
+        const int sideW = scene.railLeft ? editorX - gap - sideX : right_bar_x() - gap - sideX;
+        draw_phrase_side_view(c, s, sideX, sideW, editorY);
+    }
 
     if (s.currentScreen != ScreenType::VISUALIZER) {   // VI has no title row to underline
         c.fill_rect(editorX, editorY + ROW_HEIGHT + 4, editorWidth, 1,

@@ -24,6 +24,7 @@ Work top to bottom. Each item has its own spec; finish (build, test on Windows, 
 | 17 | Help pass | [help-pass.md](help-pass.md) | Spec ready |
 | 18 | Piano roll (melodic sequencer view) | [piano-roll.md](piano-roll.md) | Spec ready |
 | 19 | Chord editor | [chord-editor.md](chord-editor.md) | Spec ready |
+| 20 | More visualizers (14 styles) | [more-visualizers.md](more-visualizers.md) | Built on branch `more-visualizers` (started from `wide-mode`), not merged. After U: split it from wide mode, see the note below |
 
 ## Wide mode: work left after the upstream merge (agreed 2026-11-20)
 
@@ -33,6 +34,17 @@ Work top to bottom. Each item has its own spec; finish (build, test on Windows, 
   - **With or without sharp scaling:** wide mode works with integer scaling alone, and uses SCALING only when that row exists.
 
   Each combination must build: with both, with either one, and with neither.
+
+## More visualizers: split from wide mode after the upstream merge (agreed 2026-11-20)
+
+More visualizers (item 20) and wide mode (item 10) are separate features. Upstream may take either one without the other, and nothing may break.
+
+- **Today:** branch `more-visualizers` was started from `wide-mode`, so it carries all of wide mode. The style code itself (`native/ui/demo_fx_styles.cpp`, `demo_fx.h`, the names in `theme.h`, `settings_editor.cpp`, `theme_io.h`, `settings_store.cpp`) uses nothing from wide mode; each style fills the box it is given. The only link is `tests/studio/visualizer_screen.cpp`, whose 16:9 section calls `set_design_width`.
+- **The split, done right after U:**
+  1. Rebuild `more-visualizers` from `main` without wide mode: only the 14 styles, their names, help (`SET_VISUALIZER`), manual table and spec. Its check tests the styles at 4:3 only.
+  2. Wide mode's own check (`ptwide-mode-check`) draws every visualizer style the app has at 16:9 and checks each stays in its box, reading the list from `SettingsModule::visualizer_names()`, so it passes with the original 9 styles or all 23.
+  3. Each branch builds and passes CI alone, and both merged together too. Neither contains code that knows about the other.
+- **Done when** both branches stand alone as above, the user has tested them on Windows, and CI is green. Then mark item 20 Done (and item 10 when its own work is finished).
 
 ## Needs device testing
 

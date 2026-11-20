@@ -10,7 +10,7 @@ Work top to bottom. Each item has its own spec; finish (build, test on Windows, 
 | 4 | Repair a damaged song on request | [repair-damaged-song.md](repair-damaged-song.md) | Done |
 | 5 | Audit fixes, batch 2 (save safety) | [audit-fixes-batch2.md](audit-fixes-batch2.md) | Done |
 | 6 | Audit fixes, batch 3 (the rest) | [audit-fixes-batch3.md](audit-fixes-batch3.md) | Done |
-| 7 | Refuse files from a newer TrackWerk | [refuse-newer-files.md](refuse-newer-files.md) | Spec ready |
+| 7 | Refuse files from a newer TrackWerk | [refuse-newer-files.md](refuse-newer-files.md) | Done |
 | 8 | Save under a new name | [save-under-new-name.md](save-under-new-name.md) | Spec ready |
 | 9 | Sharp scaling | [sharp-scaling.md](sharp-scaling.md) | Spec ready |
 | 10 | Wide mode (16:9) | [wide-mode.md](wide-mode.md) | Spec ready |

@@ -34,13 +34,15 @@ enum class SettingsRow {
     APPEARANCE = 19,   // global palette/material/typeface; stable previous IDs retained
     LATENCY    = 20,   // read-only: the output's latency in ms (every platform)
     SCREEN     = 21,   // 4:3 / 16:9 — applies at the next start (specs/wide-mode.md)
+    TOUCH_BTNS = 22,   // AUTO / ALWAYS / OFF — the on-screen buttons (touch screens only)
 };
 
-inline constexpr int SETTINGS_ROW_COUNT = 22;
+inline constexpr int SETTINGS_ROW_COUNT = 23;
 
 // The order rows are drawn and walked; every SettingsRow exactly once.
 inline constexpr SettingsRow SETTINGS_DISPLAY_ORDER[SETTINGS_ROW_COUNT] = {
-    SettingsRow::LAYOUT,   SettingsRow::SCALING,   SettingsRow::SCREEN,    SettingsRow::OVERLAY,
+    SettingsRow::LAYOUT,   SettingsRow::TOUCH_BTNS, SettingsRow::SCALING,  SettingsRow::SCREEN,
+    SettingsRow::OVERLAY,
     SettingsRow::AUDIO_OUT, SettingsRow::LATENCY,
     SettingsRow::BTN_SOUND, SettingsRow::BTN_VIBRO, SettingsRow::ABXY,
     SettingsRow::METRONOME,
@@ -75,6 +77,7 @@ inline bool settings_row_gap_after(SettingsRow row) {
 inline bool settings_row_visible(SettingsRow row, const PlatformCaps& caps) {
     switch (row) {
         case SettingsRow::LAYOUT:    return caps.touchLayouts;
+        case SettingsRow::TOUCH_BTNS: return caps.touchLayouts;   // a touch screen
         case SettingsRow::OVERLAY:   return caps.skinOverlay && caps.debug;
         case SettingsRow::BTN_SOUND:
         case SettingsRow::BTN_VIBRO: return caps.buttonFeedback;

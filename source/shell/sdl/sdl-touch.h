@@ -37,6 +37,10 @@ public:
     // Enabled, and the bars wide enough for a usable box.
     bool active() const { return active_; }
 
+    // Wide mode: the two boxes are drawn over the picture's edges, translucent, solid while pressed,
+    // since a 16:9 picture leaves no bars beside it (specs/wide-mode.md).
+    void set_overlay(bool on) { overlay_ = on; }
+
     // Recompute the boxes; every frame before the event poll, so a finger hits the current layout.
     void layout(const SDL_Rect& frame, int outW, int outH);
 
@@ -64,6 +68,7 @@ private:
 
     bool enabled_ = false;
     bool active_  = false;
+    bool overlay_ = false;
     bool trace_   = false;
 
     int      outW_ = 0, outH_ = 0;

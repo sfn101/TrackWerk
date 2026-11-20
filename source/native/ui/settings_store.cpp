@@ -123,7 +123,12 @@ bool load_settings(FileSystem& fs, SettingsValues& values, Theme& theme) {
     values.traceEnabled       = get_bool(j, "trace",              values.traceEnabled);
 
     values.abxyIndex          = clamp(get_int(j, "abxy", values.abxyIndex), 0, 2);
-    values.touchButtonsWithPad = get_bool(j, "touchButtonsWithPad", values.touchButtonsWithPad);
+    // TOUCH BUTTONS: the three-way "touchButtons"; an older file's touchButtonsWithPad carries over.
+    if (const auto it = j.find("touchButtons"); it != j.end() && it->is_number_integer() &&
+                                                it->get<int64_t>() >= TOUCH_AUTO && it->get<int64_t>() <= TOUCH_OFF)
+        values.touchButtons = static_cast<int>(it->get<int64_t>());
+    else
+        values.touchButtons = get_bool(j, "touchButtonsWithPad", false) ? TOUCH_ALWAYS : TOUCH_AUTO;
 
     values.metronomeEnabled   = get_bool(j, "metronome", values.metronomeEnabled);
     values.metronomeVolume    = clamp(get_int(j, "metronomeVolume", values.metronomeVolume), 0, 255);
@@ -209,7 +214,8 @@ std::string serialize_settings(const SettingsValues& values, const Theme& theme)
     if (values.soundPreviewLevel != kSoundPreviewLevelDefault) j["soundPreviewLevel"] = values.soundPreviewLevel;
     j["navSongRelative"]    = values.navSongRelative;
     j["abxy"]               = values.abxyIndex;            // 0 AUTO, 1 XBOX, 2 NINTENDO
-    j["touchButtonsWithPad"] = values.touchButtonsWithPad;
+    j["touchButtons"]       = values.touchButtons;
+    j["touchButtonsWithPad"] = values.touchButtons == TOUCH_ALWAYS;   // for older builds
     j["metronome"]          = values.metronomeEnabled;
     j["metronomeVolume"]    = values.metronomeVolume;
     j["help"]               = values.helpMode;             // 0 OFF, 1 SHORT, 2 FULL

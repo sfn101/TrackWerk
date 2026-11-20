@@ -643,6 +643,11 @@ class FrameLoop {
 
     // Whether `layoutIndex` means the FULL/PORTRAIT choice: the list has one entry without a pad, two with.
     bool padLayoutLive = false;
+    // The FULL/PORTRAIT index update_skin last derived: a different one is an edit on the LAYOUT row.
+    int derivedLayoutIndex = -1;
+
+    // TOUCH BUTTONS = OFF: a two-finger tap shows the buttons, another hides them.
+    bool touchRevealed = false;
 
     // The last rotation permission sent (-1 = none); pushed on change, a JNI round trip.
     int lastLandscapeAllowed = -1;
@@ -797,23 +802,33 @@ void FrameLoop::lay_out_frame(Uint64 now) {
     // ── Layout: on-screen buttons or full screen ─────────────────────────────────────────────────
     //
     // One gate read by both `touch` and `portrait`. A touchscreen with no controller gets on-screen
-    // buttons; with one, full screen unless the user keeps the buttons (`touchButtonsWithPad`, false by
-    // default). Per frame, so hot-plugging switches on the next one.
+    // buttons; with one, full screen unless TOUCH BUTTONS is ALWAYS. OFF never shows them, until a
+    // two-finger tap does. Per frame, so hot-plugging switches on the next one.
     if (padDirty) { physicalPad = has_pad(); padDirty = false; }
     const bool padChoice = cfg.touchCapable && physicalPad;
 
     // ⚠️ The row's edit is read back before update_skin re-derives the index — input is polled after
     // this. `padLayoutLive` stops a freshly plugged pad reading the touch-only index 0 as FULL.
-    if (padChoice && padLayoutLive)
-        state.settings.touchButtonsWithPad = (state.settings.layoutIndex == 1);
+    // LAYOUT's PORTRAIT is TOUCH BUTTONS = ALWAYS; FULL turns ALWAYS back to AUTO.
+    int& touchButtons = state.settings.touchButtons;
+    if (padChoice && padLayoutLive && state.settings.layoutIndex != derivedLayoutIndex) {
+        if (state.settings.layoutIndex == 1) touchButtons = ui::TOUCH_ALWAYS;
+        else if (touchButtons == ui::TOUCH_ALWAYS) touchButtons = ui::TOUCH_AUTO;
+    }
     padLayoutLive = padChoice;
+    if (touchButtons != ui::TOUCH_OFF) touchRevealed = false;
 
     const bool useTouch  = cfg.touchCapable &&
-                           (!physicalPad || state.settings.touchButtonsWithPad);
+                           (touchButtons == ui::TOUCH_ALWAYS || (touchButtons == ui::TOUCH_AUTO && !physicalPad) ||
+                            (touchButtons == ui::TOUCH_OFF && touchRevealed));
     touch.set_enabled(useTouch);
+    // A 16:9 picture leaves no bars: the buttons go over it.
+    const bool wide = ui::DESIGN_W > ui::DESIGN_W_4_3;
+    touch.set_overlay(wide);
 
-    // Landscape only while FULL is in force; pushed live because the boot hint is read once.
-    if (cfg.allowLandscape && static_cast<int>(!useTouch) != lastLandscapeAllowed) {
+    // Landscape only while FULL is in force; pushed live because the boot hint is read once. Wide
+    // mode is locked to landscape at launch and never asks for portrait.
+    if (cfg.allowLandscape && !wide && static_cast<int>(!useTouch) != lastLandscapeAllowed) {
         lastLandscapeAllowed = !useTouch ? 1 : 0;
         cfg.allowLandscape(!useTouch);
     }
@@ -860,7 +875,7 @@ void FrameLoop::lay_out_frame(Uint64 now) {
     sync_audio_output(now);
 
     // Portrait first: it decides which geometry `touch` hit-tests (the same rects it draws).
-    portrait.layout(outW, outH, useTouch, state.settings.scaling != ui::SCALING_INT);
+    portrait.layout(outW, outH, useTouch && !wide, state.settings.scaling != ui::SCALING_INT);
     if (portrait.active())
         touch.layout_portrait2(portrait.cluster_rect(), portrait.button_rects(), outW, outH);
     else
@@ -882,8 +897,9 @@ void FrameLoop::lay_out_frame(Uint64 now) {
 void FrameLoop::update_skin(bool useTouch, bool padChoice) {
     if (padChoice) {
         state.settings.layoutCount = 2;
-        state.settings.layoutIndex = state.settings.touchButtonsWithPad ? 1 : 0;
-        state.layoutText           = state.settings.touchButtonsWithPad ? "PORTRAIT" : "FULL";
+        state.settings.layoutIndex = state.settings.touchButtons == ui::TOUCH_ALWAYS ? 1 : 0;
+        derivedLayoutIndex         = state.settings.layoutIndex;
+        state.layoutText           = state.settings.layoutIndex == 1 ? "PORTRAIT" : "FULL";
     }
     if (useTouch) {
         if (state.settings.skinIndex < 0 || state.settings.skinIndex >= kDeviceSkinCount)
@@ -1130,6 +1146,12 @@ void FrameLoop::handle_sdl_event(const SDL_Event& e, Uint64 now) {
         // Dev-only quit; it does not ask, and keeps the autosave. Only PROJECT > EXIT discards it.
         running = false;
     } else if (e.type == SDL_FINGERDOWN || e.type == SDL_FINGERUP || e.type == SDL_FINGERMOTION) {
+        // TOUCH BUTTONS = OFF: a second finger landing shows or hides the buttons; nothing else.
+        if (e.type == SDL_FINGERDOWN && state.settings.touchButtons == ui::TOUCH_OFF &&
+            SDL_GetNumTouchFingers(e.tfinger.touchId) == 2) {
+            touchRevealed = !touchRevealed;
+            return;
+        }
         // A virtual button feeds SdlInput's own press/release; a finger outside one is ignored.
         screen.touch.handle_finger(e, input, now);
     } else {
@@ -1637,6 +1659,10 @@ int run(const AppConfig& cfg) {
         ui::load_settings(filesystem, early, earlyTheme);
         ui::set_design_width(early.wideScreen);
         if (early.wideScreen) std::printf("video:   SCREEN 16:9 - canvas %dx%d\n", ui::DESIGN_W, ui::DESIGN_H);
+#ifdef __ANDROID__
+        // Wide mode is landscape whichever way the phone turns; SDL reads this when the window opens.
+        if (early.wideScreen) SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+#endif
     }
     Screen screen;
     log_startup_phase("opening video begin");

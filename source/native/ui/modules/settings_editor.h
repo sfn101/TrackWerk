@@ -31,6 +31,9 @@ enum class HelpMode { OFF = 0, SHORT = 1, FULL = 2 };
 
 // Everything SETTINGS edits; the shell round-trips it through settings.json. The counts sit beside
 // the indices because only the platform knows a cycle's range.
+// SETTINGS > TOUCH BUTTONS. ⚠️ settings.json stores the number.
+inline constexpr int TOUCH_AUTO = 0, TOUCH_ALWAYS = 1, TOUCH_OFF = 2;
+
 // SETTINGS > SCALING, crispest to softest. ⚠️ settings.json stores the number.
 inline constexpr int SCALING_INT = 0, SCALING_SHARP = 1, SCALING_BILINEAR = 2;
 
@@ -65,9 +68,10 @@ struct SettingsValues {
     // How the pad's face buttons are printed: 0 AUTO, 1 XBOX, 2 NINTENDO (ui::AbxyLayout).
     int  abxyIndex          = 0;
 
-    // On-screen buttons even with a pad attached. Its own flag: the layout list changes length with
-    // a pad, so an index would change meaning.
-    bool touchButtonsWithPad = false;
+    // TOUCH BUTTONS (specs/wide-mode.md): TOUCH_AUTO shows the on-screen buttons when no controller
+    // is connected, TOUCH_ALWAYS even with one (the old touchButtonsWithPad), TOUCH_OFF never (a
+    // two-finger tap shows and hides them). Its own value: the LAYOUT list changes length with a pad.
+    int touchButtons = TOUCH_AUTO;
 
     // ── METRONOME (every platform): a click per quarter note while playing, never exported ──────
     bool metronomeEnabled = false;

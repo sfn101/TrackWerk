@@ -77,6 +77,17 @@ int main(int argc, char** argv) {
         SettingsValues loaded;
         check(save_settings(fs, values, theme) && load_settings(fs, loaded, theme) && loaded.wideScreen,
               "SCREEN 16:9 survives a save and load");
+        // TOUCH BUTTONS replaces touchButtonsWithPad and keeps its saved value.
+        const auto touch = [&](const char* json) {
+            fs.write_file(fs.settings_path(), json);
+            SettingsValues v;
+            load_settings(fs, v, theme);
+            return v.touchButtons;
+        };
+        check(touch("{\"touchButtonsWithPad\":true}") == TOUCH_ALWAYS, "old touchButtonsWithPad true reads as ALWAYS");
+        check(touch("{\"touchButtonsWithPad\":false}") == TOUCH_AUTO, "...false as AUTO");
+        check(touch("{\"touchButtons\":2,\"touchButtonsWithPad\":false}") == TOUCH_OFF, "a saved OFF is kept");
+        check(SettingsValues{}.touchButtons == TOUCH_AUTO, "a new install gets AUTO");
     }
 
     set_design_width(true);

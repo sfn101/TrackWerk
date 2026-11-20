@@ -364,6 +364,7 @@ enum class HelpTopic {
     SCREEN_VISUALIZER,
     PROJECT_SAVE_AS,
     SET_SCREEN,
+    SET_TOUCH_BUTTONS,
 
     COUNT
 };
@@ -2653,6 +2654,15 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
       "applies the next time the app",
       "starts."},
      {"A+←/→ picks 4:3 or 16:9"}},
+    /* SET_TOUCH_BUTTONS */
+    {"TOUCH BTNS: on-screen buttons", "AUTO shows them with no", "controller connected.",
+     {"AUTO: shown when no controller",
+      "is connected. ALWAYS: shown even",
+      "with one. OFF: never shown. With",
+      "OFF, a two-finger tap anywhere",
+      "shows them, and another hides",
+      "them again."},
+     {"A+←/→ picks AUTO, ALWAYS or OFF"}},
 };
 
 // ─── Rules 2 and 3, as compile errors — at runtime they fail silently ────────────────────────────
@@ -2975,6 +2985,7 @@ inline HelpTopic settings_cell_topic(int row, int column) {
         case SettingsRow::LAYOUT:     return second ? HelpTopic::SET_SKIN : HelpTopic::SET_LAYOUT;
         case SettingsRow::SCALING:    return HelpTopic::SET_SCALING;
         case SettingsRow::SCREEN:     return HelpTopic::SET_SCREEN;
+        case SettingsRow::TOUCH_BTNS: return HelpTopic::SET_TOUCH_BUTTONS;
         case SettingsRow::OVERLAY:
             return second ? HelpTopic::SET_OVERLAY_STRENGTH : HelpTopic::SET_OVERLAY;
         case SettingsRow::BTN_SOUND:

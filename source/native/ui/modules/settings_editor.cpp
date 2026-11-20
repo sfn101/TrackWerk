@@ -99,6 +99,11 @@ void SettingsModule::draw(Canvas& c, int x, int y, const SettingsState& s) const
     }
 
     // "SHARP (USING BILINEAR)" does not fit the value column.
+    {
+        static const char* const names[] = {"AUTO", "ALWAYS", "OFF"};
+        param_row(SettingsRow::TOUCH_BTNS, "TOUCH BTNS", names[clamp(v.touchButtons, 0, 2)]);
+    }
+
     param_row(SettingsRow::SCALING, "SCALING",
               v.scaling == SCALING_INT        ? "INT"
               : v.scaling == SCALING_BILINEAR ? "BILINEAR"
@@ -208,6 +213,9 @@ CursorContext SettingsModule::cursor_context(const SettingsState& s) const {
         case SettingsRow::SCREEN:
             return cc::toggle_binary(v.wideScreen);
 
+        case SettingsRow::TOUCH_BTNS:
+            return cc::enum_cycle(v.touchButtons, 3);
+
         case SettingsRow::OVERLAY:
             if (s.cursorColumn == 1) return cc::enum_cycle(v.overlayIndex, v.overlayCount);
             return cc::hex_byte(v.overlayStrength, 0, 255);
@@ -297,6 +305,7 @@ SettingsInputResult SettingsModule::handle_input(SettingsValues& v, Theme& theme
 
         case SettingsRow::ABXY: v.abxyIndex = index_in(3); break;
         case SettingsRow::SCALING: v.scaling = index_in(3); break;
+        case SettingsRow::TOUCH_BTNS: v.touchButtons = index_in(3); break;
         // The shell opens the output and writes the NAME once it plays.
         case SettingsRow::AUDIO_OUT: v.audioOutIndex = index_in(v.audioOutCount); break;
 

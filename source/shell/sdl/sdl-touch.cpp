@@ -4,6 +4,7 @@
 
 #include "skin/button_glyphs.h"  // shared with the portrait cluster
 
+#include <algorithm>
 #include <cstdio>
 
 namespace tl = pt::ui::touch_layout;
@@ -17,11 +18,15 @@ constexpr uint32_t BTN_NORMAL  = 0x3D5A80;
 constexpr uint32_t BTN_PRESSED = 0x98C1D9;
 constexpr uint32_t PANEL_BG    = 0x1A1A1A;
 
-void fill(SDL_Renderer* r, const SDL_Rect& rc, uint32_t rgb) {
+void fill(SDL_Renderer* r, const SDL_Rect& rc, uint32_t rgb, Uint8 alpha = 255) {
+    SDL_SetRenderDrawBlendMode(r, alpha == 255 ? SDL_BLENDMODE_NONE : SDL_BLENDMODE_BLEND);
     SDL_SetRenderDrawColor(r, static_cast<Uint8>((rgb >> 16) & 0xFF),
-                           static_cast<Uint8>((rgb >> 8) & 0xFF), static_cast<Uint8>(rgb & 0xFF), 255);
+                           static_cast<Uint8>((rgb >> 8) & 0xFF), static_cast<Uint8>(rgb & 0xFF), alpha);
     SDL_RenderFillRect(r, &rc);
 }
+
+// Wide mode's overlay buttons: about 40 % see-through, solid while pressed.
+constexpr Uint8 OVERLAY_ALPHA = 153;
 
 }  // namespace
 
@@ -30,9 +35,11 @@ void SdlTouch::layout(const SDL_Rect& frame, int outW, int outH) {
     outH_ = outH;
     portrait_ = false;
 
-    // The bars either side of the centred frame; none wide enough → inactive.
-    const int leftW  = frame.x;
-    const int rightX = frame.x + frame.w;
+    // The bars either side of the centred frame; none wide enough → inactive. Overlaid (wide mode),
+    // each box is a fifth of the width at the picture's edge, whatever bars there are.
+    const int overlayW = std::max(MIN_PANEL_PX, outW / 5);
+    const int leftW  = overlay_ ? overlayW : frame.x;
+    const int rightX = overlay_ ? outW - overlayW : frame.x + frame.w;
     const int rightW = outW - rightX;
 
     active_ = enabled_ && outH > 0 && leftW >= MIN_PANEL_PX && rightW >= MIN_PANEL_PX;
@@ -122,14 +129,17 @@ void SdlTouch::handle_finger(const SDL_Event& e, SdlInput& input, uint64_t now_m
 void SdlTouch::draw(SDL_Renderer* r, const SdlInput& input) const {
     if (!active_ || portrait_) return;   // the portrait cluster is PortraitSkin's
 
-    fill(r, leftBox_, PANEL_BG);
-    fill(r, rightBox_, PANEL_BG);
+    if (!overlay_) {   // overlaid, the picture shows between the buttons
+        fill(r, leftBox_, PANEL_BG);
+        fill(r, rightBox_, PANEL_BG);
+    }
 
     auto draw_box = [&](const tl::BoxRects& box, int ox, int oy) {
         for (int i = 0; i < box.count; ++i) {
             const tl::ButtonRect& br = box.r[i];
             const SDL_Rect        rc{br.x + ox, br.y + oy, br.w, br.h};
-            fill(r, rc, input.is_held(br.button) ? BTN_PRESSED : BTN_NORMAL);
+            const bool held = input.is_held(br.button);
+            fill(r, rc, held ? BTN_PRESSED : BTN_NORMAL, overlay_ && !held ? OVERLAY_ALPHA : 255);
             ptshell::draw_label(r, br.button, rc);
         }
     };

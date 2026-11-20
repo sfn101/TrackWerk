@@ -8,6 +8,13 @@ YouTube in SOURCE is for getting a specific track to sample. Before this change 
 had the genre added, results included hour-long compilations, playlists and channels with no length shown, and there was
 no way to give it a link. It now works as a picker.
 
+## Status
+
+- **Windows:** tested by hand on 2026-11-20, covering link paste and lengths. A typed search after the START fix (4863b4b) has not been tried by hand yet.
+- **Android:** UNTESTED on a device. It only builds in CI.
+- **Linux desktop:** CI checks only.
+- If Android YouTube misbehaves, start from this spec and the commits f3e64b1 and 4863b4b. Listed under "Needs device testing" in ROADMAP.md.
+
 ## Platforms
 
 Android, Windows and Linux desktops. Not on handhelds: builds with `PT_HANDHELD` (Brick, RGB20S) never look for yt-dlp, so

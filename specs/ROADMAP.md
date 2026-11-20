@@ -11,6 +11,17 @@ Work top to bottom. Each item has its own spec; finish (build, test on Windows, 
 | 5 | Audit fixes, batch 2 (save safety) | [audit-fixes-batch2.md](audit-fixes-batch2.md) | Done |
 | 6 | Audit fixes, batch 3 (the rest) | [audit-fixes-batch3.md](audit-fixes-batch3.md) | Done |
 
+## Needs device testing
+
+- **YouTube picker on Android (merged 2026-11-20, untested on a device):** [youtube-picker.md](youtube-picker.md). Built by CI only, never run on a phone. What to check:
+  - Search > PASTE LINK reads the clipboard through SDL.
+  - Share > TrackWerk from the YouTube app (the `SEND` intent filter, then `onNewIntent`) opens the link field.
+  - The 15-minute filter and link lookup run in `YouTubeFacade.kt`.
+  - A typed search no longer has the genre added.
+  - The START release no longer cancels a typed search.
+  - Commits: f3e64b1 (picker) and 4863b4b (START), on branch `windows-sources`.
+  - Tested on Windows only. Linux desktop has passed CI only.
+
 ## Later (no spec yet)
 
 - **Refuse songs from a newer TrackWerk (agreed 2026-11-19):** today the loader reads a song's `version` but never refuses a newer one (`songcore/project_io.h`), so an older app would open a newer song, silently drop what it doesn't know, and a SAVE would lose it. Add the check now: a song whose `version` is newer than this app understands is refused with `MADE WITH A NEWER TRACKWERK` and the open song stays as it was. Every later change to the song format raises `version`. Small, and worth doing early so as many released versions as possible carry it; `.pt16` covers the 16-track change on its own.

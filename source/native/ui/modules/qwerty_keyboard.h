@@ -31,7 +31,8 @@ enum class QwertyContext {
     GROOVE_SAVE,      // write the GROOVE screen's slot to `contextExtra`/<text>.ptg, and name it <text>
     REVERB_SAVE,      // write EFFECTS' reverb cells to `contextExtra`/<text>.ptr, and name them <text>
     DELAY_SAVE,       // write EFFECTS' delay cells to `contextExtra`/<text>.ptd, and name them <text>
-    SOURCE_SEARCH    // Digging search text on platforms without a system text dialog
+    SOURCE_SEARCH,   // Digging search text on platforms without a system text dialog
+    PROJECT_SAVE_AS  // save the song as <text>.ptp in the folder SAVE uses, and name it <text>
 };
 
 // 3 key rows of 10, then the space bar. The ABORT/APPLY row is virtual.

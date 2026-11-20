@@ -50,9 +50,14 @@ static std::string project_file(const songcore::SongcoreHost& host) {
 
 // A song opened from a file saves into that file's folder (as <name>.ptp, so a renamed song stays
 // beside it); a new, recovered or imported song has no path and goes to Projects.
-static std::string project_save_path(const songcore::SongcoreHost& host, FileSystem& fs, const AppState& s) {
+std::string project_save_path(const songcore::SongcoreHost&, FileSystem& fs, const AppState& s,
+                              const std::string& name) {
     const std::string folder = s.projectPath.empty() ? std::string() : fs.parent_path(s.projectPath);
-    return (folder.empty() ? fs.projects_directory() : folder) + "/" + project_file(host);
+    return (folder.empty() ? fs.projects_directory() : folder) + "/" + songcore::project_file_name(name) + ".ptp";
+}
+
+static std::string project_save_path(const songcore::SongcoreHost& host, FileSystem& fs, const AppState& s) {
+    return project_save_path(host, fs, s, host.project().name);
 }
 
 ActionResult save_project(songcore::SongcoreHost& host, FileSystem& fs, AppState& s) {
@@ -66,8 +71,13 @@ ActionResult save_project(songcore::SongcoreHost& host, FileSystem& fs, AppState
         // holds it): keep it untouched and save beside it (AUDIT 8). The path stays the original, so
         // the next SAVE tries it again without asking.
         if (existed) {
-            const std::string backupName = songcore::project_file_name(host.project().name) + "-backup.ptp";
-            if (write_project(host, fs, fs.parent_path(path) + "/" + backupName)) {
+            // Numbered, never over an older backup: -backup, -backup-2, -backup-3…
+            const std::string stem = songcore::project_file_name(host.project().name) + "-backup";
+            std::string backupName = stem + ".ptp";
+            for (int n = 2; n < 10000 && fs.file_exists(fs.parent_path(path) + "/" + backupName); ++n)
+                backupName = stem + "-" + std::to_string(n) + ".ptp";
+            if (!fs.file_exists(fs.parent_path(path) + "/" + backupName) &&
+                write_project(host, fs, fs.parent_path(path) + "/" + backupName)) {
                 s.savedProjectVersion = s.projectVersion;
                 s.projectPath         = path;
                 autosave_clear(fs);
@@ -172,8 +182,7 @@ bool copy_in_pieces(const std::string& from, const std::string& to,
 
 }  // namespace
 
-bool save_would_replace_other_song(const songcore::SongcoreHost& host, FileSystem& fs, const AppState& s) {
-    const std::string target = project_save_path(host, fs, s);
+bool save_would_replace_other_song(FileSystem& fs, const AppState& s, const std::string& target) {
     if (!fs.file_exists(target)) return false;
     // A repaired song not saved yet: its own file is the damaged one, so the first SAVE asks too.
     if (s.repairedUnsaved) return true;

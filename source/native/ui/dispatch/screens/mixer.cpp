@@ -113,7 +113,7 @@ void InputDispatcher::save_reverb_preset_as(const std::string& dir, const std::s
     // "REVERB" (never the dotfile .ptr).
     const std::string shown = reverb_preset_display_name(host_.project());
     const std::string want  = !typed_text.empty() ? typed_text : !shown.empty() ? shown : "REVERB";
-    const std::string safe  = safe_file_name(want);
+    const std::string path  = typed_save_path(QwertyContext::REVERB_SAVE, dir, typed_text);
 
     // The row adopts the name it was saved under — the only thing on screen naming the file.
     if (host_.project().reverbPreset != want) {
@@ -121,7 +121,7 @@ void InputDispatcher::save_reverb_preset_as(const std::string& dir, const std::s
         mark_modified();
     }
 
-    const bool ok = save_reverb_file(fs_, dir + "/" + safe + ".ptr", reverb_cells_of(host_.project()));
+    const bool ok = save_reverb_file(fs_, path, reverb_cells_of(host_.project()));
     set_status(s_, ok ? "REVERB SAVED" : "SAVE FAILED", ok);
 }
 
@@ -129,14 +129,14 @@ void InputDispatcher::save_delay_preset_as(const std::string& dir, const std::st
     // As the reverb's.
     const std::string shown = delay_preset_display_name(host_.project());
     const std::string want  = !typed_text.empty() ? typed_text : !shown.empty() ? shown : "DELAY";
-    const std::string safe  = safe_file_name(want);
+    const std::string path  = typed_save_path(QwertyContext::DELAY_SAVE, dir, typed_text);
 
     if (host_.project().delayPreset != want) {
         host_.edit_project().delayPreset = want;
         mark_modified();
     }
 
-    const bool ok = save_delay_file(fs_, dir + "/" + safe + ".ptd", delay_cells_of(host_.project()));
+    const bool ok = save_delay_file(fs_, path, delay_cells_of(host_.project()));
     set_status(s_, ok ? "DELAY SAVED" : "SAVE FAILED", ok);
 }
 

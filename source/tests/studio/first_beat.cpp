@@ -320,7 +320,7 @@ int main(int argc, char** argv) {
         assert(r.state.currentScreen == ScreenType::PROJECT);
         for (int i = 0; i < 12 && r.state.projectCursorRow != static_cast<int>(ProjectRow::PROJECT); ++i)
             r.tap(Button::DPAD_DOWN);
-        while (r.state.projectCursorColumn < 3) r.tap(Button::DPAD_RIGHT);   // NEW
+        while (r.state.projectCursorColumn < 4) r.tap(Button::DPAD_RIGHT);   // NEW
         r.tap(Button::A);
         assert(!r.state.firstBeat.active && r.host.project().name != "FIRSTBEAT2");
 
@@ -330,8 +330,8 @@ int main(int argc, char** argv) {
         r.hold_tap(Button::R_SHIFT, Button::DPAD_UP);
         for (int i = 0; i < 12 && r.state.projectCursorRow != static_cast<int>(ProjectRow::PROJECT); ++i)
             r.tap(Button::DPAD_DOWN);
-        while (r.state.projectCursorColumn > 2) r.tap(Button::DPAD_LEFT);
-        while (r.state.projectCursorColumn < 2) r.tap(Button::DPAD_RIGHT);   // LOAD
+        while (r.state.projectCursorColumn > 3) r.tap(Button::DPAD_LEFT);
+        while (r.state.projectCursorColumn < 3) r.tap(Button::DPAD_RIGHT);   // LOAD
         r.tap(Button::A);
         for (int i = 0; i < 40; ++i) {
             const auto* item = r.state.fileBrowser.current();

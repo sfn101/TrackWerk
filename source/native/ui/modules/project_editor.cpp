@@ -101,8 +101,8 @@ void ProjectModule::draw(Canvas& c, int x, int y, const ProjectState& s) const {
               p.name.empty() ? "______"
                              : Canvas::clip_text(p.name, ProjectModule::NAME_VISIBLE_CHARS));
 
-    // SAVE, LOAD, NEW are cursor columns 1, 2, 3.
-    button_row(ProjectRow::PROJECT, "PROJECT", {"SAVE", "LOAD", "NEW"});
+    // SAVE, COPY (save as), LOAD, NEW are cursor columns 1-4. "SAVE AS" does not fit the row.
+    button_row(ProjectRow::PROJECT, "PROJECT", {"SAVE", "COPY", "LOAD", "NEW"});
 
     // A live percentage beside a row while its job runs.
     const auto progress = [&](ProjectRow row, float done) {

@@ -1518,7 +1518,8 @@ Navigate here: **R+UP** from SONG or CHAIN.
 
 | Row | Action |
 |---|---|
-| SAVE | Save the song as `<NAME>.ptp`. A song opened from a file saves back into that file's folder; a new, recovered or imported song goes to `Projects/`. If that folder can't be written (read-only, or no permission on Android) it saves in `Projects/` and says `FOLDER READ-ONLY: SAVED IN PROJECTS`. A different song already under that name asks `SONG EXISTS - OVERWRITE?` first. If the song's file is held by another program (OneDrive or a virus scanner on Windows), the file is left untouched and the song is saved beside it as `<NAME>-backup.ptp`, with `FILE LOCKED: SAVED AS <NAME>-backup.ptp`; load it from LOAD like any song. |
+| SAVE | Save the song as `<NAME>.ptp`. A song opened from a file saves back into that file's folder; a new, recovered or imported song goes to `Projects/`. If that folder can't be written (read-only, or no permission on Android) it saves in `Projects/` and says `FOLDER READ-ONLY: SAVED IN PROJECTS`. A different song already under that name asks `SONG EXISTS - OVERWRITE?` first: **A** overwrites it, **B** opens the keyboard on `<NAME>-COPY` so you can keep both (see COPY). If the song's file is held by another program (OneDrive or a virus scanner on Windows), the file is left untouched and the song is saved beside it as `<NAME>-backup.ptp`, with `FILE LOCKED: SAVED AS <NAME>-backup.ptp`; load it from LOAD like any song. A later locked save never replaces that backup: it writes `<NAME>-backup-2.ptp`, then `-backup-3`, and so on. |
+| COPY | Save as: save the song under a new name and keep the old file. The keyboard opens on `<NAME>-COPY` (`-COPY-2`, `-COPY-3`… if that is taken too). START saves it beside the old file, and the copy becomes the open song: its NAME changes and the next SAVE writes to the copy. A name you type that is already in use asks `SONG EXISTS - OVERWRITE?` again; it is never numbered for you. SELECT cancels and nothing changes. |
 | LOAD | Open file browser to load a project. With unsaved changes it asks `UNSAVED CHANGES - LOAD ANYWAY?` first. A damaged song asks `FILE DAMAGED - REPAIR?` (see below). |
 | COLLECT | Copy the song and every sample and SoundFont it plays into `<home>/Songs/ProjectName/`. Move or share that folder and the song opens anywhere. If the folder is already there, choose REPLACE, NEW COPY (`ProjectName_2`) or CANCEL. Two different samples with the same file name are both kept, the second as `kick_2.wav`. |
 | EXPORT — MIX | Open the RENDER panel, set to a stereo WAV (offline, faster than real-time). |
@@ -2624,7 +2625,7 @@ modifiers.
 
 | Input | Action |
 |---|---|
-| SELECT + A | Rename the file or folder under the cursor. A keyboard opens with the current name. |
+| SELECT + A | Rename the file or folder under the cursor. A keyboard opens with the current name. A name already in use is never overwritten: the status says `NAME TAKEN` and the keyboard comes back with what you typed. |
 | SELECT + B | Delete it — or, inside a selection, every selected file. An `A=YES  B=NO` confirm appears first — nothing is deleted on the press itself. |
 | SELECT + R | Create a folder here. A keyboard opens for the name. |
 
@@ -2650,6 +2651,15 @@ Two details worth knowing:
 > [!TIP]
 > On Android the destination can be any folder you have granted, including one on an SD card — so
 > this is also how you move a project or a sample between two granted folders.
+
+**Saving under a name that is taken.** Every save where you type a name (songs, instrument presets,
+themes, scales, grooves, reverb and delay presets) asks before it replaces a file:
+`INSTRUMENT EXISTS - OVERWRITE?`, `THEME EXISTS - OVERWRITE?` and so on. **A** overwrites. **B** opens
+the keyboard on `<NAME>-COPY` (or `-COPY-2`, `-COPY-3`… if that is taken too), so you can keep both;
+SELECT there cancels and nothing is saved. A preset asks even when you save it again under its own
+name, because presets do not remember which file they came from. Whatever name you save under becomes
+the name the instrument, scale, groove, reverb or delay row shows, and a saved theme becomes the
+active one.
 
 ### Project files
 

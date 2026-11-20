@@ -362,6 +362,7 @@ enum class HelpTopic {
     OVERLAY_CONFIRM,
     SCREEN_PERFORM,
     SCREEN_VISUALIZER,
+    PROJECT_SAVE_AS,
 
     COUNT
 };
@@ -1090,7 +1091,9 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
      {"Saves under the NAME above, in",
       "the folder the song came from.",
       "New songs go to Projects. A",
-      "different song there asks first."},
+      "different song there asks first:",
+      "A overwrites it, B opens the",
+      "keyboard to save a copy."},
      {"A saves"}},
     /* PROJECT_LOAD */
     {"LOAD: open another song", "Opens the file browser to", "pick one.",
@@ -2625,6 +2628,16 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
      {"A+←/→ picks the style",
       "START plays the song",
       "R+→ goes back to SONG"}},
+    /* PROJECT_SAVE_AS */
+    {"COPY: save as a new song", "Saves the song under a new", "name and keeps the old file.",
+     {"Opens the keyboard on the name",
+      "with -COPY added. The copy",
+      "becomes the open song, and the",
+      "old file stays as it was. A",
+      "name already in use asks first."},
+     {"A opens the keyboard",
+      "START on the keyboard saves",
+      "SELECT on the keyboard cancels"}},
 };
 
 // ─── Rules 2 and 3, as compile errors — at runtime they fail silently ────────────────────────────
@@ -2822,7 +2835,8 @@ inline HelpTopic project_cell_topic(int row, int column) {
         case ProjectRow::NAME:      return HelpTopic::PROJECT_NAME;
         case ProjectRow::PROJECT:
             return column == 1   ? HelpTopic::PROJECT_SAVE
-                   : column == 2 ? HelpTopic::PROJECT_LOAD
+                   : column == 2 ? HelpTopic::PROJECT_SAVE_AS
+                   : column == 3 ? HelpTopic::PROJECT_LOAD
                                  : HelpTopic::PROJECT_NEW;
         case ProjectRow::EXPORT:
             return column == 1 ? HelpTopic::PROJECT_EXPORT_MIX : HelpTopic::PROJECT_EXPORT_STEMS;

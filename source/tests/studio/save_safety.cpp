@@ -64,6 +64,11 @@ int main(int argc, char** argv) {
     check(get(target / "keep.txt") == "untouched", "8: the locked target is untouched");
     check(!fs::exists(fs::path(files.projects_directory()) / "LOCKED.ptp.tmp"), "8: no temp left behind");
     check(!state.project_dirty(), "8: the song counts as saved");
+    state.projectVersion++;
+    const ActionResult again = save_project(host, files, state);
+    check(again.ok && again.message == "FILE LOCKED: SAVED AS LOCKED-backup-2.ptp" &&
+              fs::is_regular_file(fs::path(files.projects_directory()) / "LOCKED-backup.ptp"),
+          "8: a second backup is numbered and never replaces the first");
 
     // ── 12 · two different kick.wav files ──
     const fs::path a = dir / "outside" / "a" / "kick.wav";

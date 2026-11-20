@@ -29,7 +29,9 @@ struct ConfirmDialogState {
         COLLECT_EXISTS,   // PROJECT → COLLECT, when Songs/<name> is already there
         FIRST_BEAT,       // help → START (First beat), when DIRTY: the tutorial starts a new project
         LOAD_DISCARD,     // PROJECT → LOAD, when DIRTY: YES opens the browser
-        SAVE_OVERWRITE,   // PROJECT → SAVE onto Projects/<name>.ptp that holds a different song
+        // A typed-name save onto a taken file: <THING> EXISTS - OVERWRITE?. `arg` is the save's
+        // QwertyContext; A overwrites, B opens the keyboard on a -COPY name.
+        SAVE_OVERWRITE,
         // A song refused as damaged but readable: A repairs and loads it. `arg` says where it came
         // from; B differs (LOAD keeps the open song, RESUME starts an empty one).
         REPAIR_SONG,
@@ -56,7 +58,7 @@ struct ConfirmDialogState {
     void close()             { kind = Kind::NONE; arg = 0; }
 };
 
-std::string confirm_dialog_title(ConfirmDialogState::Kind kind);
+std::string confirm_dialog_title(ConfirmDialogState::Kind kind, int arg = 0);
 
 // The box itself, asking `title`; the sample editor uses it alone. ⚠️ It does not dim the screen —
 // `draw_confirm_dialog` does.

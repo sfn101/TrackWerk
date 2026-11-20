@@ -76,9 +76,12 @@ void InputDispatcher::confirm_accept() {
             open_project_browser();
             break;
 
-        case ConfirmDialogState::Kind::SAVE_OVERWRITE:
-            save_project_now();
+        case ConfirmDialogState::Kind::SAVE_OVERWRITE: {
+            const AppState::PendingSave p = s_.pendingSave;
+            s_.pendingSave = AppState::PendingSave{};
+            run_typed_save(p.context, p.dir, p.text);
             break;
+        }
 
         case ConfirmDialogState::Kind::CHANGE_TYPE:
             // The direction comes back out of the dialog, so A+LEFT still steps backwards after a yes.
@@ -131,6 +134,14 @@ void InputDispatcher::confirm_cancel() {
             set_status(s_.fileBrowser, "LOAD FAILED: FILE DAMAGED", false);
         else
             start_new_project();
+        return;
+    }
+
+    // B on <THING> EXISTS - OVERWRITE?: keep both, under a name the keyboard suggests.
+    if (kind == ConfirmDialogState::Kind::SAVE_OVERWRITE) {
+        const AppState::PendingSave p = s_.pendingSave;
+        s_.pendingSave = AppState::PendingSave{};
+        open_copy_keyboard(p.context, p.dir, p.text);
         return;
     }
 

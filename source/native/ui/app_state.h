@@ -90,6 +90,10 @@ struct AppState {
     std::string m8PendingJson,m8PendingPath,m8PendingReport;
     // The damaged song the REPAIR_SONG box asks about (LOAD only; RESUME reads the autosave).
     std::string repairPendingPath;
+    // A typed-name save waiting on SAVE_OVERWRITE's answer: A saves it, B opens the keyboard on a
+    // -COPY name (specs/save-under-new-name.md). Kept here because the keyboard is gone by then.
+    struct PendingSave { QwertyContext context = QwertyContext::PROJECT_SAVE_AS; std::string dir, text; };
+    PendingSave pendingSave;
     // A repaired song from LOAD that has not been saved yet: its file on disk is still the damaged
     // one, so the first SAVE asks before writing over it.
     bool repairedUnsaved = false;

@@ -68,17 +68,17 @@ void InputDispatcher::project_action() {
 
         case ProjectRow::PROJECT:
             switch (s_.projectCursorColumn) {
-                case 1:     // SAVE: another song already at Projects/<name>.ptp asks first
-                    if (save_would_replace_other_song(host_, fs_, s_))
-                        s_.confirm.open(ConfirmDialogState::Kind::SAVE_OVERWRITE);
-                    else
-                        save_project_now();
+                case 1:     // SAVE: another song already at <name>.ptp asks first
+                    typed_save(QwertyContext::PROJECT_SAVE_AS, "", host_.project().name);
                     break;
-                case 2:     // LOAD, asking like NEW
+                case 2:     // COPY (save as): the keyboard on <NAME>-COPY
+                    open_copy_keyboard(QwertyContext::PROJECT_SAVE_AS, "", host_.project().name);
+                    break;
+                case 3:     // LOAD, asking like NEW
                     if (s_.project_dirty()) s_.confirm.open(ConfirmDialogState::Kind::LOAD_DISCARD);
                     else                    open_project_browser();
                     break;
-                case 3:     // NEW
+                case 4:     // NEW
                     // Only ask if there is something to lose.
                     if (s_.project_dirty()) s_.confirm.open(ConfirmDialogState::Kind::NEW_PROJECT);
                     else                    start_new_project();

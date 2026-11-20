@@ -2,12 +2,129 @@
 
 #include "ui/dispatch/dispatch_common.h"
 
-#include "ui/std_filesystem.h"   // path_stem
+#include "ui/std_filesystem.h"   // path_stem / path_extension / path_sanitize
 #include "ui/source_sampler.h"
+#include "ui/fx_preset_bank.h"   // reverb/delay_preset_display_name
+#include "ui/fx_preset_io.h"     // REVERB/DELAY_FILE_EXT, FX_PRESET_NAME_MAX
+#include "ui/groove_io.h"        // GROOVE_FILE_EXT
+#include "ui/scale_io.h"         // SCALE_FILE_EXT
+#include "ui/project_actions.h"  // project_save_path / save_would_replace_other_song
 
 #include <string>
 
 namespace pt::ui {
+
+namespace {
+
+// The path FILE_RENAME would create (StdFileSystem::rename_file's rule), to tell a taken name apart.
+std::string rename_target(FileSystem& fs, const std::string& path, const std::string& name) {
+    const std::string ext = fs.is_directory(path) ? std::string() : path_extension(path);
+    std::string file = path_sanitize(name, /*allow_dot=*/true);
+    if (file.empty()) return std::string();
+    const std::string suffix = "." + ext;
+    if (!ext.empty() && !(file.size() > suffix.size() &&
+                          file.compare(file.size() - suffix.size(), suffix.size(), suffix) == 0))
+        file += suffix;
+    return fs.parent_path(path) + "/" + file;
+}
+
+// The keyboard a typed-name save reopens with: its label and length.
+struct SaveKeyboard { const char* label; int maxLength; };
+SaveKeyboard save_keyboard(QwertyContext c) {
+    switch (c) {
+        case QwertyContext::INSTRUMENT_SAVE: return {"SAVE PRESET:", 20};
+        case QwertyContext::THEME_SAVE:      return {"SAVE THEME:", 20};
+        case QwertyContext::SCALE_SAVE:      return {"SAVE SCALE:", 20};
+        case QwertyContext::GROOVE_SAVE:     return {"SAVE GROOVE:", 20};
+        case QwertyContext::REVERB_SAVE:     return {"SAVE REVERB:", FX_PRESET_NAME_MAX};
+        case QwertyContext::DELAY_SAVE:      return {"SAVE DELAY:", FX_PRESET_NAME_MAX};
+        default:                             return {"SAVE COPY:", PROJECT_NAME_MAX_CHARS};
+    }
+}
+
+}  // namespace
+
+std::string InputDispatcher::typed_save_path(QwertyContext c, const std::string& dir, const std::string& text) {
+    const auto file = [&](const std::string& name, const char* fallback, const char* ext) {
+        const std::string safe = safe_file_name(name);
+        return dir + "/" + (safe.empty() ? std::string(fallback) : safe) + "." + ext;
+    };
+    const songcore::Project& p = host_.project();
+    switch (c) {
+        case QwertyContext::INSTRUMENT_SAVE: return file(text, "PRESET", "pti");
+        case QwertyContext::THEME_SAVE:      return file(text, "THEME", "ptt");
+        case QwertyContext::SCALE_SAVE:      return file(text, "SCALE", SCALE_FILE_EXT);
+        case QwertyContext::GROOVE_SAVE:     return file(text, "GROOVE", GROOVE_FILE_EXT);
+        // An empty field saves under the name the row shows.
+        case QwertyContext::REVERB_SAVE:
+            return file(text.empty() ? reverb_preset_display_name(p) : text, "REVERB", REVERB_FILE_EXT);
+        case QwertyContext::DELAY_SAVE:
+            return file(text.empty() ? delay_preset_display_name(p) : text, "DELAY", DELAY_FILE_EXT);
+        case QwertyContext::PROJECT_SAVE_AS: return project_save_path(host_, fs_, s_, text);
+        default:                             return std::string();
+    }
+}
+
+void InputDispatcher::typed_save(QwertyContext c, const std::string& dir, const std::string& text) {
+    const std::string path = typed_save_path(c, dir, text);
+    // A song's own file never asks; a preset always does (presets don't remember their file).
+    const bool taken = c == QwertyContext::PROJECT_SAVE_AS ? save_would_replace_other_song(fs_, s_, path)
+                                                           : fs_.file_exists(path);
+    if (!taken) {
+        run_typed_save(c, dir, text);
+        return;
+    }
+    s_.pendingSave = AppState::PendingSave{c, dir, text};
+    s_.confirm.open(ConfirmDialogState::Kind::SAVE_OVERWRITE, static_cast<int>(c));
+}
+
+void InputDispatcher::open_copy_keyboard(QwertyContext c, const std::string& dir, const std::string& text) {
+    const SaveKeyboard kb = save_keyboard(c);
+    const std::string base = text.empty() ? path_stem(typed_save_path(c, dir, text)) : text;
+    // Only the suggestion is numbered; a typed name that is taken asks again.
+    std::string name;
+    for (int n = 1; n < 10000; ++n) {
+        const std::string suffix = n == 1 ? std::string("-COPY") : "-COPY-" + std::to_string(n);
+        const size_t room = static_cast<size_t>(kb.maxLength) > suffix.size() ? kb.maxLength - suffix.size() : 0;
+        name = base.substr(0, room) + suffix;
+        if (!fs_.file_exists(typed_save_path(c, dir, name))) break;
+    }
+    open_qwerty(c, name, kb.label, dir, kb.maxLength, /*clear_on_first_b=*/true);
+}
+
+void InputDispatcher::run_typed_save(QwertyContext c, const std::string& dir, const std::string& text) {
+    switch (c) {
+        case QwertyContext::INSTRUMENT_SAVE: {
+            const std::string name = text.empty() ? "PRESET" : text;
+            if (!save_instrument_preset(host_, fs_, s_.currentInstrument, typed_save_path(c, dir, text))) {
+                set_status(s_, "SAVE FAILED", false);
+                break;
+            }
+            // The slot takes the name it was saved under.
+            Instrument& ins = host_.edit_project().instruments[static_cast<size_t>(s_.currentInstrument)];
+            if (!text.empty() && ins.name != text) {
+                ins.name = text;
+                mark_modified();
+            }
+            set_status(s_, "SAVED: " + name, true);
+            break;
+        }
+        case QwertyContext::THEME_SAVE:      save_theme_as(dir, text);         break;
+        case QwertyContext::SCALE_SAVE:      save_scale_as(dir, text);         break;
+        case QwertyContext::GROOVE_SAVE:     save_groove_as(dir, text);        break;
+        case QwertyContext::REVERB_SAVE:     save_reverb_preset_as(dir, text); break;
+        case QwertyContext::DELAY_SAVE:      save_delay_preset_as(dir, text);  break;
+        case QwertyContext::PROJECT_SAVE_AS:
+            // The song takes the name; save_project writes <name>.ptp and makes it the song's file.
+            if (host_.project().name != text) {
+                host_.edit_project().name = text;
+                mark_modified();
+            }
+            save_project_now();
+            break;
+        default: break;
+    }
+}
 
 GestureResult InputDispatcher::qwerty_layer(Gesture g) {
     QwertyKeyboardState& k = s_.qwerty;
@@ -69,9 +186,14 @@ void InputDispatcher::qwerty_apply() {
         case QwertyContext::FILE_RENAME: {
             // An empty field means "leave it alone", not "name it nothing".
             const std::string name = text.empty() ? path_stem(k.contextExtra) : text;
+            const std::string target = rename_target(fs_, k.contextExtra, name);
             if (fs_.rename_file(k.contextExtra, name)) {
                 refresh_browser();
                 set_status(s_.fileBrowser, "RENAMED", true);
+            } else if (!target.empty() && fs_.file_exists(target)) {
+                // Never over another file: the keyboard comes back with what was typed.
+                set_status(s_.fileBrowser, "NAME TAKEN", false);
+                open_qwerty(QwertyContext::FILE_RENAME, text, k.fieldLabel, k.contextExtra, k.maxLength);
             } else {
                 set_status(s_.fileBrowser, "RENAME FAILED", false);
             }
@@ -103,36 +225,15 @@ void InputDispatcher::qwerty_apply() {
             mark_modified();
             break;
 
-        case QwertyContext::INSTRUMENT_SAVE: {
-            const std::string name = text.empty() ? "PRESET" : text;
-            const std::string path = k.contextExtra + "/" + name + ".pti";
-            if (save_instrument_preset(host_, fs_, s_.currentInstrument, path)) {
-                set_status(s_, "SAVED: " + name, true);
-            } else {
-                set_status(s_, "SAVE FAILED", false);
-            }
-            break;
-        }
-
+        // ⚠️ k.contextExtra, not s_.qwerty's: the live keyboard is already cleared.
+        case QwertyContext::INSTRUMENT_SAVE:
         case QwertyContext::THEME_SAVE:
-            // ⚠️ k.contextExtra, not s_.qwerty's: the live keyboard is already cleared.
-            save_theme_as(k.contextExtra, text);
-            break;
-
         case QwertyContext::SCALE_SAVE:
-            save_scale_as(k.contextExtra, text);
-            break;
-
         case QwertyContext::GROOVE_SAVE:
-            save_groove_as(k.contextExtra, text);
-            break;
-
         case QwertyContext::REVERB_SAVE:
-            save_reverb_preset_as(k.contextExtra, text);
-            break;
-
         case QwertyContext::DELAY_SAVE:
-            save_delay_preset_as(k.contextExtra, text);
+        case QwertyContext::PROJECT_SAVE_AS:
+            typed_save(k.context, k.contextExtra, text);
             break;
 
         case QwertyContext::SAMPLE_NAME: {

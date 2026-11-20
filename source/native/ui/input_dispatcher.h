@@ -846,6 +846,16 @@ class InputDispatcher {
     // ABORT (SELECT, or A on ABORT): discards the text.
     void qwerty_cancel() { s_.qwerty = QwertyKeyboardState{}; }
 
+    // ── Typed-name saves (specs/save-under-new-name.md) ──────────────────────────────────────────
+    // The file a save in `context` writes for `text` (each save's own fallback name included).
+    std::string typed_save_path(QwertyContext context, const std::string& dir, const std::string& text);
+    // Save, or ask <THING> EXISTS - OVERWRITE? first when the file is taken.
+    void typed_save(QwertyContext context, const std::string& dir, const std::string& text);
+    // Save now, no question.
+    void run_typed_save(QwertyContext context, const std::string& dir, const std::string& text);
+    // The keyboard on `<NAME>-COPY`, numbered -COPY-2, -COPY-3... while taken.
+    void open_copy_keyboard(QwertyContext context, const std::string& dir, const std::string& text);
+
     // ── PROJECT and SETTINGS (ui/dispatch/screens/project.cpp) ───────────────────────────────────
 
     GestureResult project_screen(Gesture g);

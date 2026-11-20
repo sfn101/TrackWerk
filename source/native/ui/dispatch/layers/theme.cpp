@@ -182,15 +182,14 @@ void InputDispatcher::theme_row_action() {
 
 void InputDispatcher::save_theme_as(const std::string& dir, const std::string& typed_text) {
     // Sanitized filename (empty → THEME.ptt), raw name inside.
-    const std::string safe = safe_file_name(typed_text);
-    const std::string file = (safe.empty() ? std::string("THEME") : safe) + ".ptt";
-    const std::string path = dir + "/" + file;
+    const std::string path = typed_save_path(QwertyContext::THEME_SAVE, dir, typed_text);
 
     Theme to_save = s_.theme;
     if (!typed_text.empty()) to_save.name = typed_text;
 
-    // ⚠️ The live theme keeps its name: the built-in cycle keys off it. Loading the file sets it.
     const bool ok = save_theme_file(fs_, path, to_save);
+    // The saved file becomes the active theme, as loading it would (settings.json remembers it).
+    if (ok) s_.theme.name = to_save.name;
 
     // ⚠️ A full card or a read-only mount must not report success.
     set_status(s_, ok ? "THEME SAVED" : "SAVE FAILED", ok);

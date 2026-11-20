@@ -84,8 +84,7 @@ void InputDispatcher::scale_row_action() {
 
 void InputDispatcher::save_scale_as(const std::string& dir, const std::string& typed_text) {
     // Sanitized filename (empty → SCALE.pts), raw name inside.
-    const std::string safe = safe_file_name(typed_text);
-    const std::string file = (safe.empty() ? std::string("SCALE") : safe) + ".pts";
+    const std::string path = typed_save_path(QwertyContext::SCALE_SAVE, dir, typed_text);
 
     songcore::Scale& slot = host_.edit_project().scales[static_cast<size_t>(s_.currentScale)];
 
@@ -98,7 +97,7 @@ void InputDispatcher::save_scale_as(const std::string& dir, const std::string& t
         mark_modified();
     }
 
-    const bool ok = save_scale_file(fs_, dir + "/" + file, slot);
+    const bool ok = save_scale_file(fs_, path, slot);
     set_status(s_, ok ? "SCALE SAVED" : "SAVE FAILED", ok);
 }
 
@@ -128,8 +127,7 @@ void InputDispatcher::groove_row_action() {
 
 void InputDispatcher::save_groove_as(const std::string& dir, const std::string& typed_text) {
     // As for scales (empty → GROOVE.ptg).
-    const std::string safe = safe_file_name(typed_text);
-    const std::string file = (safe.empty() ? std::string("GROOVE") : safe) + ".ptg";
+    const std::string path = typed_save_path(QwertyContext::GROOVE_SAVE, dir, typed_text);
 
     songcore::Groove& slot = host_.edit_project().grooves[static_cast<size_t>(s_.currentGroove)];
 
@@ -141,7 +139,7 @@ void InputDispatcher::save_groove_as(const std::string& dir, const std::string& 
         mark_modified();
     }
 
-    const bool ok = save_groove_file(fs_, dir + "/" + file, slot);
+    const bool ok = save_groove_file(fs_, path, slot);
     set_status(s_, ok ? "GROOVE SAVED" : "SAVE FAILED", ok);
 }
 

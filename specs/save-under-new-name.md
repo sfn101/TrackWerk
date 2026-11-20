@@ -42,10 +42,10 @@ not remember which file they came from, so one extra A press is the price.
 **Songs:** saving over the open song's own file never asks, as today. A song repaired but not yet saved still asks, as
 today (`repairedUnsaved`).
 
-## SAVE AS on PROJECT
+## COPY (save as) on PROJECT
 
-- The PROJECT row becomes four columns: `SAVE  SAVE AS  LOAD  NEW`.
-- SAVE AS opens the same keyboard with `<NAME>-COPY` (numbered if taken), then follows steps 4 and 5.
+- The PROJECT row becomes four columns: `SAVE  COPY  LOAD  NEW`. (Planned as `SAVE AS`, which is too wide for the row; changed to COPY on 2026-11-20.)
+- COPY opens the same keyboard with `<NAME>-COPY` (numbered if taken), then follows steps 4 and 5.
 - No rows move.
 
 ## Also covered
@@ -82,13 +82,13 @@ A host check covers:
 - a typed taken name asking again;
 - cancel changing nothing;
 - the copy becoming current;
-- SAVE AS;
+- COPY (save as);
 - rename onto a taken name;
 - backup numbering;
 - an instrument name with `/` saving safely.
 
 ## Help
 
-- SELECT help for the PROJECT row's SAVE AS (`help_text.h`), and for each save whose help mentions overwriting.
-- Manual: the PROJECT section (SAVE AS, the overwrite question), File Management (rename `NAME TAKEN`, the overwrite
+- SELECT help for the PROJECT row's COPY (`help_text.h`), and for each save whose help mentions overwriting.
+- Manual: the PROJECT section (COPY, the overwrite question), File Management (rename `NAME TAKEN`, the overwrite
   question for presets), and the locked-file backup numbering.

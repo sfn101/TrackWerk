@@ -1,4 +1,5 @@
 #include "ui/modules/confirm_dialog.h"
+#include "ui/modules/qwerty_keyboard.h"   // SAVE_OVERWRITE names the save by its QwertyContext
 
 #include "ui/helpers.h"
 
@@ -27,7 +28,7 @@ constexpr int DLG_INSTR_Y    = DLG_TITLE_Y + DLG_LINE_PITCH;
 
 }  // namespace
 
-std::string confirm_dialog_title(ConfirmDialogState::Kind kind) {
+std::string confirm_dialog_title(ConfirmDialogState::Kind kind, int arg) {
     switch (kind) {
         case ConfirmDialogState::Kind::M8_IMPORT: return "M8 IMPORT";
         case ConfirmDialogState::Kind::CLEAN_SEQ:   return "CLEAN SEQ?";
@@ -39,7 +40,16 @@ std::string confirm_dialog_title(ConfirmDialogState::Kind kind) {
         case ConfirmDialogState::Kind::COLLECT_EXISTS: return "ALREADY IN SONGS";
         case ConfirmDialogState::Kind::FIRST_BEAT:  return "DISCARD WORK?";
         case ConfirmDialogState::Kind::LOAD_DISCARD:   return "UNSAVED CHANGES - LOAD ANYWAY?";
-        case ConfirmDialogState::Kind::SAVE_OVERWRITE: return "SONG EXISTS - OVERWRITE?";
+        case ConfirmDialogState::Kind::SAVE_OVERWRITE:
+            switch (static_cast<QwertyContext>(arg)) {
+                case QwertyContext::INSTRUMENT_SAVE: return "INSTRUMENT EXISTS - OVERWRITE?";
+                case QwertyContext::THEME_SAVE:      return "THEME EXISTS - OVERWRITE?";
+                case QwertyContext::SCALE_SAVE:      return "SCALE EXISTS - OVERWRITE?";
+                case QwertyContext::GROOVE_SAVE:     return "GROOVE EXISTS - OVERWRITE?";
+                case QwertyContext::REVERB_SAVE:     return "REVERB EXISTS - OVERWRITE?";
+                case QwertyContext::DELAY_SAVE:      return "DELAY EXISTS - OVERWRITE?";
+                default:                             return "SONG EXISTS - OVERWRITE?";
+            }
         case ConfirmDialogState::Kind::REPAIR_SONG:    return "FILE DAMAGED - REPAIR?";
         case ConfirmDialogState::Kind::NONE:        break;
     }
@@ -108,7 +118,7 @@ void draw_confirm_dialog(Canvas& c, const ConfirmDialogState& s, const Theme& t)
     if (s.kind == ConfirmDialogState::Kind::COLLECT_EXISTS)
         draw_choice_box(c, confirm_dialog_title(s.kind), {"REPLACE", "NEW COPY", "CANCEL"}, s.arg, t);
     else
-        draw_confirm_box(c, confirm_dialog_title(s.kind), t);
+        draw_confirm_box(c, confirm_dialog_title(s.kind, s.arg), t);
 }
 
 }  // namespace pt::ui

@@ -26,8 +26,13 @@ std::string unique_render_path(FileSystem& fs, const std::string& dir, const std
 // Writes `<Projects>/<name>.ptp` and marks the document clean.
 ActionResult save_project(songcore::SongcoreHost& host, FileSystem& fs, AppState& s);
 
-// SAVE's target exists and is not the song open now (Windows ignores case: "Song" is "SONG").
-bool save_would_replace_other_song(const songcore::SongcoreHost& host, FileSystem& fs, const AppState& s);
+// Where SAVE writes the song when it is called `name`: the folder it came from, else Projects.
+std::string project_save_path(const songcore::SongcoreHost& host, FileSystem& fs, const AppState& s,
+                              const std::string& name);
+
+// Saving as `name` would write over a file that is not the song open now (Windows ignores case:
+// "Song" is "SONG"), or over the damaged file of a song repaired and not saved yet.
+bool save_would_replace_other_song(FileSystem& fs, const AppState& s, const std::string& path);
 
 // ─── COLLECT: the song and every file it plays, copied into one folder under Songs/ ──────────────
 

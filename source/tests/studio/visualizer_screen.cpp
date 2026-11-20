@@ -9,7 +9,10 @@
 #include "ui/input_dispatcher.h"
 #include "ui/layout.h"
 #include "ui/std_filesystem.h"
+#include "ui/theme_io.h"
 
+#include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <filesystem>
@@ -90,14 +93,14 @@ int main(int argc, char** argv) {
 
     // ── the style ──
     const int count = static_cast<int>(SettingsModule::visualizer_names().size());
-    check(count == 9, "nine styles");
+    check(count == 23, "twenty-three styles");
     r.state.theme.visualizerType = VisualizerType::SCOPE;
     r.chord(Button::A, Button::DPAD_RIGHT);
     check(r.state.theme.visualizerType == VisualizerType::FLAT, "A+RIGHT: next style (the setting the bar uses)");
     check(r.state.vizNameUntilMs > r.now, "...and its name is shown");
     r.chord(Button::A, Button::DPAD_LEFT);
     r.chord(Button::A, Button::DPAD_LEFT);
-    check(r.state.theme.visualizerType == VisualizerType::PLASMA, "A+LEFT from the first wraps to the last");
+    check(r.state.theme.visualizerType == VisualizerType::RIDGES, "A+LEFT from the first wraps to the last");
     r.chord(Button::A, Button::DPAD_RIGHT);
     check(r.state.theme.visualizerType == VisualizerType::SCOPE, "A+RIGHT from the last wraps to the first");
 
@@ -135,9 +138,12 @@ int main(int argc, char** argv) {
     TrackerLayout layout;
     for (int style = 0; style < count; ++style) {
         r.state.theme.visualizerType = static_cast<VisualizerType>(style);
-        r.state.animationMs = 5000 + static_cast<uint64_t>(style) * 37;
         Canvas c;
-        layout.draw(c, r.state);
+        // A second of frames: FIRE and RIDGES build up over time.
+        for (int f = 0; f < 25; ++f) {
+            r.state.animationMs = 5000 + static_cast<uint64_t>(style) * 37 + static_cast<uint64_t>(f) * 40;
+            layout.draw(c, r.state);
+        }
         // Something besides the background was drawn inside the main area.
         int lit = 0;
         const auto bg = c.pixels()[(DESIGN_H - 20) * DESIGN_W + 20];
@@ -149,6 +155,60 @@ int main(int argc, char** argv) {
             check(lit > 50, SettingsModule::visualizer_names()[static_cast<size_t>(style)] + " draws across the main area");
         save_ppm(dir / ("vi-" + std::to_string(style) + ".ppm"), c);
     }
+
+    // ── the styles after PLASMA (specs/more-visualizers.md) ──
+    // Inside their box at the strip's size and VI's, in 4:3 and 16:9; saved and read back by name; and
+    // light: at VI size each costs at most three times PLASMA (the best of a few runs, for a busy CI).
+    const auto frame_ms = [&](OscilloscopeModule& m, const OscilloscopeState& os, int w, int h) {
+        Canvas c;
+        double best = 1e9;
+        for (int run = 0; run < 3; ++run) {
+            const auto t0 = std::chrono::steady_clock::now();
+            for (int i = 0; i < 20; ++i) m.draw_sized(c, 10, 82, w, h, os);
+            best = std::min(best, std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count() / 20);
+        }
+        return best;
+    };
+    for (bool wide : {false, true}) {
+        set_design_width(wide);
+        const int stripW = DESIGN_W - 20, viW = wide ? 713 : 499;
+        OscilloscopeState os;
+        os.waveform = wave.data();
+        os.theme = theme_classic();
+        os.playing = true;
+        os.animationMs = 7000;
+        OscilloscopeModule plasmaModule;
+        os.theme.visualizerType = VisualizerType::PLASMA;
+        const double plasma = frame_ms(plasmaModule, os, viW, 392);
+        for (int style = static_cast<int>(VisualizerType::TUNNEL); style < count; ++style) {
+            const auto v = static_cast<VisualizerType>(style);
+            const std::string name = SettingsModule::visualizer_names()[static_cast<size_t>(style)] + (wide ? " 16:9" : " 4:3");
+            os.theme.visualizerType = v;
+            bool inside = true;
+            for (const int boxW : {stripW, viW}) {
+                const int boxH = boxW == stripW ? OscilloscopeModule::HEIGHT : 392;
+                Canvas c;
+                c.fill_rect(0, 0, DESIGN_W, DESIGN_H, 0xFF123456u);
+                OscilloscopeModule m;
+                for (int f = 0; f < 4; ++f) { os.animationMs = 7000 + uint64_t(f) * 40; m.draw_sized(c, 10, 82, boxW, boxH, os); }
+                for (int y = 0; y < DESIGN_H; ++y)
+                    for (int x = 0; x < DESIGN_W; ++x) {
+                        const bool inBox = x >= 10 && x < 10 + boxW && y >= 82 && y < 82 + boxH;
+                        if (!inBox && c.pixels()[y * DESIGN_W + x] != 0xFF123456u) inside = false;
+                    }
+            }
+            check(inside, name + " stays inside its box, strip and VI");
+            OscilloscopeModule m;
+            const double ms = frame_ms(m, os, viW, 392);
+            char cost[96];
+            std::snprintf(cost, sizeof cost, " is light: %.2f ms a frame at VI size (PLASMA %.2f)", ms, plasma);
+            check(ms <= plasma * 3.0 + 0.5, name + cost);
+            Theme back;
+            check(parse_theme(serialize_theme(os.theme), back) && back.visualizerType == v,
+                  name + " saves and loads by name");
+        }
+    }
+    set_design_width(false);
 
     std::printf(failures ? "%d FAILED\n" : "all passed\n", failures);
     return failures ? 1 : 0;

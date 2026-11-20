@@ -45,7 +45,7 @@ std::string get_string(const json& j, const char* key, const std::string& fallba
 
 int clamp(int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v); }
 
-constexpr int VISUALIZER_COUNT = 9;   // VisualizerType — SCOPE … PLASMA
+constexpr int VISUALIZER_COUNT = 23;   // VisualizerType — SCOPE … RIDGES
 
 }  // namespace
 

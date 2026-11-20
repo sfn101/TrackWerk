@@ -23,6 +23,7 @@ Work top to bottom. Each item has its own spec; finish (build, test on Windows, 
 | 17 | Help pass | [help-pass.md](help-pass.md) | Spec ready |
 | 18 | Piano roll (melodic sequencer view) | [piano-roll.md](piano-roll.md) | Spec ready |
 | 19 | Chord editor | [chord-editor.md](chord-editor.md) | Spec ready |
+| 20 | More visualizers (14 styles) | [more-visualizers.md](more-visualizers.md) | Spec ready |
 
 ## Needs device testing
 

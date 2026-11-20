@@ -4,6 +4,7 @@
 // by the theme. Stateful (peak dots, bar decay), so each place keeps its own instance across frames.
 // Reads no engine: samples are handed in; null is silence.
 
+#include "ui/demo_fx.h"
 #include <cstdint>
 
 #include "ui/canvas.h"
@@ -83,7 +84,7 @@ public:
 
 private:
     void draw_scope(Canvas& c, int x, int y, const float* wave, const Theme& t);
-    void draw_demo(Canvas& c, int x, int y, const OscilloscopeState& s) const;
+    void draw_demo(Canvas& c, int x, int y, const OscilloscopeState& s);
     void draw_flat(Canvas& c, int x, int y, const Theme& t) const;
     void draw_graticule(Canvas& c, int x, int y, const Theme& t) const;
     void draw_octa(Canvas& c, int x, int y, const float* tracks, int mask, const Theme& t) const;
@@ -106,6 +107,7 @@ private:
     // otherwise. A stopped app draws only when something changes, so a running clock made the picture
     // jump between those redraws.
     uint64_t demoMs_ = 0;
+    demo_fx::EffectMemory effects_;   // FIRE's and RIDGES's frames-to-frame state
     int     phosphorX_ = -1, phosphorY_ = -1;  // where the history was drawn; a move discards it
 
     int w_ = WIDTH, h_ = HEIGHT;   // this call's area (draw_sized)

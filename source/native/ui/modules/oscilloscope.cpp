@@ -55,6 +55,9 @@ void OscilloscopeModule::draw_sized(Canvas& c, int x, int y, int w, int h, const
         case VisualizerType::PLASMA:
             draw_demo(c, x, y, s);
             break;
+        default:   // TUNNEL and the other styles after PLASMA
+            if (demo_fx::is_style(t.visualizerType)) draw_demo(c, x, y, s);
+            break;
     }
     // On the one of every bar a bright scanline sweeps once down the strip (Motion on, playing).
     if (s.playing && s.bpm > 0) {
@@ -83,7 +86,7 @@ float energy(const float* wave) {
 }  // namespace
 
 // The demo visualizers. Inside the strip only; the animation clock moves them while playing.
-void OscilloscopeModule::draw_demo(Canvas& c, int x, int y, const OscilloscopeState& s) const {
+void OscilloscopeModule::draw_demo(Canvas& c, int x, int y, const OscilloscopeState& s) {
     const Theme& t = s.theme;
     Canvas::ClipScope clip(c, x, y, w_, h_);
     c.fill_rect(x, y, w_, h_, t.vizBackground);
@@ -104,8 +107,11 @@ void OscilloscopeModule::draw_demo(Canvas& c, int x, int y, const OscilloscopeSt
             demo_fx::starfield(c, x, y, w_, h_, t, ms, energy(s.waveform),
                                static_cast<int>(170LL * w_ * h_ / (WIDTH * HEIGHT)));
             break;
-        default:
+        case VisualizerType::PLASMA:
             demo_fx::plasma(c, x, y, w_, h_, t, ms, 6, energy(s.waveform));
+            break;
+        default:
+            demo_fx::style(c, x, y, w_, h_, t, t.visualizerType, ms, s.waveform, energy(s.waveform), effects_);
             break;
     }
     // Faint scanlines, and a dark band along the top where the status line is written.

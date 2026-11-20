@@ -20,6 +20,7 @@ constexpr int VAL2_X     = 408;  // the secondary value
 const std::vector<std::string>& SettingsModule::visualizer_names() {
     static const std::vector<std::string> names = {
         "SCOPE", "FLAT", "OCTA", "OCTA.F", "SPECT", "SPCT.P", "COPPR", "STARS", "PLASM",
+        "TUNNL", "FIRE", "RAIN", "TWIST", "RINGS", "LISSA", "BLOBS", "ROTO", "CUBE", "GLOBE", "LAND", "TORUS", "BALLS", "RIDGE",
     };
     return names;
 }

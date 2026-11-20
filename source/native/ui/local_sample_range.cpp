@@ -15,7 +15,7 @@ std::string local_sample_time(int64_t frame,int rate){
     return text;
 }
 void draw_local_sample_range(Canvas& c,const LocalSampleRangeState& v,const Theme& t){
-    c.surface_rect(0,0,640,480,t.background);
+    c.surface_rect(-c.origin_x(),0,DESIGN_W,DESIGN_H,t.background);   // the whole canvas, centred or not
     c.draw_label(kProductName,18,16,t.textValue,18);
     brand::mark(c,202,12,30,t.rowCursor,t.textTitle);
     c.draw_label("LONG SAMPLE / CHOP SOURCE",254,20,t.rowCursor,12);

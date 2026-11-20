@@ -211,7 +211,7 @@ void scene_heading(Canvas& c, const AppState& s, const char* transport, bool act
 
 void heading(Canvas& c,const AppState& s){
  const auto& t=s.theme;
- c.surface_rect(0,0,640,480,t.background);
+ c.surface_rect(-c.origin_x(),0,DESIGN_W,DESIGN_H,t.background);   // the whole canvas, centred or not
  const bool audition=s.studioTab==0&&(s.studioAuditionHeld||s.studioSynthPicker.previewSounding);
  const bool recording=s.resampleView.active||granular_recording_busy(s.sampleGranular.recording);
  const char* transport=recording?"RECORDING":s.studioAppearanceSettings?"SETTINGS":s.studioTab==3&&s.studioAUsed?"FX HELD":audition?"AUDITION":s.isPlaying?"PLAYING":"STOPPED";

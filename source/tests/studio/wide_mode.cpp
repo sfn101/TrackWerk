@@ -4,6 +4,8 @@
 // usage: ptwide-mode-check <new run directory>   (it also writes each drawn screen there as a .bmp)
 #include "songcore/project_ops.h"
 #include "ui/layout.h"
+#include "ui/scene_layout.h"
+#include "ui/scene_presets.h"
 #include "ui/settings_store.h"
 #include "ui/std_filesystem.h"
 
@@ -12,6 +14,7 @@
 #include <fstream>
 #include <memory>
 #include <string>
+#include <vector>
 
 using namespace pt::ui;
 
@@ -165,6 +168,71 @@ int main(int argc, char** argv) {
     state.currentScreen = ScreenType::SAMPLE_EDITOR;
     layout.draw(*canvas, state);
     write_bmp(*canvas, dir / "sample-editor-wide.bmp");
+
+    // ── Every look at 854×480: nothing drawn into the space between the editor and the rail ──
+    // That space must look the same whatever screen is up; an editor spilling into it would differ.
+    // (PHRASE's side view and the centred INSTRUMENT use it on purpose, so they are not among these.)
+    b.items.clear();
+    int spills = 0;
+    for (int look = -1; look < kSceneCount; ++look) {
+        state.theme = look < 0 ? theme_classic() : scene_preset(look, VisualizerType::SCOPE);
+        const SceneLayout scene = scene_layout(state.theme);
+        const int railW = NavigationMapModule::WIDTH, editorW = EDITOR_CLIP_RIGHT - SIDE_SPACER;
+        const int editorX = scene.railLeft ? DESIGN_W - SIDE_SPACER - editorW : SIDE_SPACER;
+        const int gapX = scene.railLeft ? SIDE_SPACER + railW + 4 : editorX + editorW + 4;
+        const int gapW = scene.railLeft ? editorX - 8 - gapX : right_bar_x() - 4 - gapX;
+        std::vector<uint32_t> first;
+        for (ScreenType screen : {ScreenType::SONG, ScreenType::CHAIN, ScreenType::TABLE, ScreenType::GROOVE,
+                                  ScreenType::SCALE, ScreenType::MIXER, ScreenType::INST_POOL}) {
+            state.currentScreen = screen;
+            layout.draw(*canvas, state);
+            std::vector<uint32_t> gap;
+            for (int y = 100; y < 400; ++y)
+                for (int x = gapX; x < gapX + gapW; ++x)
+                    gap.push_back(canvas->pixels()[static_cast<size_t>(y) * DESIGN_W + x]);
+            if (first.empty()) first = gap;
+            else if (gap != first) {
+                ++spills;
+                std::printf("      look %d: screen %d draws into the gap\n", look, static_cast<int>(screen));
+            }
+        }
+    }
+    check(spills == 0,
+          "every look: no screen draws into the space between the editor and the rail");
+    state.theme = theme_classic();
+
+    // ── Exact-pixel references at 854×480 (FNV-1a over the canvas), still frames with no clock ──
+    // ⚠️ A deliberate visual change updates these: run the check, read the hash it prints.
+    {
+        const auto fnv = [&] {
+            uint64_t h = 1469598103934665603ull;
+            for (int i = 0; i < DESIGN_W * DESIGN_H; ++i) { h ^= canvas->pixels()[i]; h *= 1099511628211ull; }
+            return h;
+        };
+        struct Ref { ScreenType screen; uint64_t hash; };
+        const Ref refs[] = {
+            {ScreenType::SONG, 0xe28de95e4698d5dcull}, {ScreenType::PHRASE, 0xaaab766da386c55aull},
+            {ScreenType::INSTRUMENT, 0x975b80f79f44e3a3ull}, {ScreenType::MIXER, 0x18bd0f3a016a447eull},
+            {ScreenType::SETTINGS, 0xb002fc343b44b6faull},
+        };
+        for (const Ref& r : refs) {
+            state.currentScreen = r.screen;
+            layout.draw(*canvas, state);
+            const uint64_t h = fnv();
+            char hex[24];
+            std::snprintf(hex, sizeof hex, "%016llx", static_cast<unsigned long long>(h));
+            check(h == r.hash, "16:9 screen " + std::to_string(static_cast<int>(r.screen)) + " matches its reference (" + hex + ")");
+        }
+    }
+
+    // The scene picker previews the wide layout; a few looks, rail-left and scope-bottom ones among them.
+    state.currentScreen = ScreenType::PHRASE;
+    for (int look : {0, 7, 15, 31}) {
+        state.scenePicker = look;
+        layout.draw(*canvas, state);
+        write_bmp(*canvas, dir / ("picker-" + std::to_string(look) + ".bmp"));
+    }
+    state.scenePicker = -1;
 
     std::printf(failures ? "%d FAILED\n" : "all passed\n", failures);
     return failures ? 1 : 0;

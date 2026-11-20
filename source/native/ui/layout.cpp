@@ -54,15 +54,15 @@ void TrackerLayout::draw(Canvas& c, const AppState& s) {
     if(s.attractActive){demo_fx::draw_attract(c,s,s.animationMs-s.attractStarted);return;}
     if(s.showActive){demo_fx::draw_show(c,s,&showPeaks_);return;}
     if(s.localSampleRange.isOpen){
-        // A 640-wide screen: centred on a wide canvas, the background across all of it.
-        c.surface_rect(0, 0, DESIGN_W, DESIGN_H, s.theme.background);
+        // A 640-wide screen, centred on a wide canvas; it paints the whole background itself.
         {const Canvas::OriginScope inMiddle(c, wide_dx());draw_local_sample_range(c,s.localSampleRange,s.theme);}
         draw_loading_strip(c,s.loading,s.theme);return;}
     if (s.scenePicker >= 0) {
+        // A 640-wide screen, centred like the Studio.
+        const Canvas::OriginScope inMiddle(c, wide_dx());
         draw_scene_picker(c, s.scenePicker, s.theme, s.settings.sceneMotion ? s.animationMs : 0);
     } else if (s.studioOpen) {
-        // As the sample range: centred, with the background across the whole canvas.
-        c.surface_rect(0, 0, DESIGN_W, DESIGN_H, s.theme.background);
+        // As the sample range: centred, painting the whole background itself.
         const Canvas::OriginScope inMiddle(c, wide_dx());
         draw_studio(c, s);
         if (s.qwerty.isOpen) qwerty_.draw(c, s.qwerty, s.theme);

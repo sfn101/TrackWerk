@@ -1587,6 +1587,8 @@ All value rows are edited with **A + D-pad**. A single **A** press is reserved f
 | Setting | Options | Description |
 |---|---|---|
 | LAYOUT | PORTRAIT (+ SKIN) | On a touchscreen device the app lays itself out as the portrait device skin, and the row's real control is the **SKIN** column beside it: **NORM** (beige casing, dark labels), **DARK** (slate casing, white labels) or **TRNS** (no casing at all — see-through keys and labels drawn in your theme's colours, with the tracker across the full width of the screen). PocketTracker picks portrait, landscape or fullscreen for you from the screen shape and from whether it finds physical buttons; a mode column appears only on a device that has both a touchscreen and a controller (see below). |
+| TOUCH BTNS | AUTO / ALWAYS / OFF | The on-screen buttons, on a touchscreen. **AUTO** shows them when no controller is connected (the default). **ALWAYS** shows them even with a controller, so you can use both together. **OFF** never shows them; a **two-finger tap** anywhere then shows them, and another hides them again. On a device with a controller, the LAYOUT row's PORTRAIT is the same as ALWAYS and FULL the same as AUTO. Touchscreens only. |
+| SCREEN | 4:3 / 16:9 | The picture's shape. **4:3** (the default) is the classic 640×480 picture. **16:9** fills a wide screen; see *Wide mode* below. The change applies the next time the app starts: until then the row shows `RESTART TO APPLY`. |
 | SCALING | INT / SHARP / BILINEAR | How the picture is enlarged to your screen, crispest to softest. **INT** enlarges by whole steps only: perfectly crisp, but on a screen that isn't a whole multiple of 640×480 (a 960×544 RG505, a 1280×720 handheld) it stays small with wide borders. **SHARP** (the default for new installs) fills the screen like BILINEAR and stays nearly as crisp as INT: it enlarges by a whole step first, then shrinks smoothly to fit. **BILINEAR** fills the screen but looks soft. If a device's graphics can't do SHARP, the row shows `SHARP (BILINEAR)` and the app uses BILINEAR. An older install keeps its choice: INT stays INT, BILINEAR stays BILINEAR. |
 | AUDIO OUT | SYSTEM / an ASIO driver | **Windows only.** Where the sound goes. **SYSTEM** plays through Windows' own output. Picking an installed ASIO driver (your audio interface's, or ASIO4ALL) plays straight to it, with much less delay between a press and the sound. The switch happens at once; the buffer size is set in the driver's own control panel. A driver usually takes the interface for itself, so other programs may go quiet on it while PocketTracker plays. If the driver cannot be opened — another program holds it, or the interface is unplugged — the app keeps playing through the previous output and says why. Unplugged while playing, it moves to **SYSTEM** (AUDIO OUT LOST) and goes back to the interface when it is plugged in again. |
 | BTN SOUND | ON / OFF (+ VOL) | Play a click sound on button press. The **VOL** sub-column to its right sets click volume (`00`–`FF`). |
@@ -1616,7 +1618,33 @@ the on-screen buttons off. On a device that has both, the LAYOUT row offers **FU
 buttons) and **PORTRAIT** (keep them), so you can use the touchscreen and the controller together.
 BTN SOUND and BTN VIBRO appear only while the on-screen buttons are actually shown.
 
-**Not every row is on every device.** LAYOUT, BTN SOUND and BTN VIBRO configure a touchscreen and its
+### Wide mode (16:9)
+
+SETTINGS → SCREEN → **16:9** makes the picture 854×480 instead of 640×480, so it fills a wide screen
+(RG505, Odin, TrimUI Smart Pro, laptops, tablets) at the same text size. Restart the app after
+changing it.
+
+- **What moves:** the side panel (BPM, track meters, screen map) goes to the right edge, the
+  visualizer band stretches across the whole width, and dialogs open in the middle. The editors stay
+  where they are on the left; the space between them and the side panel stays empty for now. With a
+  scene that puts the side panel on the left, everything is mirrored.
+- **PHRASE** shows, beside the phrase, the note each of the other seven tracks plays on the same step,
+  greyed, with `---` where nothing plays. It only shows, the cursor never goes there, and it needs
+  NAV = SONG (with NAV = POOL there is no song row to line up with, so every step shows `---`).
+- **The file browser** lists two columns of 19 files: down the left, then down the right. LEFT and
+  RIGHT jump to the file beside you, and the list moves a whole column at a time.
+- **The sample editor's** waveform spans the full width; its controls stay in the middle.
+- **INSTRUMENT**, the Studio and the scene picker sit in the middle. The scene picker's preview
+  shows the wide layout.
+- **On Android** wide mode is always landscape, whichever way you hold the phone. The on-screen
+  buttons are drawn over the edges of the picture, partly see-through, and solid while you press
+  them. TOUCH BTNS = OFF hides them; a two-finger tap brings them back.
+- **On Windows and Linux** the window opens at 16:9 (1708×960 on a 1080p screen) and can be resized
+  freely; the picture keeps its shape, with bars where the window has another one.
+
+Everything can still be reached in 4:3; wide mode only adds room.
+
+**Not every row is on every device.** LAYOUT, TOUCH BTNS, BTN SOUND and BTN VIBRO configure a touchscreen and its
 virtual buttons, so they appear on Android and not on the Windows, Linux or handheld builds — where
 there are no on-screen buttons to sound, shake or lay out. The rest are the same everywhere. A row
 that would configure nothing is not shown rather than shown and inert.

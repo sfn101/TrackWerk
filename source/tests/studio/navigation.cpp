@@ -64,9 +64,11 @@ int main(int argc,char** argv){
  static_assert(static_cast<int>(SettingsRow::AUDIO_OUT)==18);
  static_assert(static_cast<int>(SettingsRow::APPEARANCE)==19);
  static_assert(static_cast<int>(SettingsRow::LATENCY)==20);
+ static_assert(static_cast<int>(SettingsRow::SCREEN)==21);
+ static_assert(static_cast<int>(SettingsRow::TOUCH_BTNS)==22);
  assert(!studio_is_music_tab(6));std::set<int> settingIds;
  for(auto row:SETTINGS_DISPLAY_ORDER)assert(settingIds.insert(static_cast<int>(row)).second);
- assert(settingIds.size()==21);
+ assert(settingIds.size()==static_cast<size_t>(SETTINGS_ROW_COUNT));
  assert(detail::settings_cell_topic(19,1)==HelpTopic::SET_APPEARANCE);
 
  AppState s;s.project=&host.edit_project();s.studioOpen=true;s.studioTab=3;

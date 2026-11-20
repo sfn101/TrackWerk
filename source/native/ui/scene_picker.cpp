@@ -46,7 +46,7 @@ void draw_scene_picker(Canvas& c, int index, const Theme& current, uint64_t ms) 
     const int family = index / kScenesPerFamily;
     const Theme t = scene_preset(index, current.visualizerType);
     c.set_appearance(t, 0);
-    c.surface_rect(0, 0, DESIGN_W, DESIGN_H, t.background);
+    c.surface_rect(-c.origin_x(), 0, DESIGN_W, DESIGN_H, t.background);   // the whole canvas, centred or not
     c.panel_rect(16, 14, 608, 48, t.rowEvery4th, t.textParam, 4);
     c.draw_label("SCENE PRESETS", 29, 24, t.textTitle, 28);   // the title size
     c.draw_label("TRACKWERK", 504, 31, t.textParam, 14);
@@ -76,18 +76,21 @@ void draw_scene_picker(Canvas& c, int index, const Theme& current, uint64_t ms) 
             c.draw_label("ACTIVE", 224, y + 32, t.textParam, 12);
     }
 
-    c.panel_rect(325, 155, 299, 237, t.rowEvery4th, t.textParam, 4);
+    // Wide mode previews the wide layout: the preview grows by the canvas's own ratio (854 / 640), the
+    // rail stays at its edge and the extra space opens beside the grid. It reaches into the right margin.
+    const int extra = wide_dx() > 0 ? 89 : 0;
+    c.panel_rect(325, 155, 299 + extra, 237, t.rowEvery4th, t.textParam, 4);
     c.draw_label("PHRASE PREVIEW", 341, 166, t.textTitle, 16);
     // Live: this look's own playback animation, as it runs while a song plays (120 BPM).
     scene_animation::family_strip(c, 548, 162, t, ms, 120, int(ms / 125) % 16);
     const auto scene = scene_layout(t);
     constexpr int previewX = 341, railWidth = 42, gridWidth = 216;
-    const int gridX = previewX + (scene.railLeft ? 50 : 0);
-    const int railX = previewX + (scene.railLeft ? 0 : 224);
+    const int gridX = previewX + (scene.railLeft ? 50 + extra : 0);
+    const int railX = previewX + (scene.railLeft ? 0 : 224 + extra);
     const int scopeY = scene.scopeBottom ? 354 : 196;
     const int headerY = scene.scopeBottom ? 200 : 233;
-    c.panel_rect(previewX, scopeY, 266, 23, t.background, with_alpha(t.textParam, .6f), 3);
-    for (int i = 0; i < 26; ++i) {
+    c.panel_rect(previewX, scopeY, 266 + extra, 23, t.background, with_alpha(t.textParam, .6f), 3);
+    for (int i = 0; i < 26 + extra / 10; ++i) {
         const int height = 3 + (i * i + 5 * family) % 14;
         c.fill_rect(previewX + 4 + i * 10, scopeY + (23 - height) / 2, 5, height,
                     i < 20 ? t.vizWave : t.vizCenterLine);

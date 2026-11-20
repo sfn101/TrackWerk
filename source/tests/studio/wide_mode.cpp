@@ -129,6 +129,32 @@ int main(int argc, char** argv) {
         write_bmp(*canvas, dir / ("screen-" + std::to_string(static_cast<int>(screen)) + ".bmp"));
     }
 
+    // ── The file browser: two columns of 19, scrolling a whole column at a time ──
+    for (int i = 0; i < 50; ++i) {
+        BrowserItem item;
+        item.displayName = "kick_" + std::to_string(i);
+        item.extension = "wav";
+        item.sizeText = "12KB";
+        item.dateText = "11-20-26";
+        item.path = "/x/" + item.displayName + ".wav";
+        state.fileBrowser.items.push_back(item);
+    }
+    FileBrowserState& b = state.fileBrowser;
+    check(browser_columns() == 2 && browser_max_scroll(50) == 19, "16:9: two browser columns; 50 files scroll at most one column");
+    b.cursor = 37; b.scroll = 0; browser_keep_in_view(b);
+    check(b.scroll == 0, "the 38th file is still on the first screen");
+    b.cursor = 38; browser_keep_in_view(b);
+    check(b.scroll == 19, "the 39th file moves the list one whole column");
+    b.cursor = 5; browser_keep_in_view(b);
+    check(b.scroll == 0, "going back up moves it back a column");
+    b.cursor = 40; b.scroll = 0; browser_keep_in_view(b);
+    state.currentScreen = ScreenType::FILE_BROWSER;
+    layout.draw(*canvas, state);
+    write_bmp(*canvas, dir / "browser-wide.bmp");
+    state.currentScreen = ScreenType::SAMPLE_EDITOR;
+    layout.draw(*canvas, state);
+    write_bmp(*canvas, dir / "sample-editor-wide.bmp");
+
     std::printf(failures ? "%d FAILED\n" : "all passed\n", failures);
     return failures ? 1 : 0;
 }

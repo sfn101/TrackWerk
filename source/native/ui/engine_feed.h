@@ -329,7 +329,7 @@ private:
             se.totalFrames != wfTotal_ || se.instrumentId != wfInst_) {
             if (!wfKeyValid_ || se.sourceMode != wfSource_ || se.totalFrames != wfTotal_ ||
                 se.instrumentId != wfInst_ || se.overviewData.empty())
-                se.overviewData = host.sample_waveform(se.instrumentId, SampleEditorModule::WAVEFORM_W,
+                se.overviewData = host.sample_waveform(se.instrumentId, SampleEditorModule::waveform_w(),
                                                        0, se.totalFrames,
                                                        se.sourceMode == 0 ? 0 : se.sourceMode == 1 ? 1 : 2);
             wfKeyValid_ = true;
@@ -340,7 +340,7 @@ private:
             wfInst_     = se.instrumentId;
 
             const int channel = (se.sourceMode == 0) ? 0 : (se.sourceMode == 1) ? 1 : 2;
-            se.waveformData   = host.sample_waveform(se.instrumentId, SampleEditorModule::WAVEFORM_W,
+            se.waveformData   = host.sample_waveform(se.instrumentId, SampleEditorModule::waveform_w(),
                                                      static_cast<int>(vs), static_cast<int>(ve), channel);
         }
     }

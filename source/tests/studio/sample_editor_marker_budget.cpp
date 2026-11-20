@@ -177,7 +177,7 @@ void refresh_failure(const std::filesystem::path& root) {
     auto& se = s.state.sampleEditor;
     configure_sync(s, true, 2, 0);
     const auto generation = s.host.sample_generation(s.slot);
-    constexpr int bins = pt::ui::SampleEditorModule::WAVEFORM_W;
+    const int bins = pt::ui::SampleEditorModule::waveform_w();
     failBytes = bins * 2 * sizeof(float);
     bool escaped = false;
     try { s.tap(16, 2); } catch (const std::bad_alloc&) { escaped = true; }

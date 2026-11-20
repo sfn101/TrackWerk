@@ -261,7 +261,8 @@ public:
     // The waveform panel, under the three header rows.
     static constexpr int WAVEFORM_Y = 73;
     static constexpr int WAVEFORM_H = 149;
-    static constexpr int WAVEFORM_W = 620;
+    // One (min, max) pair per pixel column: 620, or 834 across a wide canvas (specs/wide-mode.md).
+    static int waveform_w() { return DESIGN_W - 20; }
 
     // Rows 8..19 sit under the waveform.
     static int content_y(int row);

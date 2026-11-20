@@ -251,7 +251,10 @@ void TrackerLayout::draw_frame(Canvas& c, const AppState& s) {
     const bool settings = s.currentScreen == ScreenType::SETTINGS;
     const auto scene = settings ? SceneLayout{} : scene_layout(s.theme);
     constexpr int editorWidth = EDITOR_CLIP_RIGHT - SIDE_SPACER;
-    const int editorX = scene.railLeft ? DESIGN_W - SIDE_SPACER - editorWidth : SIDE_SPACER;
+    int editorX = scene.railLeft ? DESIGN_W - SIDE_SPACER - editorWidth : SIDE_SPACER;
+    // Wide mode centres INSTRUMENT in the space beside the rail; its side space is kept for later.
+    if (wide_dx() > 0 && s.currentScreen == ScreenType::INSTRUMENT && !s.eq.isOpen && !s.themeEditor.isOpen)
+        editorX += scene.railLeft ? -wide_dx() : wide_dx();
     const int editorY = scene.scopeBottom ? SCREEN_SPACER : EDITOR_Y;
     const int scopeY = scene.scopeBottom ? DESIGN_H - SCREEN_SPACER - OscilloscopeModule::HEIGHT
                                          : SCREEN_SPACER;

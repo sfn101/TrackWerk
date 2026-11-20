@@ -153,7 +153,7 @@ void pitch_waveform_refusal(const std::filesystem::path& root) {
     auto& se = s.state.sampleEditor;
     se.pitchSemitones = 12;
     const auto generation = s.host.sample_generation(s.slot);
-    failBytes = pt::ui::SampleEditorModule::WAVEFORM_W * 2 * sizeof(float);
+    failBytes = pt::ui::SampleEditorModule::waveform_w() * 2 * sizeof(float);
     bool escaped = false;
     try { s.tap(19, 2); } catch (const std::bad_alloc&) { escaped = true; }
     std::cout << "Pitch OVERWRITE waveform refusal: exception " << escaped

@@ -255,9 +255,7 @@ void InputDispatcher::refresh_browser() {
     const int last = static_cast<int>(b.items.size()) - 1;
     b.cursor = std::clamp(b.cursor, 0, std::max(last, 0));
 
-    if (b.cursor < b.scroll) b.scroll = b.cursor;
-    if (b.cursor >= b.scroll + BROWSER_VISIBLE_ROWS) b.scroll = b.cursor - BROWSER_VISIBLE_ROWS + 1;
-    b.scroll = std::clamp(b.scroll, 0, std::max(0, last - BROWSER_VISIBLE_ROWS + 1));
+    browser_keep_in_view(b);
 }
 
 void InputDispatcher::refresh_browser_on_foreground() {
@@ -285,12 +283,8 @@ void InputDispatcher::browser_move_cursor(int delta, bool page) {
         b.cursor = ((b.cursor + delta) % total + total) % total;
     }
 
-    // Keep the 19-row window around the cursor.
-    if (b.cursor < b.scroll) {
-        b.scroll = b.cursor;
-    } else if (b.cursor >= b.scroll + BROWSER_VISIBLE_ROWS) {
-        b.scroll = b.cursor - BROWSER_VISIBLE_ROWS + 1;
-    }
+    // Keep the window (19 rows, or two columns of them) around the cursor.
+    browser_keep_in_view(b);
 }
 
 // ─── A: open a folder, or LOAD the file ──────────────────────────────────────────────────────────
@@ -656,7 +650,7 @@ void InputDispatcher::browser_select() {
         const int last  = std::max(static_cast<int>(b.items.size()) - 1, first);
         b.selectionAnchor = first;
         b.cursor          = last;
-        b.scroll          = std::max(0, last - BROWSER_VISIBLE_ROWS + 1);
+        browser_keep_in_view(b);
         b.lastSelectTapMs = 0;   // …so a third tap re-anchors rather than re-selecting all
     } else {
         b.selectionAnchor = b.cursor;   // the window lapsed — start a fresh range here

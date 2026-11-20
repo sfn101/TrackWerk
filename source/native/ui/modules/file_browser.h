@@ -16,7 +16,15 @@
 
 namespace pt::ui {
 
-inline constexpr int BROWSER_VISIBLE_ROWS = 19;
+inline constexpr int BROWSER_VISIBLE_ROWS = 19;   // per column
+
+// Two columns on a wide canvas (38 entries on screen), one in 4:3.
+int browser_columns();
+// The furthest `scroll` that still fills the screen; in two columns, a whole number of columns.
+int browser_max_scroll(int total);
+// Scroll so the cursor is on screen: a row at a time in one column, a column at a time in two.
+struct FileBrowserState;
+void browser_keep_in_view(FileBrowserState& s);
 
 // Outside the theme on purpose: "can show, cannot load" must not change with the skin.
 inline constexpr Argb COLOR_VIDEO  = 0xFFFFBB55;  // amber — a container we can show but not load

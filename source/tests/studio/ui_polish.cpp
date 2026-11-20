@@ -117,7 +117,7 @@ int main() {
         s.theme = scene_preset(scene, VisualizerType::SCOPE);
         const auto sl = scene_layout(s.theme);
         const int stripY = sl.scopeBottom ? scopeY : SCREEN_SPACER;
-        const int railX = sl.railLeft ? SIDE_SPACER : RIGHT_BAR_X, railY = sl.scopeBottom ? SCREEN_SPACER : EDITOR_Y;
+        const int railX = sl.railLeft ? SIDE_SPACER : right_bar_x(), railY = sl.scopeBottom ? SCREEN_SPACER : EDITOR_Y;
         const bool inRail = scene != 20 && scene != 24;   // Raster and Crack intro move in the scope strip
         auto frame = [&](bool playing, uint64_t ms) {
             TrackerLayout l; Canvas c;

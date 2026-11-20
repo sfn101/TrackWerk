@@ -28,7 +28,7 @@ namespace pt::ui {
 namespace {
 
 /** The waveform panel's width: one (min, max) pair per pixel. */
-constexpr int WAVEFORM_BINS = SampleEditorModule::WAVEFORM_W;
+int waveform_bins() { return SampleEditorModule::waveform_w(); }
 
 /** SOURCE mode → the channel the waveform is drawn from: 0 = left, 1 = right, 2 = averaged. */
 int waveform_channel(int source_mode) {
@@ -346,7 +346,7 @@ void InputDispatcher::init_sample_editor_state() {
     se.undoMarkers = {};   // a fresh editor session: no backup's markers yet
     se.heldUndoMarkers = {};
 
-    se.waveformData  = host_.sample_waveform(se.instrumentId, WAVEFORM_BINS, 0, 0,
+    se.waveformData  = host_.sample_waveform(se.instrumentId, waveform_bins(), 0, 0,
                                              waveform_channel(se.sourceMode));
     se.overviewData = se.waveformData;
 
@@ -637,7 +637,7 @@ void InputDispatcher::apply_sample_rate_and_bits() {
     se.viewCenter = -1;
     se.zoomLevel = std::clamp(se.zoomLevel, 0, se.max_zoom());
     se.sampleRate  = host_.sample_rate_of(se.instrumentId);
-    se.waveformData = host_.sample_waveform(se.instrumentId, WAVEFORM_BINS, 0, 0,
+    se.waveformData = host_.sample_waveform(se.instrumentId, waveform_bins(), 0, 0,
                                             waveform_channel(se.sourceMode));
     se.isModified = true;
 }
@@ -681,11 +681,11 @@ void InputDispatcher::refresh_sample_view(bool reset_selection) {
     // The picture is the last step and never the reason an edit is half done: without the memory
     // for it the editor stays on the new audio, with no waveform and a word saying why.
     try {
-        se.waveformData = host_.sample_waveform(se.instrumentId, WAVEFORM_BINS,
+        se.waveformData = host_.sample_waveform(se.instrumentId, waveform_bins(),
                                                 static_cast<int>(se.view_start()),
                                                 static_cast<int>(se.view_end()),
                                                 waveform_channel(se.sourceMode));
-        se.overviewData = host_.sample_waveform(se.instrumentId, WAVEFORM_BINS, 0, newLen,
+        se.overviewData = host_.sample_waveform(se.instrumentId, waveform_bins(), 0, newLen,
                                               waveform_channel(se.sourceMode));
     } catch (const std::bad_alloc&) {
         se.waveformData.clear();
@@ -1193,7 +1193,7 @@ bool InputDispatcher::bake_pending_pitch() {
     se.isModified     = true;   // the audio is the pitched one now, saved or not
     // The picture only: without memory for it the save still goes on with the processed audio.
     try {
-        se.waveformData = host_.sample_waveform(se.instrumentId, WAVEFORM_BINS, 0, 0,
+        se.waveformData = host_.sample_waveform(se.instrumentId, waveform_bins(), 0, 0,
                                                 waveform_channel(se.sourceMode));
     } catch (const std::bad_alloc&) {
         se.waveformData.clear();

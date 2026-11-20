@@ -324,6 +324,30 @@ void navigate_to_parent(FileBrowserState& s, FileSystem& fs) {
     navigate_to_folder(s, fs, parent);
 }
 
+int browser_columns() { return DESIGN_W > DESIGN_W_4_3 ? 2 : 1; }
+
+int browser_max_scroll(int total) {
+    const int rows = BROWSER_VISIBLE_ROWS, cols = browser_columns();
+    if (cols == 1) return std::max(0, total - rows);
+    return std::max(0, ((total - 1) / rows - cols + 1) * rows);   // the last column at the right
+}
+
+void browser_keep_in_view(FileBrowserState& s) {
+    const int rows = BROWSER_VISIBLE_ROWS, cols = browser_columns(), visible = rows * cols;
+    const int last = std::max(0, static_cast<int>(s.items.size()) - 1);
+    if (cols == 1) {
+        if (s.cursor < s.scroll) s.scroll = s.cursor;
+        if (s.cursor >= s.scroll + visible) s.scroll = s.cursor - visible + 1;
+        s.scroll = std::clamp(s.scroll, 0, std::max(0, last - visible + 1));
+        return;
+    }
+    // Two columns move a whole column at a time, so a file keeps its place in the grid.
+    s.scroll = s.scroll / rows * rows;
+    if (s.cursor < s.scroll) s.scroll = s.cursor / rows * rows;
+    else if (s.cursor >= s.scroll + visible) s.scroll = (s.cursor / rows - cols + 1) * rows;
+    s.scroll = std::clamp(s.scroll, 0, browser_max_scroll(last + 1));
+}
+
 void restore_browser_position(FileBrowserState& s, const std::string& selectedPath,
                               int cursor, int scroll) {
     const int last = std::max(0, static_cast<int>(s.items.size()) - 1);
@@ -335,31 +359,36 @@ void restore_browser_position(FileBrowserState& s, const std::string& selectedPa
         if (found != s.items.end()) s.cursor = static_cast<int>(found - s.items.begin());
     }
     s.scroll = std::clamp(scroll, 0, std::max(0, last - BROWSER_VISIBLE_ROWS + 1));
-    if (s.cursor < s.scroll) s.scroll = s.cursor;
-    if (s.cursor >= s.scroll + BROWSER_VISIBLE_ROWS)
-        s.scroll = s.cursor - BROWSER_VISIBLE_ROWS + 1;
+    browser_keep_in_view(s);
 }
 
 // ─── Drawing ─────────────────────────────────────────────────────────────────────────────────────
 
+namespace {
+// A list column's left edge, offset so a row inside it is drawn as in the single 640 column.
+int cx0(int column, int colW) { return column * (colW + 8); }
+}  // namespace
+
 void FileBrowserModule::draw(Canvas& c, int x, int y, const FileBrowserState& s,
                              const Theme& t) const {
     c.set_surface_style(t.surfaceStyle);
-    c.surface_rect(x, y, WIDTH, HEIGHT, t.background);
+    const int W = DESIGN_W;   // the whole canvas: 640, or 854 in wide mode
+    const int this_x = x;
+    c.surface_rect(x, y, W, HEIGHT, t.background);
     const int total = static_cast<int>(s.items.size());
     const BrowserItem* current = s.current();
     const bool confirming = s.mode != BrowserMode::NORMAL;
     const Argb accent = s.mode == BrowserMode::DELETE ? 0xFFF5809B : t.rowCursor;
 
     // A large title, actual folder context and position are distinct from the working list.
-    c.panel_rect(x + 6, y + 5, WIDTH - 12, 51, t.rowEvery4th,
+    c.panel_rect(x + 6, y + 5, W - 12, 51, t.rowEvery4th,
                  with_alpha(t.textParam, .22f), 6);
     c.fill_rect(x + 10, y + 15, 3, 29, accent);
     const std::string title = s.sourceBookmarks.empty()?browser_title(s.fileExtensions):"Instrument Sources";
     c.draw_label(title, x + 20, y + 10, t.textValue, 18);
     const std::string count = total > 0 ? std::to_string(s.cursor + 1) + "/" + std::to_string(total) : "0 files";
     const int countW = Canvas::text_width(count, 1, 2);
-    const int countX = x + WIDTH - 18 - countW;
+    const int countX = x + W - 18 - countW;
     const int contextX = x + 35 + c.label_width(title, 18);
     std::string folder = path_name(s.currentDirectory);
     if (folder.empty()) folder = s.currentDirectory;
@@ -372,32 +401,41 @@ void FileBrowserModule::draw(Canvas& c, int x, int y, const FileBrowserState& s,
     c.draw_text("FOLDER", x + 20, y + 37, t.textEmpty, 1, 2);
     constexpr const char* help = "SELECT HELP";
     const int helpWidth = Canvas::label_width(help, 12);
-    c.draw_label(path_label(c, s.currentDirectory, WIDTH - 127 - helpWidth), x + 91, y + 35,
+    c.draw_label(path_label(c, s.currentDirectory, W - 127 - helpWidth), x + 91, y + 35,
                  t.textParam, 12);
-    c.draw_label(help, x + WIDTH - 18 - helpWidth, y + 35, accent, 12);
+    c.draw_label(help, x + W - 18 - helpWidth, y + 35, accent, 12);
 
     // Nineteen unchanged navigation rows. The left branch marks entries as children of this folder.
     constexpr int listY = 60;
     constexpr int listH = BROWSER_VISIBLE_ROWS * ROW_HEIGHT - 1;
-    c.panel_rect(x + 7, y + listY - 2, WIDTH - 20, listH + 3,
+    c.panel_rect(x + 7, y + listY - 2, W - 20, listH + 3,
                  library_tint(t.background, t.rowEvery4th, 40), with_alpha(t.textParam, .12f), 5);
+    // Wide mode lists two columns: down the left, then down the right (specs/wide-mode.md).
+    const int cols = browser_columns();
+    const int visible = BROWSER_VISIBLE_ROWS * cols;
+    const int colW = cols == 1 ? W - 25 : (W - 25 - 8) / 2;   // one row's width
+    const int extX = cols == 1 ? 401 : colW - 121;            // the extension badge, from the column
+    const int sizeRight = cols == 1 ? 531 : colW + 1;         // where the size ends
     // The rows scroll smoothly between two positions (shell/app.cpp); the frame around them stays.
-    c.mark_scroll(2 + 16 * static_cast<int>(std::hash<std::string>{}(s.currentDirectory) & 0xffffu), x + 9, y + listY, WIDTH - 25, BROWSER_VISIBLE_ROWS * ROW_HEIGHT - 1, s.scroll * ROW_HEIGHT);
-    for (int i = 0; i < BROWSER_VISIBLE_ROWS; ++i) {
+    // Two columns scroll a column sideways, which a vertical slide would misdraw.
+    if (cols == 1)
+        c.mark_scroll(2 + 16 * static_cast<int>(std::hash<std::string>{}(s.currentDirectory) & 0xffffu), x + 9, y + listY, W - 25, BROWSER_VISIBLE_ROWS * ROW_HEIGHT - 1, s.scroll * ROW_HEIGHT);
+    for (int i = 0; i < visible; ++i) {
         const int index = s.scroll + i;
         if (index < 0 || index >= total) break;
-        const int rowY = y + listY + i * ROW_HEIGHT;
+        const int rowY = y + listY + (i % BROWSER_VISIBLE_ROWS) * ROW_HEIGHT;
+        const int x = this_x + cx0(i / BROWSER_VISIBLE_ROWS, colW);   // the column, drawn as one column would be
         const BrowserItem& item = s.items[static_cast<size_t>(index)];
         const bool isCursor = index == s.cursor;
         const bool isSel = s.is_selected(index);
         const Argb rowAccent = isCursor ? accent : t.rowSelection;
         if (isCursor || isSel) {
             const Argb base = library_tint(t.rowEvery4th, rowAccent, isCursor ? 36 : 23);
-            c.panel_rect(x + 9, rowY, WIDTH - 25, ROW_HEIGHT - 1, base,
+            c.panel_rect(x + 9, rowY, colW, ROW_HEIGHT - 1, base,
                          with_alpha(rowAccent, isCursor ? .75f : .35f), 3);
             c.fill_rect(x + 10, rowY + 4, 3, ROW_HEIGHT - 9, rowAccent);
         } else if (index % 2 != 0) {
-            c.fill_rect(x + 9, rowY, WIDTH - 25, ROW_HEIGHT - 1, with_alpha(t.rowEvery4th, .38f));
+            c.fill_rect(x + 9, rowY, colW, ROW_HEIGHT - 1, with_alpha(t.rowEvery4th, .38f));
         }
 
         Argb ink = t.textValue;
@@ -416,39 +454,41 @@ void FileBrowserModule::draw(Canvas& c, int x, int y, const FileBrowserState& s,
         if (item.kind == BrowserItem::Kind::FOLDER && name.size() >= 2 &&
             name.front() == '[' && name.back() == ']') name = name.substr(1, name.size() - 2);
         const bool file = item.kind == BrowserItem::Kind::FILE;
-        c.draw_label(c.clip_label(name, file ? 337 : 550, 12), x + 56, rowY + 4, ink, 12);
+        const int nameW = cols == 1 ? (file ? 337 : 550) : (file ? extX - 75 : colW - 66);
+        c.draw_label(c.clip_label(name, nameW, 12), x + 56, rowY + 4, ink, 12);
 
         if (file) {
             std::string ext = item.extension;
             for (char& letter : ext) if (letter >= 'a' && letter <= 'z') letter -= 'a' - 'A';
             ext = Canvas::clip_text(ext, 4);
-            c.panel_rect(x + 401, rowY + 3, 48, 15,
+            c.panel_rect(x + extX, rowY + 3, 48, 15,
                          library_tint(t.rowEvery4th, mark, 18), with_alpha(mark, .16f), 3);
-            c.draw_text(ext, x + 425 - Canvas::text_width(ext, 1, 2) / 2,
+            c.draw_text(ext, x + extX + 24 - Canvas::text_width(ext, 1, 2) / 2,
                          rowY + 6, isCursor ? t.textValue : t.textParam, 1, 2);
             const std::string size = Canvas::clip_text(item.sizeText, 7);
-            c.draw_text(size, x + 531 - Canvas::text_width(size, 1, 2), rowY + 6,
+            c.draw_text(size, x + sizeRight - Canvas::text_width(size, 1, 2), rowY + 6,
                          t.textParam, 1, 2);
-            c.draw_text(item.dateText, x + 537, rowY + 6, t.textEmpty, 1, 2);
+            if (cols == 1) c.draw_text(item.dateText, x + 537, rowY + 6, t.textEmpty, 1, 2);
         }
     }
 
     if (total == 0) {
-        c.panel_rect(x + 83, y + 197, WIDTH - 166, 98, t.rowEvery4th,
+        c.panel_rect(x + 83, y + 197, W - 166, 98, t.rowEvery4th,
                      with_alpha(t.textParam, .18f), 8);
         BrowserItem emptyFolder; emptyFolder.kind = BrowserItem::Kind::FOLDER;
-        browser_icon(c, x + 310, y + 212, emptyFolder, accent);
+        browser_icon(c, x + W / 2 - 10, y + 212, emptyFolder, accent);
         const std::string empty = "This folder is empty";
-        c.draw_label(empty, x + (WIDTH - c.label_width(empty, 18)) / 2, y + 236, t.textValue, 18);
+        c.draw_label(empty, x + (W - c.label_width(empty, 18)) / 2, y + 236, t.textValue, 18);
         const std::string tip = "Choose another folder or change the file filter.";
-        c.draw_label(tip, x + (WIDTH - c.label_width(tip, 12)) / 2, y + 266, t.textParam, 12);
-    } else if (total > BROWSER_VISIBLE_ROWS) {
-        const int thumbH = std::max(8, listH * BROWSER_VISIBLE_ROWS / total);
+        c.draw_label(tip, x + (W - c.label_width(tip, 12)) / 2, y + 266, t.textParam, 12);
+    } else if (total > visible) {
+        const int thumbH = std::max(8, listH * visible / total);
+        const int maxScroll = std::max(1, browser_max_scroll(total));
         // The thumb glides with the rows (Canvas::tween).
-        const int offset = c.tween(0x6000000u, (listH - thumbH) * std::clamp(s.scroll, 0, total - BROWSER_VISIBLE_ROWS) /
-                                               (total - BROWSER_VISIBLE_ROWS));
-        c.fill_rect(x + WIDTH - 6, y + listY, 2, listH, with_alpha(t.textParam, .10f));
-        c.fill_rect(x + WIDTH - 6, y + listY + offset, 2, thumbH, with_alpha(t.textTitle, .65f));
+        const int offset = c.tween(0x6000000u, (listH - thumbH) * std::clamp(s.scroll, 0, maxScroll) /
+                                               maxScroll);
+        c.fill_rect(x + W - 6, y + listY, 2, listH, with_alpha(t.textParam, .10f));
+        c.fill_rect(x + W - 6, y + listY + offset, 2, thumbH, with_alpha(t.textTitle, .65f));
     }
 
     // The footer reports available actions. A pending confirmation owns the entire line.
@@ -459,12 +499,12 @@ void FileBrowserModule::draw(Canvas& c, int x, int y, const FileBrowserState& s,
         const auto count = request.paths.size();
         const std::string what = count == 1 ? request.name : std::to_string(count) + " items";
         const std::string suffix = request.includesFolder ? " and contents?   A Yes   B No" : "?   A Yes   B No";
-        const int room = WIDTH - 40 - c.label_width("Delete " + suffix, 12);
+        const int room = W - 40 - c.label_width("Delete " + suffix, 12);
         hint = "Delete " + c.clip_label(what, room, 12) + suffix;
         hintColor = accent;
     } else if (s.mode == BrowserMode::SET_HOME || s.mode == BrowserMode::FORGET_ROOT) {
         const std::string action = s.mode == BrowserMode::SET_HOME ? "Use as home: " : "Forget access: ";
-        const int room = WIDTH - 40 - c.label_width(action + "?   A Yes   B No", 12);
+        const int room = W - 40 - c.label_width(action + "?   A Yes   B No", 12);
         hint = action + c.clip_label(current ? current->displayName : "", room, 12) + "?   A Yes   B No";
         hintColor = t.textTitle;
     } else if (!s.statusMessage.empty()) {
@@ -483,9 +523,9 @@ void FileBrowserModule::draw(Canvas& c, int x, int y, const FileBrowserState& s,
     } else {
         hint = "A Open   B Back   R+Left Up   R+Up/Down Sort   SEL+A Rename   SEL+B Delete   SEL+R New";
     }
-    c.fill_rect(x + 8, y + HEIGHT - ROW_HEIGHT, WIDTH - 16, 1,
+    c.fill_rect(x + 8, y + HEIGHT - ROW_HEIGHT, W - 16, 1,
                  with_alpha(confirming ? accent : t.textParam, confirming ? .45f : .18f));
-    c.draw_label(c.clip_label(hint, WIDTH - 28, 12), x + 14, y + HEIGHT - 16, hintColor, 12);
+    c.draw_label(c.clip_label(hint, W - 28, 12), x + 14, y + HEIGHT - 16, hintColor, 12);
 }
 
 }  // namespace pt::ui

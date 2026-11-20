@@ -294,7 +294,7 @@ int64_t SampleEditorState::visible_frames() const {
 }
 
 int64_t SampleEditorState::fine_step() const {
-    return std::max<int64_t>(visible_frames() / SampleEditorModule::WAVEFORM_W, 1);
+    return std::max<int64_t>(visible_frames() / SampleEditorModule::waveform_w(), 1);
 }
 
 void SampleEditorState::set_zoom(int level) {
@@ -465,7 +465,10 @@ void draw_sample_level(Canvas& c, int x, int y, const SampleEditorState::LevelEd
 void SampleEditorModule::draw(Canvas& c, int x, int y, const SampleEditorState& s,
                               const Theme& t) const {
     c.set_surface_style(t.surfaceStyle);
-    c.surface_rect(x, y, WIDTH, HEIGHT, t.background);
+    c.surface_rect(x, y, DESIGN_W, HEIGHT, t.background);
+    // Wide mode: the controls keep their 640 layout in the middle; the waveform spans the width.
+    const int dx = wide_dx();
+    const Canvas::OriginScope middle(c, c.origin_x() + dx);
 
     // A quiet title and file statistics, followed by two three-column parameter rows.
     constexpr const char* title = "Sample Editor";
@@ -512,7 +515,7 @@ void SampleEditorModule::draw(Canvas& c, int x, int y, const SampleEditorState& 
                      seconds(s.visible_frames()), false, t, 2);
         sample_group(c, x, y + content_y(9), 23, "VIEW", s.cursorRow == 9, t);
     } else {
-        draw_waveform(c, x, y + WAVEFORM_Y, WAVEFORM_W, WAVEFORM_H, s, t);
+        draw_waveform(c, x - dx, y + WAVEFORM_Y, waveform_w(), WAVEFORM_H, s, t);
         sample_group(c, x, y + content_y(8), 44, "TRIM", s.cursorRow >= 3 && s.cursorRow <= 9, t);
         sample_field(c, x + 85, y + content_y(8), 263, "START f", std::to_string(s.selectionStart),
                      s.cursorRow == 8 && s.cursorCol == 0, t, 2);
@@ -653,7 +656,7 @@ void SampleEditorModule::draw_waveform(Canvas& c, int x, int y, int width, int h
         message = "UP: ALL  DOWN: ONE  A: EXPORT  B: BACK";
     const Argb messageInk = (s.hitReview.open || s.chopReview.open()) ? 0xffffc166 :
                             s.toolMessage.empty() ? t.textParam : t.textTitle;
-    if (width < WAVEFORM_W)
+    if (width < waveform_w())
         c.draw_label(Canvas::clip_label(message, width - 14, 12), wfLeft + 7, y + height - 15, messageInk, 12);
     else
         c.draw_text(Canvas::clip_text(message,54), wfLeft + 7, y + height - 13, messageInk, 1, 2);

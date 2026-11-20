@@ -4,6 +4,7 @@
 #include <initializer_list>
 
 #include "ui/helpers.h"
+#include "ui/layout.h"   // SIDE_SPACER / EDITOR_CLIP_RIGHT: the editor's visible edge
 
 namespace pt::ui {
 
@@ -71,15 +72,15 @@ void ProjectModule::draw(Canvas& c, int x, int y, const ProjectState& s) const {
 
     // ── A button row: PROJECT, EXPORT, COMPACT ───────────────────────────────────────────────────
     const auto button_row = [&](ProjectRow row, const char* name,
-                                std::initializer_list<const char*> options) {
+                                std::initializer_list<const char*> options, int stride = 0) {
         label(row, name);
         int optionX = valueX;
         int index   = 1;
         for (const char* option : options) {
             draw_cursor_cell(c, option, optionX, rowY(row) + TEXT_PADDING, on_cell(row, index),
                              t.textValue, t);
-            optionX += std::max(OPTION_W,
-                               Canvas::text_width(option, CHAR_SPACING, FONT_SCALE) + 16);
+            optionX += stride > 0 ? stride
+                                  : std::max(OPTION_W, Canvas::text_width(option, CHAR_SPACING, FONT_SCALE) + 16);
             ++index;
         }
     };
@@ -101,8 +102,13 @@ void ProjectModule::draw(Canvas& c, int x, int y, const ProjectState& s) const {
               p.name.empty() ? "______"
                              : Canvas::clip_text(p.name, ProjectModule::NAME_VISIBLE_CHARS));
 
-    // SAVE, COPY (save as), LOAD, NEW are cursor columns 1-4. "SAVE AS" does not fit the row.
-    button_row(ProjectRow::PROJECT, "PROJECT", {"SAVE", "COPY", "LOAD", "NEW"});
+    // SAVE, COPY (save as), LOAD, NEW are cursor columns 1-4. "SAVE AS" does not fit the row, and
+    // four buttons only fit at a tighter stride: NEW's cursor then ends 10 px inside the editor's edge.
+    constexpr int PROJECT_BUTTON_STRIDE = 76;   // a 4-letter word (66 px) + 10 px
+    static_assert(SIDE_SPACER + ProjectModule::VALUE_X + 3 * PROJECT_BUTTON_STRIDE + 3 * CHAR_W + 10 <=
+                      EDITOR_CLIP_RIGHT,
+                  "PROJECT's NEW button must stay clear of the editor's right edge");
+    button_row(ProjectRow::PROJECT, "PROJECT", {"SAVE", "COPY", "LOAD", "NEW"}, PROJECT_BUTTON_STRIDE);
 
     // A live percentage beside a row while its job runs.
     const auto progress = [&](ProjectRow row, float done) {

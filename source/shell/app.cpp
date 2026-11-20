@@ -860,7 +860,7 @@ void FrameLoop::lay_out_frame(Uint64 now) {
     sync_audio_output(now);
 
     // Portrait first: it decides which geometry `touch` hit-tests (the same rects it draws).
-    portrait.layout(outW, outH, useTouch, state.settings.scalingBilinear);
+    portrait.layout(outW, outH, useTouch, state.settings.scaling != ui::SCALING_INT);
     if (portrait.active())
         touch.layout_portrait2(portrait.cluster_rect(), portrait.button_rects(), outW, outH);
     else
@@ -1299,7 +1299,10 @@ void FrameLoop::draw_frame(Uint64 now) {
                            static_cast<float>(state.settings.metronomeVolume) / 255.0f * 0.5f);
 
     // Polled (the row or a hand-edited settings.json); recreates the texture on change, so not in present().
-    screen.video.set_scaling(state.settings.scalingBilinear ? ScalingMode::FIT : ScalingMode::INTEGER);
+    screen.video.set_scaling(state.settings.scaling == ui::SCALING_INT        ? ScalingMode::INTEGER
+                             : state.settings.scaling == ui::SCALING_BILINEAR ? ScalingMode::FIT
+                                                                              : ScalingMode::SHARP);
+    state.scalingFallback = screen.video.sharp_fallback();
 
     // ── Idle frame skip ──────────────────────────────────────────────────────────────────────────
     //

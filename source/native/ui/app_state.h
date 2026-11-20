@@ -397,6 +397,7 @@ struct AppState {
     std::string overlayText = "OFF";
     std::string audioOutText = "SYSTEM";   // the output playing now (SETTINGS > AUDIO OUT)
     std::string latencyText = "-";         // SETTINGS > LATENCY, from latency_text()
+    bool scalingFallback = false;          // SETTINGS > SCALING: SHARP fell back to BILINEAR
     std::string appVersion{};              // empty in the tools
 
     // Sample + SoundFont PCM the engine holds (USED RAM).

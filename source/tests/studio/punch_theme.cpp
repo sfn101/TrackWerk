@@ -187,9 +187,9 @@ void ui(const std::filesystem::path& out){
   if(i>=24){state.theme=theme;snapshot(out/("theme-"+theme.name+".ppm"),state);state.studioTab=3;snapshot(out/("punch-theme-"+theme.name+".ppm"),state);state.studioTab=6;}
  }
  Theme custom=themes[16];custom.name="MY SAVED MATERIAL";custom.textParam=0xFFAABBCC;custom.surfaceStyle=2;custom.visualizerType=VisualizerType::SPECTRUM;
- SettingsValues settings;settings.abxyIndex=2;settings.scalingBilinear=false;settings.helpMode=2;settings.buttonSoundEnabled=false;
+ SettingsValues settings;settings.abxyIndex=2;settings.scaling=SCALING_INT;settings.helpMode=2;settings.buttonSoundEnabled=false;
  assert(save_settings(fs,settings,custom));SettingsValues loaded;Theme loadedTheme;assert(load_settings(fs,loaded,loadedTheme));
- assert(serialize_theme(custom)==serialize_theme(loadedTheme)&&loaded.abxyIndex==2&&!loaded.scalingBilinear&&loaded.helpMode==2&&!loaded.buttonSoundEnabled);
+ assert(serialize_theme(custom)==serialize_theme(loadedTheme)&&loaded.abxyIndex==2&&loaded.scaling==SCALING_INT&&loaded.helpMode==2&&!loaded.buttonSoundEnabled);
  assert(save_settings_if_changed(fs,loaded,loadedTheme)==SettingsWrite::UNCHANGED);
  const std::string mapping=R"({"controller":{"abxy":"nintendo"},"keyboard":{"A":["X"],"B":["Z"],"SELECT":["Tab"]},"gamepad":{"A":["b"],"SELECT":["back"]},"repeat":{"delay":630,"interval":47}})";
  assert(fs.write_file(fs.config_path(),mapping));InputConfig config;std::vector<InputConfigWarning> warnings;

@@ -480,6 +480,7 @@ SettingsState settings_state(const AppState& s) {
     ss.audioOutText = s.audioOutText;
     ss.latencyText  = s.latencyText;
     ss.appVersion   = s.appVersion;
+    ss.scalingFallback = s.scalingFallback;
     ss.themeName    = s.theme.name;
     ss.caps         = s.caps;
     ss.theme        = s.theme;

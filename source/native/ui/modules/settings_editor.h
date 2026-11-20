@@ -31,6 +31,9 @@ enum class HelpMode { OFF = 0, SHORT = 1, FULL = 2 };
 
 // Everything SETTINGS edits; the shell round-trips it through settings.json. The counts sit beside
 // the indices because only the platform knows a cycle's range.
+// SETTINGS > SCALING, crispest to softest. ⚠️ settings.json stores the number.
+inline constexpr int SCALING_INT = 0, SCALING_SHARP = 1, SCALING_BILINEAR = 2;
+
 struct SettingsValues {
     // ── The device rows (Android; the shell hides them) ──────────────────────────────────────────
     int  layoutIndex       = 0;
@@ -75,8 +78,9 @@ struct SettingsValues {
     int  helpMode         = 1;
 
     // ── The rows every platform has ──────────────────────────────────────────────────────────────
-    // Bilinear: integer scaling leaves black borders at anything but exact multiples of 640×480.
-    bool scalingBilinear    = true;
+    // SCALING (specs/sharp-scaling.md): SCALING_INT, SCALING_SHARP or SCALING_BILINEAR. A new install
+    // gets SHARP; an older settings.json's scalingBilinear carries over (settings_store.cpp).
+    int scaling             = SCALING_SHARP;
     // Stable appearance-only ID; 0 preserves existing installs. Independent of theme presets.
     int fontStyle           = 0;
     // Appearance > Motion: the Scene animations (ui/scene_animation.h). OFF keeps the screens still;
@@ -168,6 +172,7 @@ struct SettingsState {
     std::string audioOutText = "SYSTEM";
     std::string latencyText  = "-";
     std::string appVersion{};
+    bool        scalingFallback = false;   // SHARP is drawing with BILINEAR: no render targets here
     std::string themeName   = "CLASSIC";
 
     PlatformCaps caps{};

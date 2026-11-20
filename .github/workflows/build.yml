@@ -100,5 +100,7 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           build/windows/native/Release/ptvisualizer-check.exe "$env:RUNNER_TEMP/ptvisualizer-check"
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          build/windows/native/Release/ptsharp-scaling-check.exe "$env:RUNNER_TEMP/ptsharp-scaling-check"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           build/windows/native/Release/ptfile-validation-check.exe "$env:RUNNER_TEMP/ptfile-validation-check"
           if ($LASTEXITCODE) { exit $LASTEXITCODE }

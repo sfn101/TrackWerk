@@ -6,8 +6,10 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 
 #include "ui/canvas.h"
+#include "ui/scaling_math.h"
 
 // The window icon is embedded for desktop Linux (a bare ELF); Windows takes it from the .exe's
 // resources and Android has its launcher icon.
@@ -21,6 +23,10 @@ using pt::ui::DESIGN_H;
 using pt::ui::DESIGN_W;
 
 namespace {
+const char* scaling_name(ScalingMode m) {
+    return m == ScalingMode::FIT ? "FIT" : m == ScalingMode::SHARP ? "SHARP" : "INTEGER";
+}
+
 void log_video_startup(const char* phase) {
     std::fprintf(stderr, "startup: video %s\n", phase);
     persist_startup_log();
@@ -219,7 +225,7 @@ void SdlVideo::describe() const {
     std::printf("video:   driver=%s  panel=%dx%d@%dHz  output=%dx%d  frame=%dx%d at %d,%d  %s  %s\n",
                 SDL_GetCurrentVideoDriver() ? SDL_GetCurrentVideoDriver() : "?",
                 haveMode ? mode.w : 0, haveMode ? mode.h : 0, haveMode ? mode.refresh_rate : 0, outW,
-                outH, d.w, d.h, d.x, d.y, scaling_ == ScalingMode::FIT ? "FIT" : "INTEGER",
+                outH, d.w, d.h, d.x, d.y, scaling_name(scaling_),
                 vsync_ ? "vsync" : "SELF-PACED");
 
     // Bars are expected on a panel that is no whole multiple of 640x480; a frame larger than the
@@ -236,8 +242,10 @@ bool SdlVideo::create_texture() {
     if (texture_) SDL_DestroyTexture(texture_);
 
     // ⚠️ SDL2 reads the filter hint when the texture is created, so a mode change recreates it.
-    // Nearest keeps INTEGER pixel-perfect; linear keeps FIT's fractional stretch even.
+    // Nearest keeps INTEGER pixel-perfect and SHARP's enlargement exact; linear keeps FIT's
+    // fractional stretch even.
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, scaling_ == ScalingMode::FIT ? "1" : "0");
+    drop_sharp_target();   // made again at the next present, at that frame's size
 
     // ARGB8888 is Canvas's uint32 layout on little-endian targets: the upload is a straight memcpy.
     texture_ = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
@@ -249,6 +257,46 @@ bool SdlVideo::create_texture() {
     return true;
 }
 
+void SdlVideo::drop_sharp_target() {
+    if (sharpTarget_) SDL_DestroyTexture(sharpTarget_);
+    sharpTarget_ = nullptr;
+    sharpN_      = 0;
+}
+
+bool SdlVideo::ensure_sharp_target(int destW, int destH) {
+    if (sharpFailed_) return false;
+    // The window-surface path presents through its own blit; nothing to render into.
+    const char* why = surfaceMode_ ? "the surface video path" : nullptr;
+    SDL_RendererInfo info{};
+    if (!why && (SDL_GetRendererInfo(renderer_, &info) != 0 || !SDL_RenderTargetSupported(renderer_)))
+        why = "no render-target textures on this renderer";
+    if (!why) {
+        const int maxW = info.max_texture_width > 0 ? info.max_texture_width : 4096;
+        const int maxH = info.max_texture_height > 0 ? info.max_texture_height : 4096;
+        const int n = pt::ui::sharp_factor(DESIGN_W, DESIGN_H, destW, destH, maxW, maxH);
+        if (sharpTarget_ && n == sharpN_) return true;
+        drop_sharp_target();
+        // The shrink is the filtered step. The hint is put back: the shell's skin textures read it too.
+        const char* hint = SDL_GetHint(SDL_HINT_RENDER_SCALE_QUALITY);
+        const std::string was = hint ? hint : "0";
+        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+        sharpTarget_ = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET,
+                                         DESIGN_W * n, DESIGN_H * n);
+        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, was.c_str());
+        if (sharpTarget_) {
+            sharpN_ = n;
+            std::printf("video:   SHARP %dx -> %dx%d, shrunk to %dx%d\n", n, DESIGN_W * n, DESIGN_H * n,
+                        destW, destH);
+            return true;
+        }
+        why = SDL_GetError();
+    }
+    // Once: from now on SHARP draws as FIT, and SETTINGS says so.
+    std::fprintf(stderr, "video: SHARP unavailable (%s) - using BILINEAR\n", why);
+    sharpFailed_ = true;
+    return false;
+}
+
 void SdlVideo::set_scaling(ScalingMode m) {
     if (m == scaling_) return;
     const ScalingMode was = scaling_;
@@ -258,13 +306,14 @@ void SdlVideo::set_scaling(ScalingMode m) {
     // Once per change. The rect is printed beside the mode, so "the setting does nothing" and "the
     // window is wrong" can be told apart in a log.
     const SDL_Rect d = dest_rect();
-    std::printf("video:   scaling %s -> %s   frame=%dx%d at %d,%d\n",
-                was == ScalingMode::FIT ? "FIT" : "INTEGER",
-                scaling_ == ScalingMode::FIT ? "FIT" : "INTEGER", d.w, d.h, d.x, d.y);
+    std::printf("video:   scaling %s -> %s   frame=%dx%d at %d,%d\n", scaling_name(was),
+                scaling_name(scaling_), d.w, d.h, d.x, d.y);
     std::fflush(stdout);
 }
 
 void SdlVideo::close() {
+    drop_sharp_target();
+    sharpFailed_ = false;
     if (texture_) SDL_DestroyTexture(texture_);
     if (renderer_) SDL_DestroyRenderer(renderer_);
     if (softwareSurface_) SDL_FreeSurface(softwareSurface_);
@@ -285,17 +334,11 @@ SDL_Rect SdlVideo::dest_rect() const {
     int outW = 0, outH = 0;
     SDL_GetRendererOutputSize(renderer_, &outW, &outH);
 
-    if (scaling_ == ScalingMode::FIT) {
-        // FIT keeps the aspect: one factor, the binding axis's. ⚠️ Integer arithmetic — a float
-        // scale can land at 959.99997 and leave a 1px bar on an exact multiple.
+    if (scaling_ != ScalingMode::INTEGER) {
+        // FIT and SHARP keep the aspect: one factor, the binding axis's. SHARP's rect is FIT's, so
+        // the bars and the touch panels get the same room.
         int w, h;
-        if (outW * DESIGN_H >= outH * DESIGN_W) {  // window wider than 4:3 → height binds
-            h = outH;
-            w = outH * DESIGN_W / DESIGN_H;
-        } else {                                   // taller than 4:3 → width binds
-            w = outW;
-            h = outW * DESIGN_H / DESIGN_W;
-        }
+        pt::ui::fit_size(DESIGN_W, DESIGN_H, std::max(1, outW), std::max(1, outH), w, h);
         return SDL_Rect{(outW - w) / 2, frame_top(outH, h), w, h};
     }
 
@@ -408,6 +451,17 @@ bool SdlVideo::present_impl(const Canvas& canvas, uint32_t clearArgb, const SDL_
     }
     SDL_UnlockTexture(texture_);
 
+    // SHARP, step 1: the design enlarged N× with nearest pixels, before anything is drawn on screen
+    // (switching the render target resets the frame). A failure falls back to FIT's single copy.
+    SDL_Texture* frame = texture_;
+    if (scaling_ == ScalingMode::SHARP && ensure_sharp_target(dest.w, dest.h)) {
+        if (SDL_SetRenderTarget(renderer_, sharpTarget_) == 0 &&
+            SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255) == 0 && SDL_RenderClear(renderer_) == 0 &&
+            SDL_RenderCopy(renderer_, texture_, nullptr, nullptr) == 0)
+            frame = sharpTarget_;
+        SDL_SetRenderTarget(renderer_, nullptr);
+    }
+
     // The bars in the live theme's background (or the casing), so the window reads as one surface.
     SDL_SetRenderDrawColor(renderer_, static_cast<Uint8>((clearArgb >> 16) & 0xFF),
                            static_cast<Uint8>((clearArgb >> 8) & 0xFF),
@@ -441,7 +495,8 @@ bool SdlVideo::present_impl(const Canvas& canvas, uint32_t clearArgb, const SDL_
         SDL_RenderFillRects(renderer_, bars, 4);
     }
 
-    if (SDL_RenderCopy(renderer_, texture_, nullptr, &dest) != 0)
+    // SHARP, step 2: the enlarged frame shrunk into `dest`, filtered.
+    if (SDL_RenderCopy(renderer_, frame, nullptr, &dest) != 0)
         return presentation_failed("frame copy");
 
     // After the frame, before the flip: the touch panels or the portrait button cluster.

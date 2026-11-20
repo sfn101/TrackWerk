@@ -57,7 +57,12 @@ bool load_settings(FileSystem& fs, SettingsValues& values, Theme& theme) {
     if (!j.is_object()) return false;
     loaded_settings() = j;
 
-    values.scalingBilinear    = get_bool(j, "scalingBilinear",    values.scalingBilinear);
+    // SCALING: the three-way "scaling"; an older file's "scalingBilinear" carries over as BILINEAR/INT.
+    if (const auto it = j.find("scaling"); it != j.end() && it->is_number_integer() &&
+                                           it->get<int64_t>() >= SCALING_INT && it->get<int64_t>() <= SCALING_BILINEAR)
+        values.scaling = static_cast<int>(it->get<int64_t>());
+    else if (const auto old = j.find("scalingBilinear"); old != j.end() && old->is_boolean())
+        values.scaling = old->get<bool>() ? SCALING_BILINEAR : SCALING_INT;
     // Unknown/future IDs and wrong types fall back to the existing classic face.
     values.fontStyle=0;
     if(const auto font=j.find("fontStyle");font!=j.end()){
@@ -180,7 +185,8 @@ std::string serialize_settings(const SettingsValues& values, const Theme& theme)
     // Over the file as loaded, so a key only a newer TrackWerk knows survives this one.
     json j = loaded_settings();
     for (const char* key : kOptionalKeys) j.erase(key);
-    j["scalingBilinear"]    = values.scalingBilinear;
+    j["scaling"]            = values.scaling;
+    j["scalingBilinear"]    = values.scaling == SCALING_BILINEAR;   // for older builds
     if(valid_demo_font_style(values.fontStyle))j["fontStyle"]=valid_demo_font_style(values.fontStyle);
     if(!values.sceneMotion)j["sceneMotion"]=false;
     if(values.sourceYoutube)j["sourceYoutube"]=true;

@@ -98,7 +98,12 @@ void SettingsModule::draw(Canvas& c, int x, int y, const SettingsState& s) const
         param_row(SettingsRow::LAYOUT, "LAYOUT", s.layoutText);
     }
 
-    param_row(SettingsRow::SCALING, "SCALING", v.scalingBilinear ? "BILINEAR" : "INT");
+    // "SHARP (USING BILINEAR)" does not fit the value column.
+    param_row(SettingsRow::SCALING, "SCALING",
+              v.scaling == SCALING_INT        ? "INT"
+              : v.scaling == SCALING_BILINEAR ? "BILINEAR"
+              : s.scalingFallback             ? "SHARP (BILINEAR)"
+                                              : "SHARP");
 
     dual_row(SettingsRow::OVERLAY, "OVERLAY", s.overlayText, "STR", hex2(v.overlayStrength));
 
@@ -193,7 +198,7 @@ CursorContext SettingsModule::cursor_context(const SettingsState& s) const {
             return cc::enum_cycle(v.layoutIndex, v.layoutCount);
 
         case SettingsRow::SCALING:
-            return cc::toggle_binary(v.scalingBilinear);
+            return cc::enum_cycle(v.scaling, 3);
 
         case SettingsRow::OVERLAY:
             if (s.cursorColumn == 1) return cc::enum_cycle(v.overlayIndex, v.overlayCount);
@@ -283,10 +288,10 @@ SettingsInputResult SettingsModule::handle_input(SettingsValues& v, Theme& theme
             break;
 
         case SettingsRow::ABXY: v.abxyIndex = index_in(3); break;
+        case SettingsRow::SCALING: v.scaling = index_in(3); break;
         // The shell opens the output and writes the NAME once it plays.
         case SettingsRow::AUDIO_OUT: v.audioOutIndex = index_in(v.audioOutCount); break;
 
-        case SettingsRow::SCALING:   v.scalingBilinear    = on; break;
         case SettingsRow::KB_INSERT: v.insertBefore       = on; break;
         case SettingsRow::CURSOR:    v.cursorRemember     = on; break;
         case SettingsRow::NOTE_PREV: v.notePreviewEnabled = on; break;

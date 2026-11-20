@@ -13,7 +13,7 @@ namespace pt::ui {
 // SETTINGS_DISPLAY_ORDER's business.
 enum class SettingsRow {
     LAYOUT     = 0,    // FULLSCREEN / LANDSCAPE / PORTRAIT (+ a skin column when skinned)
-    SCALING    = 1,    // INT / BILINEAR
+    SCALING    = 1,    // INT / SHARP / BILINEAR
     OVERLAY    = 2,    // a PNG over the button skin, + STR (debug)
     BTN_SOUND  = 3,    // ON / OFF, + VOL
     BTN_VIBRO  = 4,    // ON / OFF, + POW

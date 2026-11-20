@@ -18,9 +18,10 @@ namespace pt::ui {
 class Canvas;
 }
 
-// INTEGER scales by a whole number (crisp, the default); FIT by a fraction, filtered (bigger, soft).
-// Both keep 4:3 and letterbox the rest. On a whole multiple of the design they differ only in the filter.
-enum class ScalingMode { INTEGER, FIT };
+// INTEGER scales by a whole number (crisp); FIT by a fraction, filtered (bigger, soft). SHARP fills
+// FIT's rectangle but first enlarges by a whole number with nearest pixels, then shrinks with a
+// linear filter (specs/sharp-scaling.md), so edges stay nearly as crisp as INTEGER. All keep 4:3.
+enum class ScalingMode { INTEGER, FIT, SHARP };
 
 class SdlVideo {
 public:
@@ -53,6 +54,8 @@ public:
     // Recreates the texture: SDL2 fixes the filter at creation (INTEGER → nearest, FIT → linear).
     void        set_scaling(ScalingMode m);
     ScalingMode scaling() const { return scaling_; }
+    // SHARP is drawing as FIT: this renderer has no render-target textures (the log says why, once).
+    bool        sharp_fallback() const { return scaling_ == ScalingMode::SHARP && sharpFailed_; }
 
     // The frame in the top half of the output: a portrait phone with a clip-on pad covering the
     // bottom. Set per frame, so unclipping the pad puts it back.
@@ -85,6 +88,9 @@ public:
 
 private:
     bool     create_texture();
+    // SHARP's intermediate texture, N× the design, for a frame drawn at destW×destH. False → draw as FIT.
+    bool     ensure_sharp_target(int destW, int destH);
+    void     drop_sharp_target();
     bool     presentation_failed(const char* operation);
     SDL_Rect dest_rect() const;
     int      frame_top(int outH, int h) const;
@@ -101,6 +107,9 @@ private:
     SDL_Window*   window_   = nullptr;
     SDL_Renderer* renderer_ = nullptr;
     SDL_Texture*  texture_  = nullptr;
+    SDL_Texture*  sharpTarget_ = nullptr;   // SHARP: the design enlarged N× (nearest), shrunk with linear
+    int           sharpN_      = 0;
+    bool          sharpFailed_ = false;     // no render targets: SHARP draws as FIT
     // Owned backing store for the surface renderer. The window's surface is borrowed anew on each
     // flip: SDL can replace it after a mode change, while overlay textures retain this renderer.
     SDL_Surface*  softwareSurface_ = nullptr;

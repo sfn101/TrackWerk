@@ -500,6 +500,7 @@ add_library(pt-ui STATIC
         ui/source_sampler.cpp
         ui/source_credits.cpp
         ui/demo_fx.cpp
+        ui/demo_fx_styles.cpp
         ui/first_beat.cpp
         ui/canvas.cpp
         ui/clipboard.cpp

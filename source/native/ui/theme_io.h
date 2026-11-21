@@ -29,6 +29,20 @@ inline const char* visualizer_serial_name(VisualizerType v) {
         case VisualizerType::COPPER:         return "COPPER";
         case VisualizerType::STARFIELD:      return "STARFIELD";
         case VisualizerType::PLASMA:         return "PLASMA";
+        case VisualizerType::TUNNEL:        return "TUNNEL";
+        case VisualizerType::FIRE:          return "FIRE";
+        case VisualizerType::RAIN:          return "RAIN";
+        case VisualizerType::TWISTER:       return "TWISTER";
+        case VisualizerType::RINGS:         return "RINGS";
+        case VisualizerType::LISSAJOUS:     return "LISSAJOUS";
+        case VisualizerType::BLOBS:         return "BLOBS";
+        case VisualizerType::ROTOZOOM:      return "ROTOZOOM";
+        case VisualizerType::CUBE:          return "CUBE";
+        case VisualizerType::GLOBE:         return "GLOBE";
+        case VisualizerType::TERRAIN:       return "TERRAIN";
+        case VisualizerType::TORUS:         return "TORUS";
+        case VisualizerType::DOTBALL:       return "DOTBALL";
+        case VisualizerType::RIDGES:        return "RIDGES";
     }
     return "SCOPE";
 }
@@ -43,6 +57,20 @@ inline VisualizerType visualizer_from_serial_name(const std::string& s) {
     if (s == "COPPER")         return VisualizerType::COPPER;
     if (s == "STARFIELD")      return VisualizerType::STARFIELD;
     if (s == "PLASMA")         return VisualizerType::PLASMA;
+    if (s == "TUNNEL")         return VisualizerType::TUNNEL;
+    if (s == "FIRE")           return VisualizerType::FIRE;
+    if (s == "RAIN")           return VisualizerType::RAIN;
+    if (s == "TWISTER")        return VisualizerType::TWISTER;
+    if (s == "RINGS")          return VisualizerType::RINGS;
+    if (s == "LISSAJOUS")      return VisualizerType::LISSAJOUS;
+    if (s == "BLOBS")          return VisualizerType::BLOBS;
+    if (s == "ROTOZOOM")       return VisualizerType::ROTOZOOM;
+    if (s == "CUBE")           return VisualizerType::CUBE;
+    if (s == "GLOBE")          return VisualizerType::GLOBE;
+    if (s == "TERRAIN")        return VisualizerType::TERRAIN;
+    if (s == "TORUS")          return VisualizerType::TORUS;
+    if (s == "DOTBALL")        return VisualizerType::DOTBALL;
+    if (s == "RIDGES")         return VisualizerType::RIDGES;
     return VisualizerType::SCOPE;   // incl. "SCOPE", and any value another build might write
 }
 

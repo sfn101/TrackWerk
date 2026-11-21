@@ -27,6 +27,25 @@ void plasma(Canvas&, int x, int y, int w, int h, const Theme&, uint64_t ms, int 
 // Horizontal copper bars swinging on sines; `energy[0…count)` (0…1) widens and brightens each bar.
 void copper(Canvas&, int x, int y, int w, int h, const Theme&, uint64_t ms, const float* energy = nullptr,
             int count = 0);
+// ── The styles after PLASMA (specs/more-visualizers.md, ui/demo_fx_styles.cpp) ──────────────────
+// What FIRE and RIDGES keep between frames: fixed-size, one per visualizer (the strip and VI). They
+// move only while the clock runs, so they hold still with it while stopped.
+struct EffectMemory {
+    static constexpr int kFireCols = 220, kFireRows = 100;   // 4 px cells of the widest box, 854 × 392
+    uint8_t  fire[kFireCols * kFireRows] = {};
+    int      fireCols = 0, fireRows = 0;
+    uint64_t fireMs = 0;
+    static constexpr int kRidgeRows = 24, kRidgePoints = 64;
+    int8_t   ridges[kRidgeRows][kRidgePoints] = {};
+    int      ridgeHead = 0;
+    uint64_t ridgeMs = 0;
+};
+// TUNNEL and later: drawn by style().
+bool is_style(VisualizerType);
+// One of those styles in the box; `wave` the 620-sample waveform (null = silence), `energy` 0…1.
+void style(Canvas&, int x, int y, int w, int h, const Theme&, VisualizerType, uint64_t ms,
+           const float* wave, float energy, EffectMemory&);
+
 // A text scrolling right to left along a sine, `size` a label size (12…28).
 void scroller(Canvas&, int x, int y, int w, int amplitude, const std::string& text, const Theme&, uint64_t ms,
               int size = 28, int pixelsPerSecond = 90);

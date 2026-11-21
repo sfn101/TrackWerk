@@ -1563,7 +1563,10 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
       "FLAT shows nothing. OCTA and",
       "OCTA.F show a small wave for",
       "each track. SPECT and SPCT.P",
-      "show the spectrum."},
+      "show the spectrum. COPPR to",
+      "RIDGE are demo effects in the",
+      "theme colours. They hold still",
+      "while no song plays."},
      {"A+D-PAD picks the mode"}},
     /* SET_THEME */
     {"THEME: the colours", "A opens the theme editor,", "where every colour is a row.",

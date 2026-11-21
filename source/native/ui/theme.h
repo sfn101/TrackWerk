@@ -13,7 +13,9 @@ using Argb = uint32_t;  // 0xAARRGGBB
 
 // ⚠️ Append only: settings and themes store the index. COPPER, STARFIELD and PLASMA are the demo
 // visualizers (ui/demo_fx.h).
-enum class VisualizerType { SCOPE, FLAT, OCTA, OCTA_FULL, SPECTRUM, SPECTRUM_PEAKS, COPPER, STARFIELD, PLASMA };
+enum class VisualizerType { SCOPE, FLAT, OCTA, OCTA_FULL, SPECTRUM, SPECTRUM_PEAKS, COPPER, STARFIELD, PLASMA,
+                            // specs/more-visualizers.md: the demo styles after PLASMA (ui/demo_fx_styles.cpp)
+                            TUNNEL, FIRE, RAIN, TWISTER, RINGS, LISSAJOUS, BLOBS, ROTOZOOM, CUBE, GLOBE, TERRAIN, TORUS, DOTBALL, RIDGES };
 
 enum class StepGridStyle { OFF, BEATS, GRID, DOTS };
 

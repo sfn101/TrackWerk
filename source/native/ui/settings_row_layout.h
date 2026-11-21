@@ -41,7 +41,9 @@ inline constexpr int SETTINGS_ROW_COUNT = 23;
 
 // The order rows are drawn and walked; every SettingsRow exactly once.
 inline constexpr SettingsRow SETTINGS_DISPLAY_ORDER[SETTINGS_ROW_COUNT] = {
-    SettingsRow::LAYOUT,   SettingsRow::TOUCH_BTNS, SettingsRow::SCALING,  SettingsRow::SCREEN,
+    SettingsRow::LAYOUT,   SettingsRow::TOUCH_BTNS,
+    SettingsRow::SCALING,   // sharp scaling (roadmap 9), not wide mode: wide mode builds and works without this row
+    SettingsRow::SCREEN,
     SettingsRow::OVERLAY,
     SettingsRow::AUDIO_OUT, SettingsRow::LATENCY,
     SettingsRow::BTN_SOUND, SettingsRow::BTN_VIBRO, SettingsRow::ABXY,

@@ -315,7 +315,8 @@ void TrackerLayout::draw_frame(Canvas& c, const AppState& s) {
 
     const bool settings = s.currentScreen == ScreenType::SETTINGS;
     const auto scene = settings ? SceneLayout{} : scene_layout(s.theme);
-    // VI fills the whole main area beside the rail (in 4:3 that is the editors' own width).
+    // VI fills the whole main area beside the rail (in 4:3 that is the editors' own width). Wide mode's only
+    // link to the VI screen (roadmap 3): without VI, `vi` is false and the rest stands as it is.
     const bool vi = s.currentScreen == ScreenType::VISUALIZER && !s.eq.isOpen && !s.themeEditor.isOpen;
     const int editorWidth = vi ? main_area_width() : EDITOR_CLIP_RIGHT - SIDE_SPACER;
     // The editor sits right beside the rail; wide mode's spare space is always on its right.

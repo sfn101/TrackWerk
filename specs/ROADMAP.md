@@ -14,7 +14,7 @@ Work top to bottom. Each item has its own spec; finish (build, test on Windows, 
 | 8 | Save under a new name | [save-under-new-name.md](save-under-new-name.md) | Done |
 | 9 | Sharp scaling | [sharp-scaling.md](sharp-scaling.md) | Done |
 | U | Merge upstream 1.3.0 | [upstream-1.3-merge.md](upstream-1.3-merge.md) | Done |
-| 10 | Wide mode (16:9) | [wide-mode.md](wide-mode.md) | Built on branch `wide-mode`, not merged. After U: see the wide mode note below |
+| 10 | Wide mode (16:9) | [wide-mode.md](wide-mode.md) | Done |
 | 11 | Fake stereo loads as mono | [fake-stereo-mono.md](fake-stereo-mono.md) | Spec ready |
 | 12 | Drumlab: manual sequencing and layout | [drumlab-manual.md](drumlab-manual.md) | Spec ready |
 | 13 | Sound: master limiter | [master-limiter.md](master-limiter.md) | Spec ready |
@@ -26,7 +26,7 @@ Work top to bottom. Each item has its own spec; finish (build, test on Windows, 
 | 19 | Chord editor | [chord-editor.md](chord-editor.md) | Spec ready |
 | 20 | More visualizers (14 styles) | [more-visualizers.md](more-visualizers.md) | Built on branch `more-visualizers` (started from `wide-mode`), not merged. After U: split it from wide mode, see the note below |
 
-## Wide mode: work left after the upstream merge (agreed 2026-11-20)
+## Wide mode after the upstream merge (agreed 2026-11-20, done 2026-11-21)
 
 - **Upstream 1.3.0's new screens work in wide mode:** the AUDIO DRIVERS overlay, the Studio synth XY pad page, the per-family synth sheets, the frog stage and karaoke, and the lyric keyboard. Dialogs are centred like ours (`wide_dx()`), and XY pad touch maps correctly on the wide canvas. Extend `ptwide-mode-check` to cover them.
 - **Wide mode stands alone,** so upstream can take it without anything else:

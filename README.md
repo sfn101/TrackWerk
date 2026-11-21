@@ -53,7 +53,7 @@ Networking, MIDI and external audio inputs depend on the platform and hardware. 
 
 ## Windows build (this fork)
 
-Build the fork from `source/` (below), then run `shell/build/Release/pockettracker-sdl.exe`. Songs, samples and settings live in `Documents\TrackWerk`, and the session log is written to `Documents\TrackWerk	rackwerk-log.txt`. For Studio SOURCE's YouTube, run `powershell -File shell/windows/fetch-helpers.ps1` once before configuring, so `yt-dlp`, QuickJS and FFmpeg sit beside the exe.
+Build the fork from `source/` (below), then run `shell/build/Release/pockettracker-sdl.exe`. Songs, samples and settings live in `Documents\TrackWerk`, and the session log is written to `Documents\TrackWerk\trackwerk-log.txt`. For Studio SOURCE's YouTube, run `powershell -File shell/windows/fetch-helpers.ps1` once before configuring, so `yt-dlp`, QuickJS and FFmpeg sit beside the exe.
 
 - **Controls:** the arrows or WASD act as the D-pad, K/Enter is A, J/Escape is B, U/I are L/R, Space is START and F10 quits. A gamepad works too.
 - **Audio:** SETTINGS > AUDIO OUT offers SYSTEM (WASAPI shared mode) or any installed ASIO driver.

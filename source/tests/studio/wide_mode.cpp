@@ -313,9 +313,15 @@ int main(int argc, char** argv) {
             st.qwerty.context = QwertyContext::LYRIC_EDIT;
             layout.draw(*canvas, st);
             write_bmp(*canvas, dir / (std::string(p.name) + "-wide.bmp"));
+            if (p.keyboard) {   // a dialog: it dims the whole canvas, and its frame sits in the middle
+                int l = -1, r = -1;
+                for (int x = 0; x < DESIGN_W; ++x)
+                    if (at(x, 240) == st.theme.textTitle) { if (l < 0) l = x; r = x; }
+                check(l > 0 && std::abs((l + r) - (DESIGN_W - 1)) <= 1, "16:9: the lyric keyboard sits in the middle");
+                continue;
+            }
             if (first.empty()) first = strips();
-            else if (strips() != first) { ++spilled; std::printf("      %s draws outside the centred Studio
-", p.name); }
+            else if (strips() != first) { ++spilled; std::printf("      %s draws outside the centred Studio\n", p.name); }
         }
         check(spilled == 0, "16:9: every 1.3.0 Studio page stays inside the centred 640");
         st.qwerty.isOpen = false;

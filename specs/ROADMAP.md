@@ -35,6 +35,10 @@ Work top to bottom. Each item has its own spec; finish (build, test on Windows, 
 
   Each combination must build: with both, with either one, and with neither.
 
+  **Checked 2026-11-21:** with both (our `main`): builds, `ptwide-mode-check` passes. With neither: wide mode applied on plain upstream 1.3.0 (`origin/main`, which has no VI and only its own INT / BILINEAR SCALING row) builds with MSVC, and every check passes except the five exact-pixel hashes, which upstream's own screens change. Not built separately: VI alone and sharp scaling alone, as they are halves of those two builds. What porting wide mode to upstream needs:
+  - **VI:** set `vi` to `false` in `layout.cpp` (marked) and drop the VI lines in `wide_mode.cpp` (marked). ⚠️ The full-width scope band uses `OscilloscopeModule::draw_sized`, which came with VI's commit `fddc165`: that part of `oscilloscope.h/.cpp` must go with wide mode.
+  - **SCALING:** wide mode needs nothing from sharp scaling; the video code sizes from `DESIGN_W` in both. Only the SETTINGS order line (marked) and `portrait.layout`'s last argument (upstream's `scalingBilinear`) differ.
+
 ## More visualizers: split from wide mode after the upstream merge (agreed 2026-11-20)
 
 More visualizers (item 20) and wide mode (item 10) are separate features. Upstream may take either one without the other, and nothing may break.

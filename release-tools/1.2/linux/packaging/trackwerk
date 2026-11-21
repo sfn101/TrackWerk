@@ -30,6 +30,24 @@ def publish_new(temp,target):
             if err not in (errno.ENOSYS,errno.EINVAL,errno.EOPNOTSUPP):raise OSError(err,os.strerror(err),str(target))
     try:os.link(temp,target);return True
     except FileExistsError:return False
+    except OSError as e:
+        # exFAT and phone-exported FUSE images refuse hard links outright. Fall through to the
+        # exclusive copy below instead of leaving the preset unpublished.
+        if e.errno not in (errno.EPERM,errno.EACCES,errno.EINVAL,errno.EOPNOTSUPP,errno.ENOSYS,errno.EMLINK):raise
+    # Neither atomic path exists on this filesystem: exFAT on a ROMs card is the common case.
+    # O_EXCL keeps the "never replace a user's preset" guarantee - the name is created
+    # exclusively and then filled, so a second launcher loses the race instead of truncating
+    # a file the user already has.
+    try:fd=os.open(target,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o644)
+    except FileExistsError:return False
+    try:
+        with os.fdopen(fd,'wb') as dst,open(temp,'rb') as inp:
+            shutil.copyfileobj(inp,dst);dst.flush();os.fsync(dst.fileno())
+    except Exception:
+        try:os.unlink(target)
+        except OSError:pass
+        raise
+    return True
 
 def seed_presets(factory,root):
     if not factory.is_dir():return 0

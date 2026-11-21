@@ -163,7 +163,7 @@ enum class ProjectRow {
     TRANSPOSE = 1,
     NAME      = 2,   // 20 characters, one per cursor column
     PROJECT   = 3,   // SAVE | COPY | LOAD | NEW
-    EXPORT    = 4,   // MIX | STEMS
+    EXPORT    = 4,   // MIX | STEMS | MIDI
     COMPACT   = 5,   // SEQ | INST
     SYSTEM    = 6,   // SETTINGS >
     MIDI      = 7,   // MIDI >     — only where the MIDI screens are built
@@ -242,7 +242,7 @@ inline int project_row_max_column(ProjectRow row) {
     switch (row) {
         case ProjectRow::PROJECT: return 4;   // SAVE | COPY | LOAD | NEW
         case ProjectRow::SYSTEM: return 2;
-        case ProjectRow::EXPORT:  return 2;   // MIX | STEMS
+        case ProjectRow::EXPORT:  return 3;   // MIX | STEMS | MIDI
         case ProjectRow::COMPACT: return 2;   // SEQ | INST
         // ⚠️ TAP is a cell of its own: on the value cell every A+UP would count as a tap.
         case ProjectRow::TEMPO:   return 2;   // the value | TAP

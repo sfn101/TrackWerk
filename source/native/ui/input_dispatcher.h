@@ -276,6 +276,9 @@ class InputDispatcher {
     void open_file_browser(AppState::BrowserPurpose purpose, const std::string& directory,
                            const std::vector<std::string>& extensions, bool sampleDomain = false);
 
+    // The global AUDIO DRIVERS overlay (L1+R1): the shell opens it once the shoulder chord is held.
+    void open_audio_drivers();
+
     // The load-browse categories a config.json override can redirect.
     enum class BrowserDir { SAMPLES, SOUNDFONTS, INSTRUMENTS, PROJECTS, THEMES };
 
@@ -676,6 +679,13 @@ class InputDispatcher {
     // A+DPAD and A+B, through the editor's own cursor.
     void send_editor_edit(InputAction (*fn)(const CursorContext&));
 
+    // ── The global AUDIO DRIVERS overlay (ui/dispatch/layers/audio_drivers.cpp) ──
+    // L1+R1 held for a moment opens it over any screen; picking a row writes the same
+    // `settings.audioOutIndex` SETTINGS > AUDIO OUT edits, so the shell's one switch owns the change.
+    bool audio_drivers_open() const { return s_.audioDrivers.isOpen; }
+    GestureResult audio_drivers_layer(Gesture g);
+    void close_audio_drivers() { s_.audioDrivers.isOpen = false; }
+
     // ── The theme editor (ui/dispatch/layers/theme.cpp), over SETTINGS ──
     // ⚠️ SAVE raises the keyboard on top of it, so QWERTY sits above THEME in the layer stack.
 
@@ -754,11 +764,13 @@ class InputDispatcher {
 
     // NEW, with the engine sync a fresh project needs.
     void start_new_project();
+    // PROJECT → LOAD's browser. ⚠️ Through the LOAD_PROJECT confirm when dirty: the load that follows
+    // replaces the work and deletes its autosave, so it would be gone without a trace.
+    void open_project_loader();
+    // SAVE itself, once any question is answered.
+    void save_now();
     // First beat's own new project under a free name (FIRSTBEAT, FIRSTBEAT2 …), so SAVE never overwrites.
     void begin_first_beat();
-    // PROJECT → SAVE / LOAD once any question is answered.
-    void save_project_now();
-    void open_project_browser();
 
     // Slot 0 across the board, and no selection. Shared by NEW and LOAD.
     void reset_editing_context();

@@ -1,89 +1,11 @@
 {
-  "packages": [
-    {
-      "package": "TrackWerk-1.0-Factory-Presets.zip",
-      "archivePassed": true,
-      "files": 2437,
-      "sha256": "1ab43cc330fa8dbfae4d3ebdb3b6491b33ced3b3bccc047fee75020046a810ca"
-    },
-    {
-      "package": "TrackWerk-1.2.0-Brick-KNULLI-First-Install.zip",
-      "archivePassed": true,
-      "files": 2515,
-      "sha256": "f202e0dd528b9d03b5e1d267e4eda3ecb1cbd537a806a8aa0c6d7ea257d98375"
-    },
-    {
-      "package": "TrackWerk-1.2.0-Brick-Program-Factory-Update.zip",
-      "archivePassed": true,
-      "files": 2451,
-      "sha256": "70cebb18234225a346299994ccc52eeae347a6febf376ec28b6e75dfcd6eeccd"
-    },
-    {
-      "package": "TrackWerk-1.2.0-Demo-Projects.zip",
-      "archivePassed": true,
-      "files": 6,
-      "sha256": "4769291628eda410c27a477f3f72a39af5681486f341f4147f66f0c62c12ab97"
-    },
-    {
-      "package": "TrackWerk-1.2.0-Miyoo-Mini-Onion-First-Install.zip",
-      "archivePassed": true,
-      "files": 2477,
-      "sha256": "bd1e586e86568aff7b44b5f1b0ab312fed388f5ab76f3408f3f9d12b5eafa7fc"
-    },
-    {
-      "package": "TrackWerk-1.2.0-Miyoo-Plus-Onion-First-Install.zip",
-      "archivePassed": true,
-      "files": 2479,
-      "sha256": "ebc715dc542f8fe6a3a7404f89c95caac83aa51fa59ae74d0b1359d745f02ea0"
-    },
-    {
-      "package": "TrackWerk-1.2.0-Miyoo-Program-Update.zip",
-      "archivePassed": true,
-      "files": 17,
-      "sha256": "525ff8bad297d2f259300bb7f5924d65261bf7385aed9b80a53c9089876a994d"
-    },
-    {
-      "package": "TrackWerk-1.2.0-RGB20S-AmberELEC-Program-Update.zip",
-      "archivePassed": true,
-      "files": 14,
-      "sha256": "b062c03fd4ad76b09a692760adf786120fa8b0d109a9acff87b132ec3ff7cec7"
-    },
-    {
-      "package": "TrackWerk-1.2.0-RGB20S-AmberELEC.zip",
-      "archivePassed": true,
-      "files": 2513,
-      "sha256": "3b70eba5840d1737c3aebe2be6c814101da375a000f83ccbd3b7761335e26afa"
-    }
+  "version": "1.3.0",
+  "simulations_passed": 11,
+  "simulations_total": 11,
+  "samples_per_full_install": 1528,
+  "manual_languages": [
+    "en",
+    "de"
   ],
-  "generatedCardFixtures": [
-    {
-      "profile": "miyoo-mini",
-      "legacyLayout": false,
-      "programAndMenuUpdate": true,
-      "userDataUnchanged": true,
-      "layoutUnchanged": true
-    },
-    {
-      "profile": "miyoo-plus",
-      "legacyLayout": false,
-      "programAndMenuUpdate": true,
-      "userDataUnchanged": true,
-      "layoutUnchanged": true
-    },
-    {
-      "profile": "miyoo-mini",
-      "legacyLayout": true,
-      "programAndMenuUpdate": true,
-      "userDataUnchanged": true,
-      "layoutUnchanged": true
-    },
-    {
-      "profile": "miyoo-plus",
-      "legacyLayout": true,
-      "programAndMenuUpdate": true,
-      "userDataUnchanged": true,
-      "layoutUnchanged": true
-    }
-  ],
-  "physicalDevicesSimulated": false
+  "final_hashes": "SHA256SUMS.txt"
 }

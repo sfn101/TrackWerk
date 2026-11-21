@@ -1,76 +1,17 @@
-[
-  {
-    "passed": true,
-    "profile": "brick",
-    "machine_qa": "QEMU",
-    "physical_device_tested": false,
-    "exit_code": 0,
-    "checks": {
-      "TrackWerk 1.2.0": true,
-      "video first SDL_RenderPresent returned": true,
-      "QUIT_AFTER reached": true,
-      "PASS SDL dummy capture:": true,
-      "\"processes_succeeded\":true": true
-    },
-    "program_sha256": "b27cf0bd4ad197aa79285e39a9ca47fb30497014795ba3a33a16c5681a6f69e2",
-    "network": false,
-    "host_disks": false
-  },
-  {
-    "passed": true,
-    "profile": "miyoo-mini",
-    "machine_qa": "QEMU",
-    "physical_device_tested": false,
-    "exit_code": 0,
-    "checks": {
-      "1.2.0-miyoo-offline": true,
-      "MIYOO_SDL_ABI_NAMES_PASS": true,
-      "video first SDL_RenderPresent returned": true,
-      "application run returned": true,
-      "AUTOPLAY pressed START": true,
-      "\"miyoo_dev13_guest_pass\":true": true
-    },
-    "program_sha256": "92b36ce2cea76be4d361204a63ed17c841558784a86ad1575211ab6e45af1c07",
-    "network": false,
-    "host_disks": false
-  },
-  {
-    "passed": true,
-    "profile": "miyoo-plus",
-    "machine_qa": "QEMU",
-    "physical_device_tested": false,
-    "exit_code": 0,
-    "checks": {
-      "1.2.0-miyoo-plus-archive": true,
-      "MIYOO_SDL_ABI_NAMES_PASS": true,
-      "video first SDL_RenderPresent returned": true,
-      "application run returned": true,
-      "AUTOPLAY pressed START": true,
-      "\"miyoo_dev13_guest_pass\":true": true,
-      "SourceSampler construction ready": true
-    },
-    "program_sha256": "9827f94a09a95951a8fcc00d3d775afe1e589da1a45aaf48d5f9a143d33e9ce3",
-    "network": false,
-    "host_disks": false
-  },
-  {
-    "passed": true,
-    "profile": "amberelec",
-    "machine_qa": "QEMU",
-    "physical_device_tested": false,
-    "exit_code": 0,
-    "checks": {
-      "startup: SDL_Init video and controllers begin": true,
-      "AMBER_SDL_OK 2.32.10": true,
-      "AMBER_CURL_OK": true,
-      "AMBER_10_RAW_BUTTONS_MAPPED_AND_RELEASED": true,
-      "AMBER_ALSA_OUTPUT_OK": true,
-      "AMBER_FIXTURE_RESULT loader=0 probe=0 controller=0 native_no_drm=1 qjs=0 ytdlp=0": true
-    },
-    "program_sha256": "3fea0f54cb77b76c2e3d4d861577143a221402473c5613845b968f6b58943198",
-    "network": false,
-    "host_disks": false,
-    "video_scope": "Native process reached SDL initialization; physical DRM/first frame not available in guest.",
-    "version_banner_verified_from_binary": true
-  }
-]
+{
+  "version": "1.3.0",
+  "base_programs_tested_by_Kid_Bunka": [
+    "Android",
+    "Brick",
+    "Miyoo Mini/Mini Flip",
+    "Miyoo Mini Plus",
+    "RGB20S"
+  ],
+  "final_rebuilds_physical_tests": false,
+  "community_ports": [
+    "H700",
+    "R36S",
+    "R36 Ultra",
+    "PortMaster"
+  ]
+}

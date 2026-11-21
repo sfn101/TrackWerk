@@ -34,7 +34,7 @@ def main():
             if self.path.startswith('/broken.wav'): data=b'not a RIFF WAV'
             elif self.path.startswith('/codec/'): data=(directory/pathlib.Path(self.path).name).read_bytes()
             elif self.path.startswith('/archive/advancedsearch.php'):
-                data=json.dumps({'response':{'numFound':2,'docs':[{'identifier':'fixture-b','title':'B album','description':'<b>Real fixture metadata</b>','creator':['Fixture Artist'],'subject':['Jazz']},{'identifier':'fixture-a','title':'A album'}]}}).encode()
+                data=json.dumps({'response':{'numFound':2,'docs':[{'identifier':'fixture-b','title':'B album','description':'<b>Real fixture metadata</b>','creator':['Fixture Artist'],'subject':['Jazz']},{'identifier':'fixture-a','title':'A album','description':'x'*799+'é cut at 800 bytes, mid-character'}]}}).encode()
             elif self.path.startswith('/archive/metadata/'):
                 if self.path.endswith('fixture-a'): data=json.dumps({'metadata':{},'files':[]}).encode()
                 else:data=json.dumps({'metadata':{'creator':'Fixture Artist','description':'Real fixture metadata','instrumentation':'synth test signal'},'files':[{'name':'b.wav','title':'B tone','length':'3.0'},{'name':'a.wav','title':'A tone','length':'3.0'}]}).encode()

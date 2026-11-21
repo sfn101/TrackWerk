@@ -1,0 +1,28 @@
+{
+  "version": "1.2.0-1",
+  "archive": {
+    "status": "PASS",
+    "finalArchiveReadback": true,
+    "packages": [
+      {
+        "file": "trackwerk_1.2.0-1_amd64.deb",
+        "status": "PASS",
+        "files": 2499,
+        "explicitDirectories": 235,
+        "everyParentPrecedesChild": true
+      },
+      {
+        "file": "trackwerk_1.2.0-1_arm64.deb",
+        "status": "PASS",
+        "files": 2499,
+        "explicitDirectories": 235,
+        "everyParentPrecedesChild": true
+      }
+    ]
+  },
+  "launcherTests": 11,
+  "launcherTestsPassed": true,
+  "finalArm64VmAcceptance": false,
+  "finalAmd64Execution": false,
+  "physicalUsbCapture": false
+}

@@ -34,8 +34,8 @@ android {
         targetSdk = 34
         // Keep versionCode increasing for in-place APK updates. F-Droid's update check and
         // the changelog file name (changelogs/<versionCode>.txt) need a literal value.
-        versionCode = 102000
-        versionName = "1.2.0"
+        versionCode = 103000
+        versionName = "1.3.0"
         testInstrumentationRunner = providers.gradleProperty("ptTestRunner")
             .orElse("com.conanizer.pockettracker.CaptureSmoke").get()
 

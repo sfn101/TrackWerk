@@ -1,0 +1,34 @@
+name: Verify TrackWerk 1.2.1 Windows candidate
+on:
+  push:
+    branches: [fix/1.2.1-file-validation]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Configure actual MSVC build
+        run: cmake -S source/shell -B source/shell/build -G "Visual Studio 17 2022" -A x64 -DCMAKE_DISABLE_FIND_PACKAGE_SDL2=ON -DPT_STUDIO_CHECK=ON
+      - name: Build desktop and malformed-file regression test
+        run: cmake --build source/shell/build --config Release --target pockettracker-sdl ptfile-validation-check ptfm-sysex-check ptbraids-pcm-check --parallel 3
+      - name: Exercise project, WAV and SoundFont readers on Windows
+        run: |
+          & source/shell/build/native/Release/ptfile-validation-check.exe "$env:RUNNER_TEMP/file-validation"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Verify FM rendering and Mutable Braids PCM on Windows
+        run: |
+          & source/shell/build/native/Release/ptfm-sysex-check.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & source/shell/build/native/Release/ptbraids-pcm-check.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Verify and package static Windows application
+        run: ./source/shell/build-windows.ps1
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: TrackWerk-1.2.1-Windows-candidate
+          path: source/build/windows/TrackWerk-1.2.1-windows-x64.zip
+          if-no-files-found: error

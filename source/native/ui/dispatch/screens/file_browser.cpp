@@ -703,6 +703,9 @@ void InputDispatcher::browser_paste() {
         const std::string name = path_name(src);
         std::string       target = dest + "/" + name;
         if (target == src) { ++done; continue; }   // pasted back into the source folder
+        // A folder into itself or below it: refused, or the copy walks into what it is creating and
+        // leaves hundreds of nested folders behind until the path length runs out.
+        if (path_is_within(dest, src)) { ++failed; continue; }
 
         // De-duplicate: "kick.wav" → "kick_2.wav" → "kick_3.wav". Never overwrite.
         if (fs_.file_exists(target)) {

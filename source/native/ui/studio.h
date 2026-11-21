@@ -39,5 +39,12 @@ bool studio_synth_compare(AppState&,songcore::SongcoreHost&,AudioEngine&);
 void studio_synth_audition(AppState&,songcore::SongcoreHost&,bool on);
 void studio_synth_stop_audition(AppState&,songcore::SongcoreHost&);
 void studio_synth_navigate(AppState&,Button direction);
+bool studio_synth_xy_page(const AppState&);
+// A finger on the canvas (640x480 design pixels) of the XY pad or the frog stage: phase 0 down, 1 move, 2 up. Dragging
+// moves the dot and the sound follows. Returns true when the touch belongs to the pad (a drag that started on it
+// continues anywhere). Only on the XY page of Studio > Synth; touch screens (Android, the desktop shell) only.
+bool studio_touch_canvas(AppState&,songcore::SongcoreHost&,AudioEngine&,int canvasX,int canvasY,int phase,uint64_t finger=0);
+bool studio_synth_frog_model(const AppState&);   // CROAKER and FROGGY: the stage is on the first page too
+void studio_synth_xy_move(AppState&,songcore::SongcoreHost&,AudioEngine&,Button direction);
 bool studio_button(const ButtonEvent&,AppState&,songcore::SongcoreHost&,AudioEngine&,FileSystem&);
 }

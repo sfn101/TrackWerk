@@ -51,6 +51,23 @@ source $controlfolder/control.txt
 
 get_controls
 
+# --- ArkOS-family video environment ----------------------------------------------------------
+# ArkOS, dArkOSRE, TheRA and RetroOZ run EmulationStation on KMSDRM with the vendor Mali EGL blob
+# and export SDL_VIDEO_EGL_DRIVER=libEGL.so from the service that starts the frontend. A port
+# launched from EmulationStation does not inherit that value, and SDL's KMSDRM backend then fails
+# before the first frame:
+#
+#     startup: video SDL_CreateWindow begin; size=640x480 flags=0x00000024
+#     SDL_CreateWindow failed: Can't load EGL/GL library on window creation.
+#
+# Measured on an Anbernic R36 Ultra with dArkOSRE-R36 (Debian 13 arm64) and the stock 1.2.0 .deb:
+# exporting this one variable is the difference between that failure and a full 720x720 frame.
+case "${CFW_NAME:-}" in
+  ArkOS*|dArkOS*|TheRA*|RetroOZ*)
+    export SDL_VIDEO_EGL_DRIVER="${SDL_VIDEO_EGL_DRIVER:-libEGL.so}"
+    ;;
+esac
+
 GAMEDIR=/$directory/ports/pockettracker
 
 cd "$GAMEDIR"

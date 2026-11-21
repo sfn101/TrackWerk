@@ -50,7 +50,12 @@ public:
                           int outW, int outH);
 
     // Down on a button presses it; up, or sliding off it, releases it.
-    void handle_finger(const SDL_Event& e, SdlInput& input, uint64_t now_ms);
+    // Returns true when the finger belongs to a virtual button (pressed, held or released by it).
+    bool handle_finger(const SDL_Event& e, SdlInput& input, uint64_t now_ms);
+
+    // A finger event in the 640x480 canvas coordinates of the centred frame (landscape); false outside the frame or
+    // before the first layout. For direct touch on the XY pad: a finger that hits no virtual button may still touch the screen.
+    bool canvas_point(const SDL_Event& e, int& canvasX, int& canvasY) const;
 
     // After the frame, before the flip; a button held from any source is drawn pressed.
     void draw(SDL_Renderer* r, const SdlInput& input) const;
@@ -67,6 +72,7 @@ private:
     }
 
     bool enabled_ = false;
+    SDL_Rect frame_{0, 0, 0, 0};   // the centred 640x480 frame in window pixels, from the last layout()
     bool active_  = false;
     bool overlay_ = false;
     bool trace_   = false;

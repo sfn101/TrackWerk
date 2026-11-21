@@ -16,7 +16,9 @@ namespace pt::ui {
 bool autosave_exists(FileSystem& fs);
 
 // A failure returns false and says nothing: the user did not ask for this write.
-bool autosave_write(const songcore::SongcoreHost& host, FileSystem& fs);
+// `durable` false (the 3 s debounce, on the UI thread) skips the sync; the flush on background and exit
+// stays durable, because that is the write a power-off or a killed app follows.
+bool autosave_write(const songcore::SongcoreHost& host, FileSystem& fs, bool durable = true);
 
 // Deleting one that is not there succeeds.
 bool autosave_clear(FileSystem& fs);

@@ -1,3 +1,18 @@
+# TrackWerk 1.3.0
+
+Small machine. Serious music, and now a frog that sings.
+
+## Added
+- **FROGGY** (Studio > Synth > Voices and Frogs): a singing voice that sings the words you type. Type the lyrics on the on-screen keyboard (Lyrics row, A + Right), or step through templates in `Presets/Lyrics` (A + Up/Down); every note sings the next syllable. Four voices (frog, man, woman, child), croak, vibrato, glide, coda, a fixed-syllable option, and a **Mic pitch source** that sings the pitch you hum into the recorder (Linux builds). Spelling-to-sound rules and vowel data from Chimera Vocal Synth by Jameson Hodge (MIT, see `docs/THIRD-PARTY-CHIMERA.md`); the voice itself is our own light formant engine.
+- **CROAKER**, a croaking frog; **ACID BOX** and **REESE BASS**, two bass engines; **DUB SIREN**, a sound-system siren. 16 sounds each.
+- **The frog stage**: a neon side view that follows the real sound level, hops with every note, flicks its tongue at the firefly (the XY pad's dot), and shows the sung word karaoke-style.
+- **XY pad** on every synth, with touch dragging on touch screens.
+- **Synth tabs sorted by purpose** (Voices and Frogs, Vintage Chips, Low End and Sirens, Plaits: Macro, Braids: Digital, Rings: Strings, Elements: Modal ...), a one-line description under each new model, and **control sheets** per family: dials, an LCD, a bar graph.
+- **EXPORT > MIDI**, **Presets/Inbox**, the **PRB** phrase command, **AUDIO DRIVERS overlay** and **input monitoring** (@ozkaoz), save **backups** (the last five versions) and **durable saves**.
+
+## Changed
+- 128 synth models in all. Existing songs and presets are unchanged.
+
 # TrackWerk 1.1.0
 
 Small machine. Serious music.

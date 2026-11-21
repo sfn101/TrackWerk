@@ -121,8 +121,8 @@ void ProjectModule::draw(Canvas& c, int x, int y, const ProjectState& s) const {
     door_row(ProjectRow::COLLECT, "COLLECT");
     if (s.isCollecting) progress(ProjectRow::COLLECT, s.collectProgress);
 
-    // ── EXPORT — MIX / STEMS ─────────────────────────────────────────────────────────────────────
-    button_row(ProjectRow::EXPORT, "EXPORT", {"MIX", "STEMS"});
+    // ── EXPORT — MIX / STEMS / MIDI ─────────────────────────────────────────────────────────────────────
+    button_row(ProjectRow::EXPORT, "EXPORT", {"MIX", "STEMS", "MIDI"});
     if (s.isRendering) progress(ProjectRow::EXPORT, s.renderProgress);
 
     button_row(ProjectRow::COMPACT, "COMPACT", {"SEQ", "INST"});

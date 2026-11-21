@@ -844,7 +844,7 @@ int64_t Sequencer::walk_phrase_row(int trackId, int64_t framesPerStep) {
         // note, its commands, its GRV and its HOP are not there.
         const PhraseStep& candidate = stepIndex >= 0 && stepIndex < static_cast<int>(phrase.steps.size())
                                       ? phrase.steps[stepIndex] : emptyStep;
-        const PhraseStep& step = step_plays_on_pass(candidate, w.pass) ? candidate : emptyStep;
+        const PhraseStep& step = step_plays_on_pass(candidate, w.pass, prb_salt(trackId, w.phraseId, stepIndex)) ? candidate : emptyStep;
 
         // Pre-scan GRV so a new groove takes effect on its own step; the last GRV wins.
         for (int fxSlot = 1; fxSlot <= 3; ++fxSlot) {
@@ -1050,7 +1050,7 @@ PhraseStep Sequencer::applyChanceAndRandomize(const PhraseStep& step, TrackState
     // NTH has done its work in the walk. Taken out here so CHA and RNL look past it to the cell
     // they would reach without it.
     for (int slot = 1; slot <= 3; ++slot)
-        if (step_fx_type(effectiveStep, slot) == FX_NTH) step_set_fx(effectiveStep, slot, FX_NONE, 0x00);
+        if (step_fx_type(effectiveStep, slot) == FX_NTH || step_fx_type(effectiveStep, slot) == FX_PRB) step_set_fx(effectiveStep, slot, FX_NONE, 0x00);
     // CHA XY: X gates the nearest filled column on the LEFT (or the note), Y the one on the RIGHT;
     // 0 never, F always. A CHA an earlier one cleared gates nothing.
     for (int slot = 1; slot <= 3; ++slot) {
@@ -1587,7 +1587,7 @@ void Sequencer::remember_column_fx(StepPlay& s) {
     for (int col = 1; col <= 3; ++col) {
         int fxType = step_fx_type(s.step, col);
         if (fxType != FX_NONE && fxType != FX_RND && fxType != FX_RNL && fxType != FX_CHA &&
-            fxType != FX_NTH) {
+            fxType != FX_NTH && fxType != FX_PRB) {
             s.ts.lastColFxType[col] = fxType;
             s.ts.lastColFxValue[col] = step_fx_value(s.step, col);
         }

@@ -195,7 +195,7 @@ void InputDispatcher::run_due_autosave() {
     if (!s_.project_dirty() || s_.loading.running) return;
 
     before_save();
-    autosave_write(host_, fs_);   // a failure is silent
+    autosave_write(host_, fs_, /*durable=*/false);   // a failure is silent; the flush below is the durable one
 }
 
 void InputDispatcher::flush_autosave() {

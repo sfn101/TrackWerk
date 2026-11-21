@@ -34,6 +34,7 @@ void SdlTouch::layout(const SDL_Rect& frame, int outW, int outH) {
     outW_ = outW;
     outH_ = outH;
     portrait_ = false;
+    frame_ = frame;
 
     // The bars either side of the centred frame; none wide enough → inactive. Overlaid (wide mode),
     // each box is a fifth of the width at the picture's edge, whatever bars there are.
@@ -79,17 +80,28 @@ bool SdlTouch::hit_window(int px, int py, Button& out) const {
     return false;
 }
 
-void SdlTouch::handle_finger(const SDL_Event& e, SdlInput& input, uint64_t now_ms) {
-    if (!active_) return;
+bool SdlTouch::canvas_point(const SDL_Event& e, int& canvasX, int& canvasY) const {
+    if (portrait_ || frame_.w <= 0 || frame_.h <= 0 || outW_ <= 0 || outH_ <= 0) return false;
+    const int px = static_cast<int>(e.tfinger.x * outW_), py = static_cast<int>(e.tfinger.y * outH_);
+    if (px < frame_.x || py < frame_.y || px >= frame_.x + frame_.w || py >= frame_.y + frame_.h) return false;
+    canvasX = (px - frame_.x) * 640 / frame_.w;
+    canvasY = (py - frame_.y) * 480 / frame_.h;
+    return true;
+}
+
+bool SdlTouch::handle_finger(const SDL_Event& e, SdlInput& input, uint64_t now_ms) {
+    if (!active_) return false;
 
     // SDL normalises fingers to [0,1] over the window — the output's pixel space on Android.
     const SDL_TouchFingerEvent& t  = e.tfinger;
     const int                   px = static_cast<int>(t.x * outW_);
     const int                   py = static_cast<int>(t.y * outH_);
+    bool                        consumed = false;
 
     if (e.type == SDL_FINGERDOWN) {
         Button b{};
         if (hit_window(px, py, b)) {
+            consumed = true;
             input.touch_press(b, now_ms);
             emit_feedback(b, /*down=*/true);
             finger_[t.fingerId] = b;
@@ -101,6 +113,7 @@ void SdlTouch::handle_finger(const SDL_Event& e, SdlInput& input, uint64_t now_m
     } else if (e.type == SDL_FINGERUP) {
         auto it = finger_.find(t.fingerId);
         if (it != finger_.end()) {
+            consumed = true;
             Button button{};
             const bool inside = hit_window(px, py, button) && button == it->second;
             input.touch_release(it->second, !inside);
@@ -112,6 +125,7 @@ void SdlTouch::handle_finger(const SDL_Event& e, SdlInput& input, uint64_t now_m
         // Sliding off releases; sliding back in does not re-press.
         auto it = finger_.find(t.fingerId);
         if (it != finger_.end()) {
+            consumed = true;
             Button b{};
             const bool still = hit_window(px, py, b) && b == it->second;
             if (!still) {
@@ -124,6 +138,7 @@ void SdlTouch::handle_finger(const SDL_Event& e, SdlInput& input, uint64_t now_m
             }
         }
     }
+    return consumed;
 }
 
 void SdlTouch::draw(SDL_Renderer* r, const SdlInput& input) const {

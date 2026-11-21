@@ -1,28 +1,8 @@
 {
-  "version": "1.2.0-1",
-  "archive": {
-    "status": "PASS",
-    "finalArchiveReadback": true,
-    "packages": [
-      {
-        "file": "trackwerk_1.2.0-1_amd64.deb",
-        "status": "PASS",
-        "files": 2499,
-        "explicitDirectories": 235,
-        "everyParentPrecedesChild": true
-      },
-      {
-        "file": "trackwerk_1.2.0-1_arm64.deb",
-        "status": "PASS",
-        "files": 2499,
-        "explicitDirectories": 235,
-        "everyParentPrecedesChild": true
-      }
-    ]
-  },
-  "launcherTests": 11,
-  "launcherTestsPassed": true,
-  "finalArm64VmAcceptance": false,
-  "finalAmd64Execution": false,
-  "physicalUsbCapture": false
+  "version": "1.3.0",
+  "windows": "MSVC build, static CRT/SDL checks and native window startup passed in CI; dummy audio",
+  "linux": "Debian 13 amd64/arm64 build, engine checks, Xvfb window, ldd, exact SHA256 package install, 1528 sample seed, both manuals, user-file preservation and package removal passed",
+  "macOS": "Apple Silicon local window presentation and CoreAudio startup passed; 1528 sample files seeded; ad-hoc signature verified; not notarised",
+  "audible_listening_acceptance": false,
+  "package_acceptance_run": "https://github.com/kidbee85-beep/TrackWerk/actions/runs/44746420639"
 }

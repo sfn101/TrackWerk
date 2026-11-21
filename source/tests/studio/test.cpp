@@ -9,7 +9,7 @@
 #include <string>
 int main(){
  studio::Synth s;
- assert(studio::model_count()==123);
+ assert(studio::model_count()==128);
  assert(std::string(studio::model_name(116))=="SP ADDITIVE"&&studio::is_spectral_model(116)&&std::string(studio::model_name(117))=="SP FREEZE"&&std::string(studio::model_name(118))=="SP MORPH"&&std::string(studio::model_name(119))=="FORMANT CHOIR"&&studio::is_voice_model(119)&&!studio::is_spectral_model(119)&&std::string(studio::model_name(120))=="SID CHIP"&&studio::is_vintage_model(120)&&std::string(studio::model_name(121))=="DCO POLY"&&studio::is_vintage_model(121)&&std::string(studio::model_name(122))=="FM SYSEX"&&studio::is_vintage_model(122));
  assert(std::string(studio::model_name(0))=="P VCF"&&std::string(studio::model_name(81))=="E OMINOUS");
  assert(std::string(studio::model_name(111))=="S WAVEFOLD");

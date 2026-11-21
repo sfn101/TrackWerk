@@ -34,6 +34,27 @@ std::string project_save_path(const songcore::SongcoreHost& host, FileSystem& fs
 // "Song" is "SONG"), or over the damaged file of a song repaired and not saved yet.
 bool save_would_replace_other_song(FileSystem& fs, const AppState& s, const std::string& path);
 
+// SAVE keeps what it replaces: <home>/Backups/<NAME>_bak1.ptp is the previous version, _bak2 the one before,
+// up to this many. (Also kept when SAVE > REPLACE overwrites another project of the same file name.)
+inline constexpr int kProjectBackupsKept = 5;
+std::string project_backup_path(FileSystem& fs, const std::string& stem, int generation);
+
+// SAVE's own question: save_would_replace_other_song for the path SAVE would write. True when SAVE would
+// replace a file this document did not come from (another project with the same
+// file name: two UNTITLED, "MY SONG" and "MY_SONG", or names that differ in case on FAT/Windows/macOS).
+// ⚠️ A re-save of the loaded or last-saved file is never asked about.
+bool save_replaces_other(const songcore::SongcoreHost& host, FileSystem& fs, const AppState& s);
+
+// `name` with "_2", "_3" … (kept within the NAME row's 20 characters) whose project file is free; ""
+// when none up to 999.
+std::string free_project_name(FileSystem& fs, const std::string& name);
+// The same, free in `folder` (where SAVE writes: the song's own folder, else Projects).
+std::string free_project_name(FileSystem& fs, const std::string& folder, const std::string& name);
+
+// EXPORT > MIDI: the song as `<Renders>/<NAME>_NNNN.mid` (songcore/midi_export.h), a note sketch for a
+// DAW: effects, grooves and sounds are not in it. The message says how many notes and tracks.
+ActionResult export_midi(const songcore::SongcoreHost& host, FileSystem& fs);
+
 // ─── COLLECT: the song and every file it plays, copied into one folder under Songs/ ──────────────
 
 // The folder COLLECT writes: the project's file name.

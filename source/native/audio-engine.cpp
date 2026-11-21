@@ -87,6 +87,8 @@ void AudioEngine::stopAll() {
         sfVoices[t].hardStop();
     }
     resetTic00Cursors();   // PLAY starts every table at row 0
+    std::fill(std::begin(lyricNotes),std::end(lyricNotes),0u);   // and every lyric at its first syllable
+    for(auto& shown:lyricNotesShown)shown.store(0,std::memory_order_relaxed);
     LOGD("stopAll: voices and SF notes cleared, stream stays running");
 }
 
@@ -113,6 +115,8 @@ void AudioEngine::startStopRamp(int64_t blockStartFrame) {
         else                      sfVoices[t].hardStop();
     }
     resetTic00Cursors();   // as stopAll(): PLAY starts at row 0
+    std::fill(std::begin(lyricNotes), std::end(lyricNotes), 0u);   // and every lyric at its first syllable (audio thread: it owns the counters)
+    for (auto& shown : lyricNotesShown) shown.store(0, std::memory_order_relaxed);
     // When the audio thread reclaims the slots (see processAudioBlock).
     stopRampEndFrame.store(blockStartFrame + KILL_FADE_SAMPLES, std::memory_order_relaxed);
 }
@@ -354,6 +358,17 @@ const uint8_t* AudioEngine::liveStudioFmVoice(int id) const {
     const auto& row=studioSynthParams[id];
     if(!row.fmVoiceSet)return nullptr;
     return row.code!=kStudioParamsAnyCode&&row.gen!=sampleGen[id].load(std::memory_order_acquire)?nullptr:row.fmVoice.data();
+}
+void AudioEngine::setStudioLyricText(int id,const std::string& text) {
+    if(id<0||id>=256)return;
+    auto& staged=studioSynthParams.edit(id);   // keeps code and parameters
+    staged.lyricSet=!text.empty()&&studio::sing::pack_lyric(text.c_str(),staged.lyric)>0;
+    studioSynthParams.publish(id);
+}
+const uint8_t* AudioEngine::liveStudioLyric(int id) const {
+    const auto& row=studioSynthParams[id];
+    if(!row.lyricSet)return nullptr;
+    return row.code!=kStudioParamsAnyCode&&row.gen!=sampleGen[id].load(std::memory_order_acquire)?nullptr:row.lyric;
 }
 void AudioEngine::setStudioVoiceDefaults(int id,int volume,int pan,int detune){
     if(id<0||id>=256)return;

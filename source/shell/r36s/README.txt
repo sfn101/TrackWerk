@@ -1,4 +1,4 @@
-TRACKWERK 0.2.0-beta.3
+TRACKWERK 1.3.0
 R36S COMMUNITY TEST — EXPERIMENTAL
 Kid Bunka / TrackWerk contributors
 

@@ -56,12 +56,23 @@ inline constexpr bool is_voice_model(int model) {
     return model >= kVoiceFirstModel && model < kVoiceFirstModel + kVoiceModelCount;
 }
 // The Vintage family (Studio > Synth > Vintage): 120 SID CHIP (sid_chip.h), 121 DCO POLY (dco_poly.h),
-// 122 FM SYSEX (fm_sysex_voice.h).
+// 122 FM SYSEX (fm_sysex_voice.h), 123 DUB SIREN (dub_siren.h).
 inline constexpr int kVintageFirstModel = kVoiceFirstModel + kVoiceModelCount;
-inline constexpr int kVintageModelCount = 3;
+inline constexpr int kVintageModelCount = 8;
 inline constexpr int kSidChipModel = kVintageFirstModel;
 inline constexpr int kDcoPolyModel = kVintageFirstModel + 1;
 inline constexpr int kFmSysexModel = kVintageFirstModel + 2;
+inline constexpr int kDubSirenModel = kVintageFirstModel + 3;
+inline constexpr int kFrogVoiceModel = kVintageFirstModel + 4;   // 124 CROAKER (frog_voice.h)
+inline constexpr int kSingFrogModel = kVintageFirstModel + 5;    // 125 FROGGY (sing_frog.h): sings typed words
+inline constexpr int kAcidBoxModel = kVintageFirstModel + 6;     // 126 ACID BOX (bass_synths.h)
+inline constexpr int kReeseBassModel = kVintageFirstModel + 7;   // 127 REESE BASS (bass_synths.h)
+// FROGGY parameters: 2 Lyrics, 3 Voice, 4 Croak, 5 Vibrato, 6 Glide, 7 Coda, 8 Syllable (0 = next one per note)
+// (a row that opens the keyboard; the text itself belongs to the instrument, not to the parameters).
+inline constexpr int kSingLyricParam = 2;
+inline constexpr int kSingVoiceParam = 3;
+inline constexpr int kSingSyllableParam = 8;
+inline constexpr int kSingPitchParam = 9;   // 0 Note: the note sets the pitch; 1 Mic: the pitch the microphone hears (studio/mic_pitch.h)
 // FM SYSEX parameters 2 and 3 pick a bank and a voice in it (banks 0…2 are Plaits' built-in ones).
 inline constexpr int kFmBankParam = 2;
 inline constexpr int kFmVoiceParam = 3;
@@ -103,6 +114,10 @@ public:
  // FM SYSEX's voice (128 packed bytes, fm_sysex.h) or nullptr for the built-in banks. Audio thread;
  // copies the bytes, so the caller's buffer may change afterwards.
  void set_fm_voice(const uint8_t* packed);
+ // FROGGY: the instrument's packed lyric (sing_text.h, 385 bytes, copied) or nullptr for the built-in one,
+ // and the number of the note being started (the engine counts notes per instrument).
+ void set_lyric(const uint8_t* packed);
+ void set_note_index(uint32_t index);
  // SP FREEZE's source PCM, lent for one rendering section. The voice reads it only while the loan
  // lives; the destructor ends it on every way out of the scope (early returns included). The engine
  // opens a loan only inside a piece it mixes under the sample-edit lock.

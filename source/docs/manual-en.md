@@ -1,6 +1,6 @@
-# TrackWerk 1.1 Reference Manual
+# TrackWerk 1.3 Reference Manual
 
-**Manual revision:** TrackWerk 1.1 core reference  
+**Manual revision:** TrackWerk 1.3 core reference  
 **Covers:** the inherited PocketTracker core. For current TrackWerk Studio, design, sampling and installation workflows, use the [illustrated handbook](https://kidbee85-beep.github.io/TrackWerk/guide.html).
 
 ---
@@ -35,6 +35,7 @@
 26. [Workflow Tips](#26-workflow-tips)
 27. [Configuration File (config.json)](#27-configuration-file-configjson)
 28. [Appendix: Controls Cheat Sheet](#appendix-controls-cheat-sheet)
+29. [Appendix: Studio additions in 1.3](#appendix-studio-additions-in-13)
 
 ---
 
@@ -76,7 +77,7 @@ Press **A** on it. Android's own folder picker opens; pick a folder and confirm.
 Projects/  Samples/  Renders/  Soundfonts/  Themes/  Presets/
 ```
 
-`Presets/` holds what you save from inside a project: `Instruments/`, `Scales/`, `Grooves/`, `Reverbs/` and `Delays/`.
+`Presets/` holds what you save from inside a project: `Instruments/`, `Scales/`, `Grooves/`, `Reverbs/` and `Delays/`. Presets from a friend or a download can simply be dropped into `Presets/Inbox/` (over USB, with the app closed): at the next start each readable `.pti`, `.ptr`, `.ptd`, `.pts` or `.ptg` is moved to the matching folder; an existing preset of the same name is never overwritten (the new one becomes `Name_2`), and a file the app cannot read stays in the Inbox.
 
 Anything already in the folder is left exactly as it is — so if you have used PocketTracker before, pick your existing `Documents/PocketTracker` and every project, sample and theme is where it was.
 
@@ -1537,12 +1538,13 @@ Navigate here: **R+UP** from SONG or CHAIN.
 
 | Row | Action |
 |---|---|
-| SAVE | Save the song as `<NAME>.ptp`. A song opened from a file saves back into that file's folder; a new, recovered or imported song goes to `Projects/`. If that folder can't be written (read-only, or no permission on Android) it saves in `Projects/` and says `FOLDER READ-ONLY: SAVED IN PROJECTS`. A different song already under that name asks `SONG EXISTS - OVERWRITE?` first: **A** overwrites it, **B** opens the keyboard on `<NAME>-COPY` so you can keep both (see COPY). If the song's file is held by another program (OneDrive or a virus scanner on Windows), the file is left untouched and the song is saved beside it as `<NAME>-backup.ptp`, with `FILE LOCKED: SAVED AS <NAME>-backup.ptp`; load it from LOAD like any song. A later locked save never replaces that backup: it writes `<NAME>-backup-2.ptp`, then `-backup-3`, and so on. |
+| SAVE | Save the song as `<NAME>.ptp`. A song opened from a file saves back into that file's folder; a new, recovered or imported song goes to `Projects/`. If that folder can't be written (read-only, or no permission on Android) it saves in `Projects/` and says `FOLDER READ-ONLY: SAVED IN PROJECTS`. If that file belongs to another song (two songs with the same name), choose REPLACE, NEW COPY (`<NAME>_2`) or CANCEL; the cursor starts on CANCEL. Whatever SAVE replaces is first kept in `<home>/Backups/<NAME>_bak1.ptp` (the last five versions: `_bak1` is the newest); to go back, copy one into `Projects/` and rename it. If the song's file is held by another program (OneDrive or a virus scanner on Windows), the file is left untouched and the song is saved beside it as `<NAME>-backup.ptp`, with `FILE LOCKED: SAVED AS <NAME>-backup.ptp`; load it from LOAD like any song. A later locked save never replaces that backup: it writes `<NAME>-backup-2.ptp`, then `-backup-3`, and so on. |
 | COPY | Save as: save the song under a new name and keep the old file. The keyboard opens on `<NAME>-COPY` (`-COPY-2`, `-COPY-3`… if that is taken too). START saves it beside the old file, and the copy becomes the open song: its NAME changes and the next SAVE writes to the copy. A name you type that is already in use asks `SONG EXISTS - OVERWRITE?` again; it is never numbered for you. SELECT cancels and nothing changes. |
-| LOAD | Open file browser to load a project. With unsaved changes it asks `UNSAVED CHANGES - LOAD ANYWAY?` first. A damaged song asks `FILE DAMAGED - REPAIR?` (see below). |
+| LOAD | Open file browser to load a project. With unsaved changes, **LOAD PROJECT?** asks first: A opens the browser, B keeps your work. A damaged song asks `FILE DAMAGED - REPAIR?` (see below). |
 | COLLECT | Copy the song and every sample and SoundFont it plays into `<home>/Songs/ProjectName/`. Move or share that folder and the song opens anywhere. If the folder is already there, choose REPLACE, NEW COPY (`ProjectName_2`) or CANCEL. Two different samples with the same file name are both kept, the second as `kick_2.wav`. |
 | EXPORT — MIX | Open the RENDER panel, set to a stereo WAV (offline, faster than real-time). |
 | EXPORT — STEMS | Open the RENDER panel, set to one stereo WAV stem per active track, plus reverb and delay send returns. |
+| EXPORT — MIDI | Write the song as a Standard MIDI File to `Renders/ProjectName_0001.mid` at once (no panel): tempo, one MIDI track per audible track on its own channel, notes with the chain and project transpose, the step volume as velocity and the project swing. The tracker's effect commands, grooves and sounds are not in the file; the message says so when steps had effects. |
 | CLEAN SEQ | Remove unused chains and phrases (with confirmation dialog). |
 | CLEAN INST | Remove unused instruments (with confirmation dialog). |
 | SETTINGS | Open the SETTINGS screen (press A). |
@@ -3437,3 +3439,29 @@ Note offsets:  C   C#  D   D#  E   F   F#  G   G#  A   A#  B
 ---
 
 *PocketTracker is open-source (GPL-3.0). Contributions and bug reports welcome.*
+
+---
+
+## Appendix: Studio additions in 1.3
+
+This appendix lists the keys of the 1.3 Studio additions. The illustrated update guide (`docs/site/update-1.3.html`) shows them with pictures.
+
+**Studio > Synth, model picker.** Models are sorted by purpose into tabs (Voices and Frogs, Vintage Chips, Low End and Sirens, Plaits: Macro, Braids: Digital, Rings: Strings, Elements: Modal, Grain Oscillators, Studio DSP, Gravity, Spectral). LEFT/RIGHT changes the tab, UP/DOWN the model, A chooses. The preset row shows the position (for example `4 / 16`).
+
+**Froggy (Voices and Frogs).** Each note sings the next syllable of the instrument's lyrics; PLAY starts again at the first syllable.
+
+| Key | Where | Does |
+| --- | --- | --- |
+| A + RIGHT | Words page, Lyrics row | Opens the on-screen keyboard with the current words (up to 120 characters) |
+| D-pad, A, B, START | Keyboard | Choose a key, type it, delete, keep the text |
+| R + LEFT/RIGHT | Keyboard | Move the text cursor |
+| A + UP/DOWN | Words page, Lyrics row | Next/previous template from `Presets/Lyrics` (`.txt` files, six starter lines on first use) |
+| A + LEFT/RIGHT | Any row | Edit the value (UP/DOWN steps by larger amounts) |
+| L (hold) + D-pad | Stage page and XY pad page (Froggy, Croaker) | Move the firefly: X is the first macro, Y the second |
+| Finger drag | Same pages, touch screens | Moves the firefly |
+
+Rows: Lyrics, Voice (frog, man, woman, child), Croak, Vibrato, Glide, Coda (0 = off), Syllable (Auto or a fixed number), Pitch source (Note or Mic; Mic on Linux builds only, while the recorder listens). Macros: Mouth, Breath, Throat. Spell words the way they should sound. The lyrics belong to the instrument and are saved with the project and with the instrument preset.
+
+**Control sheets.** Each family draws its values its own way: dials (Rings, Elements, Low End and Sirens), an LCD (Braids, Vintage Chips), a bar graph (Gravity, Spectral) and plain blocks elsewhere. The values and keys are the same everywhere.
+
+**Sample Pack.** The TrackWerk Sample Pack and the Drum Machines Samples are ordinary WAV folders. Copy them into the Samples folder and load them from the sample browser or the Sample Editor.

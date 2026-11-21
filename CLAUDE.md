@@ -27,6 +27,7 @@ cmake --build shell/build --config Release
 ```
 
 - **Output:** `shell/build/Release/pockettracker-sdl.exe`.
+- **SOURCE helpers:** Studio SOURCE's YouTube needs `yt-dlp.exe`, `qjs.exe` and `ffmpeg.exe` in `shell/windows/helpers/` (git-ignored). In every new checkout or worktree, run `powershell -File shell/windows/fetch-helpers.ps1` once, or copy that folder from another checkout, then configure again. Otherwise YouTube shows greyed out.
 - **Build times:** the first build takes about 5 minutes; after that, only changed files recompile.
 - **SDL2 flag:** `-DCMAKE_DISABLE_FIND_PACKAGE_SDL2=ON` is required on this machine, because MSYS2's MinGW SDL2 is installed and MSVC can't link it.
 - **Running:** close any running `pockettracker-sdl`/`TrackWerk` process before rebuilding, or the link fails.
@@ -74,17 +75,48 @@ Every new feature ships with its help in the same branch: its SELECT help entry 
 - **Remotes:** `fork` is `sfn101/TrackWerk`, where all work is pushed; local `main` tracks `fork/main`. `origin` is upstream, `kidbee85-beep/TrackWerk`.
 - **Day-to-day work:** branch from `main`, commit and push to `fork`.
 - **Pull requests:** never open one, on the fork or upstream, unless the user asks for that PR. To run CI on a branch without a PR: `gh workflow run build.yml -R sfn101/TrackWerk --ref <branch>`.
+- **Commits:** no `Co-Authored-By: Claude` line in commit messages, on any branch. This is the user's own rule, so it overrides the default attribution. Earlier commits keep theirs.
 - **Releases:** publish Windows releases on the fork as unofficial builds, tagged at the exact commit the exe was built from.
 
-## Sending a change upstream
+## Working with upstream
 
-When the user asks for a PR to upstream (`kidbee85-beep/TrackWerk`):
+The aim is that the fork can always take every upstream release, and that upstream can take any single feature of ours on its own. **Check these rules whenever upstream, a PR, an upstream issue or a merge comes up, and remind the user if a step is being skipped,** even when they ask to skip it, then do what they decide.
 
-1. **One change per PR.** Bug fixes go one at a time. A new feature goes only after the user confirms the maintainer wants it (ask in an issue first). Don't open a second PR while one is still waiting for review unless the user says so.
-2. **Fresh branch from their code:** `git fetch origin`, then `git switch -c upstream/<name> origin/main`. Never branch from our `main`.
-3. **Copy only that change:** `git cherry-pick` its commits from our branch. Never bring along `CLAUDE.md`, `AUDIT.md`, `specs/`, `.claude/`, roadmap commits or anything else that only matters to this fork. If a commit mixes the change with fork-only edits, rebuild it on this branch without them.
-4. **Check it stands alone:** run `git diff origin/main --stat` and read the list. Every file must belong to the change. Then build and test that branch on Windows. If it needs another of our unsent changes to build, stop and tell the user which one.
-5. **Push and open the PR:** push the branch to `fork` and open the PR to `kidbee85-beep/TrackWerk` `main` with a short plain description: what was wrong, what changed, how it was tested. Write the description from the change itself, not from fork-only notes.
-6. **Keep the branch:** later review fixes are pushed to that same branch. Don't rebase or force-push it unless the maintainer asks.
+### Pulling upstream into the fork
 
-Open upstream PRs: #3, Windows build fix (branch `windows-msvc-build`, one commit, 8 files). Batch 1's fixes (`audit-fixes-batch1`) are not sent yet. They touch `source/native/CMakeLists.txt` as #3 does, so build their upstream branch after #3 is merged or closed.
+- **Merge each upstream release soon after it appears:** `git fetch origin --tags`, then merge `origin/main` into `main` on a branch. Merge, never rebase: rebasing `main` would rewrite the fork's history.
+- **Their code is the base.** Where both sides built the same thing, keep upstream's version and add back only what ours does extra. Nothing we built or planned may be lost, and the result must keep performance, stability and quality. If it can't, stop and ask.
+- After a merge: build and test on Windows, run CI, and update the roadmap for what upstream now covers.
+- **Keep song files compatible** with upstream:
+  - New phrase-command codes and format version numbers must not collide with upstream's. Before using a new code, `git fetch origin` and check `songcore/effects.h` and the format numbers on `origin/main`, then take a code upstream doesn't use. Right after the command is built, tell the maintainer with a PR for that command, as promised in the message to upstream. The maintainer never has to coordinate codes for us.
+  - Never raise a format number alone without telling the user what it means for files exchanged with upstream.
+- Keep fork-only material in fork-only files (`specs/`, `AUDIT.md`, `CLAUDE.md`, `.claude/`), and touch upstream files no more than a change needs.
+
+### Drafts are private
+
+Every draft of a message, issue, comment or PR text to someone else stays on this machine only, in `drafts/` at the repo root. It's ignored through `.git/info/exclude`, so never commit, push or publish it. Only the final text goes out, and only after the user has approved it.
+
+### Sending a feature upstream
+
+Steps, in order. Don't skip one without the user's explicit OK:
+
+1. **Ask first.** A new feature goes only after the maintainer has said they want it, in an issue or a reply. Bug fixes may go directly. Never post an issue, comment or PR text before the user has read and approved the exact text. Write it in the user's voice: plain, human, short, no jargon.
+2. **Test on upstream's newest release.** `git fetch origin --tags` first. The PR branch starts from the newest `origin/main`: `git switch -c upstream/<name> origin/main`. Never branch from our `main`.
+3. **Fully self-contained.** The branch has only that feature. It must not need anything upstream doesn't have: none of our unsent features, no fork-only files.
+   - Copy the change with `git cherry-pick`, or rebuild it by hand if its commits mix in other work.
+   - If the feature normally builds on another of ours (wide mode on the VI visualizer or sharp scaling, for example), it must work without it. If it can't yet, stop and tell the user.
+4. **Check it.** Run `git diff origin/main --stat`: every file must belong to the feature. Never include `CLAUDE.md`, `AUDIT.md`, `specs/`, `.claude/` or roadmap commits. Then build that branch, test it by hand on Windows, and run CI on it (`gh workflow run build.yml -R sfn101/TrackWerk --ref upstream/<name>`).
+   - **Hand test by the user, when one is needed.** If the feature has anything a person must try in the running app (screens, buttons, sound, files), stop after the build. Tell the user it's ready, give the exact exe to run, and list numbered steps: what to press and what they should see or hear. Then wait for their report before pushing or opening anything. Skip this pause only when nothing can be checked by hand (a pure build or test fix), and say so.
+5. **Pace and order.** Send PRs the way the maintainer asks (one at a time, or all at once to pick from); until they've answered, one at a time. Follow the order in the message to upstream (`drafts/upstream-message.md`, local): the built features first, then wide mode once it fits upstream's newest screens and stands alone.
+6. **Open it only when the user says so.** Push the branch to `fork` and open the PR to `kidbee85-beep/TrackWerk` `main`. The description says what it does for the user, what changed and how it was tested, written from the change itself, not from fork-only notes.
+   - **No "Generated with Claude Code" line** in PR descriptions, upstream or on the fork. The description ends with the user's name. This is the user's own rule, so it overrides the default attribution. (PR #8 has the line and keeps it.)
+7. **Keep the branch.** Review fixes go on the same branch. Don't rebase or force-push it unless the maintainer asks. If upstream releases again before the PR is merged, merge their release into the branch and retest it.
+
+### History
+
+- PR #3 (Windows build fix) was taken by the maintainer as commit `b34487b` with our authorship, and shipped in 1.3.0.
+- Issue #2's file-validation findings are all fixed upstream.
+- The message offering our features was posted on 2026-11-20 as kidbee85-beep/TrackWerk#7 (local copy: `drafts/upstream-message.md`). It asks whether PRs should come one at a time or all at once. **No feature PR goes up before the maintainer answers there.**
+- Open upstream PR: kidbee85-beep/TrackWerk#8, the Archive search crash fix (branch `upstream/archive-utf8-crash`, one commit, 3 files), sent on 2026-11-21 as a bug fix, separate from #7.
+- Ready, not sent: `upstream/refuse-newer-files` (feature 1 of #7), built on upstream 1.3.0 with its own check `ptnewer-files-check`. It waits for the user's hand test and the maintainer's answer on #7.
+- Our audit batches 1-2 are not to be sent: upstream fixed those itself.

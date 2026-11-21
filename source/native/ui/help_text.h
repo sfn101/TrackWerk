@@ -147,6 +147,7 @@ enum class HelpTopic {
     PROJECT_NEW,
     PROJECT_EXPORT_MIX,
     PROJECT_EXPORT_STEMS,
+    PROJECT_EXPORT_MIDI,
     PROJECT_COMPACT_SEQ,
     PROJECT_COMPACT_INST,
     PROJECT_SYSTEM,
@@ -1091,17 +1092,17 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
     {"SAVE: write the song to disk", "It uses the name on the NAME", "row above.",
      {"Saves under the NAME above, in",
       "the folder the song came from.",
-      "New songs go to Projects. A",
-      "different song there asks first:",
-      "A overwrites it, B opens the",
-      "keyboard to save a copy."},
+      "New songs go to Projects. The",
+      "old version is kept in Backups",
+      "(the last five). Another song",
+      "with that name asks first."},
      {"A saves"}},
     /* PROJECT_LOAD */
     {"LOAD: open another song", "Opens the file browser to", "pick one.",
      {"Opens the file browser on your",
-      "songs. Unsaved changes are",
-      "asked about first. A damaged",
-      "song offers a repair first."},
+      "songs. With changes, LOAD asks",
+      "first: B keeps your work. A",
+      "damaged song offers a repair."},
      {"A opens the file browser",
       "A there loads it, B goes back",
       "REPAIR: A fixes, loads unsaved",
@@ -1134,6 +1135,13 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
       "A+D-PAD changes a value",
       "R+↑/↓ picks another song part",
       "B closes the panel"}},
+    /* PROJECT_EXPORT_MIDI */
+    {"MIDI: the song as a .mid file", "Writes the notes to the Renders", "folder.",
+     {"One track for each audible track",
+      "on its own channel, with tempo,",
+      "swing, transpose and velocity.",
+      "Effects and sounds are left out."},
+     {"A writes the file at once"}},
     /* PROJECT_COMPACT_SEQ */
     {"SEQ: clear unused patterns", "Empties every chain and", "phrase the song never plays.",
      {"Empties every chain and phrase",
@@ -2863,7 +2871,7 @@ inline HelpTopic project_cell_topic(int row, int column) {
                    : column == 3 ? HelpTopic::PROJECT_LOAD
                                  : HelpTopic::PROJECT_NEW;
         case ProjectRow::EXPORT:
-            return column == 1 ? HelpTopic::PROJECT_EXPORT_MIX : HelpTopic::PROJECT_EXPORT_STEMS;
+            return column == 1 ? HelpTopic::PROJECT_EXPORT_MIX : column == 2 ? HelpTopic::PROJECT_EXPORT_STEMS : HelpTopic::PROJECT_EXPORT_MIDI;
         case ProjectRow::COMPACT:
             return column == 1 ? HelpTopic::PROJECT_COMPACT_SEQ : HelpTopic::PROJECT_COMPACT_INST;
         case ProjectRow::SYSTEM:    return HelpTopic::PROJECT_SYSTEM;

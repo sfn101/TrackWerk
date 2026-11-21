@@ -102,10 +102,17 @@ struct Cancelled {};
 struct NeedsRemux : std::runtime_error {NeedsRemux():std::runtime_error("This fragmented AAC container needs FFmpeg remuxing") {}};
 using Cancel = std::function<bool()>;
 void check(const Cancel& c) { if(c()) throw Cancelled{}; }
+// The first `n` bytes of `s`, never splitting a UTF-8 character: a cut through one leaves invalid UTF-8,
+// which json::dump refuses by throwing (an Archive description cut at 800 bytes closed the app).
+std::string utf8_prefix(const std::string& s,size_t n) {
+    if(s.size()<=n) return s;
+    while(n>0&&(static_cast<unsigned char>(s[n])&0xC0)==0x80) --n;
+    return s.substr(0,n);
+}
 std::string text(const json& j,const char* key,const std::string& fallback={}) {
     const auto i=j.find(key); if(i==j.end()||i->is_null()) return fallback;
-    if(i->is_string()) return i->get<std::string>().substr(0,16384);
-    if(i->is_array()) { std::string s; for(const auto& v:*i) if(v.is_string()) {if(!s.empty())s+=" / ";s+=v.get<std::string>();if(s.size()>800)break;} return s.substr(0,1600); }
+    if(i->is_string()) return utf8_prefix(i->get<std::string>(),16384);
+    if(i->is_array()) { std::string s; for(const auto& v:*i) if(v.is_string()) {if(!s.empty())s+=" / ";s+=v.get<std::string>();if(s.size()>800)break;} return utf8_prefix(s,1600); }
     if(i->is_number()||i->is_boolean()) return i->dump(); return fallback;
 }
 int64_t number(const json& j,const char* k,int64_t fallback=0) {
@@ -119,7 +126,7 @@ std::string clean(std::string s) {
     }
     s=std::regex_replace(s,std::regex("[\\r\\n\\t ]+")," ");
     const auto first=s.find_first_not_of(' ');if(first==std::string::npos)return {};
-    return s.substr(first,s.find_last_not_of(' ')-first+1).substr(0,800);
+    return utf8_prefix(s.substr(first,s.find_last_not_of(' ')-first+1),800);
 }
 std::string encode(const std::string& s) {
     constexpr char hex[]="0123456789ABCDEF";std::string out;
@@ -871,7 +878,8 @@ struct SourceSampler::Impl {
         state["loaded_ms"]=liveMode?0:pcm.rate?pcm.frames*1000/pcm.rate:0;
         state["total_ms"]=liveMode?0:active.duration;
         state["results"]=json::array();for(const auto& t:results)state["results"].push_back(itemJson(t));state["tracks"]=json::array();for(const auto& t:tracks)state["tracks"].push_back(itemJson(t));
-        auto raw=state.dump(-1,' ',true);{std::lock_guard<std::mutex> lock(snapshotMutex);snapshot=std::move(raw);}lastPublish=Clock::now();
+        // `replace`: a server's bad bytes (radio titles in Latin-1, say) never close the app.
+        auto raw=state.dump(-1,' ',true,json::error_handler_t::replace);{std::lock_guard<std::mutex> lock(snapshotMutex);snapshot=std::move(raw);}lastPublish=Clock::now();
     }
     void message(const std::string& status,const std::string& msg){state["status"]=status;state["message"]=msg;state["error"]="";}
     void clearClip(){state["clip_ready"]=false;state["clip_path"]="";state["clip_frames"]=0;state["clip_rate"]=0;state["clip_channels"]=0;state["clip_request_id"]=0;state["progress"]=0.;}
@@ -906,7 +914,7 @@ struct SourceSampler::Impl {
         fs::create_directories(path.parent_path());const auto temporary=path.string()+".tmp-"+std::to_string(getpid());
         const int fd=open(temporary.c_str(),kNewFileFlags,0600);if(fd<0)throw std::runtime_error("Cannot create station favorites; previous file kept");
         FILE* file=fdopen(fd,"wb");if(!file){close(fd);std::remove(temporary.c_str());throw std::runtime_error("Cannot write station favorites");}
-        const auto raw=next.dump(2);const bool wrote=std::fwrite(raw.data(),1,raw.size(),file)==raw.size();const bool flushed=std::fflush(file)==0;const bool synced=fsync(fd)==0;const bool closed=std::fclose(file)==0;
+        const auto raw=next.dump(2,' ',false,json::error_handler_t::replace);const bool wrote=std::fwrite(raw.data(),1,raw.size(),file)==raw.size();const bool flushed=std::fflush(file)==0;const bool synced=fsync(fd)==0;const bool closed=std::fclose(file)==0;
         if(!wrote||!flushed||!synced||!closed||replace_file(temporary.c_str(),path.string().c_str())!=0){std::remove(temporary.c_str());throw std::runtime_error("Cannot finish station favorites; previous file kept");}
         favoriteStations=std::move(next);message("ready",found?"Station removed from Favorites.":"Station saved. Discover > Favorites opens your stations.");
     }
@@ -1079,7 +1087,7 @@ struct SourceSampler::Impl {
                 {"in_ms",frameMs(take.first)},{"out_ms",frameMs(take.last)},{"frames",take.last-take.first},
                 {"stream_start_frame",take.first},{"stream_end_frame",take.last},
                 {"rights","Broadcast ownership is unchanged; station discovery is not a sample-use license."}};
-            const auto raw = attribution.dump(2);
+            const auto raw = attribution.dump(2,' ',false,json::error_handler_t::replace);
             File side(take.path + ".source.json", "wb");
             if (side.f) std::fwrite(raw.data(), 1, raw.size(), side.f);
             state["clip_ready"] = true;
@@ -1146,7 +1154,7 @@ struct SourceSampler::Impl {
         if(std::rename(liveTakeTemporary.c_str(),liveTakePath.c_str())!=0)throw std::runtime_error("Cannot publish radio take");
         liveTakeTemporary.clear();recording=false;
         const json attribution={{"title",active.title},{"creator",active.creator},{"source_url",active.page},{"license_url",active.license},{"live",true},{"sample_rate",pcm.rate},{"channels",2},{"frames",liveTakeFrames},{"rights","Broadcast ownership is unchanged; station discovery is not a sample-use license."}};
-        const auto raw=attribution.dump(2);File side(liveTakePath+".source.json","wb");if(side.f)std::fwrite(raw.data(),1,raw.size(),side.f);
+        const auto raw=attribution.dump(2,' ',false,json::error_handler_t::replace);File side(liveTakePath+".source.json","wb");if(side.f)std::fwrite(raw.data(),1,raw.size(),side.f);
         state["clip_ready"]=true;state["clip_path"]=liveTakePath;state["clip_frames"]=liveTakeFrames;state["clip_rate"]=pcm.rate;state["clip_channels"]=2;state["clip_request_id"]=liveTakeRequest;state["progress"]=1.;
         message("clip_ready","Live take ready. Open editor loads this WAV; live listening can continue.");
     }
@@ -1391,7 +1399,7 @@ struct SourceSampler::Impl {
             std::array<unsigned char,16384> bytes{};int64_t done=0;
             while(done<last-first){check(cancel);const int n=int(std::min<int64_t>(4096,(last-first)-done));const size_t size=size_t(n)*pcm.channels*2;if(std::fread(bytes.data(),1,size,source.f)!=size)throw std::runtime_error("Source cache ended before OUT");if(std::fwrite(bytes.data(),1,size,output.f)!=size)throw std::runtime_error("SD card is full");done+=n;state["progress"]=double(done)/(last-first);}
             if(std::fflush(output.f)!=0)throw std::runtime_error("Cannot finish rendered sample");if(std::fclose(output.f)!=0){output.f=nullptr;throw std::runtime_error("Cannot close rendered sample");}output.f=nullptr;check(cancel);if(std::rename(temporary.c_str(),path.c_str())!=0)throw std::runtime_error("Cannot publish rendered sample");
-            json attribution={{"title",active.title},{"creator",active.creator},{"source_url",active.page},{"license_url",active.license},{"in_ms",inMs},{"out_ms",outMs},{"sample_rate",pcm.rate},{"channels",pcm.channels},{"frames",last-first}};const auto raw=attribution.dump(2);File side(path+".source.json","wb");if(side.f)std::fwrite(raw.data(),1,raw.size(),side.f);
+            json attribution={{"title",active.title},{"creator",active.creator},{"source_url",active.page},{"license_url",active.license},{"in_ms",inMs},{"out_ms",outMs},{"sample_rate",pcm.rate},{"channels",pcm.channels},{"frames",last-first}};const auto raw=attribution.dump(2,' ',false,json::error_handler_t::replace);File side(path+".source.json","wb");if(side.f)std::fwrite(raw.data(),1,raw.size(),side.f);
             state["clip_ready"]=true;state["clip_path"]=path;state["clip_frames"]=last-first;state["clip_rate"]=pcm.rate;state["clip_channels"]=pcm.channels;state["clip_request_id"]=request;state["progress"]=1.;state["rendering"]=false;state["busy"]=false;message("clip_ready","Clip ready. Import loads it into the selected instrument.");
         }catch(...){std::remove(temporary.c_str());state["rendering"]=false;throw;}
     }

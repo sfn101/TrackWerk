@@ -1,4 +1,4 @@
-# TrackWerk 1.2 — Your first beat
+# TrackWerk 1.3 — Your first beat
 
 This is a short route to one audible pattern. The [illustrated handbook](https://kidbee85-beep.github.io/TrackWerk/guide.html) covers the wider Studio, sampling and performance workflow. The [core reference](manual-en.md) explains the detailed tracker commands.
 

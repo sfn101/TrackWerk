@@ -32,6 +32,7 @@ extern SoundfontVoice sfVoices[SF_VOICE_COUNT];
 // oversized allocation is killed on the write, not refused.
 
 #include "studio/fm_sysex.h"
+#include "studio/sing_text.h"
 #include "studio/synth.h"
 #include "studio/rack.h"
 #include "live-resampler.h"
@@ -62,6 +63,11 @@ public:
     // play the built-in banks. Published with the slot's row, so a voice of the callback never pairs
     // it with another model's parameters.
     void setStudioFmVoice(int sampleId,const uint8_t* packed);
+    // FROGGY's words for this slot: packed into syllables here (an empty text clears them and the built-in
+    // line sings). Published with the slot's row, like the FM voice.
+    void setStudioLyricText(int sampleId,const std::string& text);
+    // Audio thread: the slot's packed lyric (studio/sing_text.h) from the same synced row, or nullptr.
+    const uint8_t* liveStudioLyric(int sampleId) const;
     // Audio thread: the model and parameters a voice of this slot plays, from the synced row — or,
     // while the row still describes the slot's previous source (its sampleGen differs), the new
     // source's code with factory parameters until the callback takes the row loaded with it.
@@ -998,7 +1004,15 @@ private:
     struct StudioSynthRow {
         studio::SynthParams params; int code; uint32_t gen;
         studio::fm_sysex::PackedVoice fmVoice{}; bool fmVoiceSet = false;
+        uint8_t lyric[studio::sing::kPackedSize]{}; bool lyricSet = false;
     };
+    // Audio thread only: how many notes each instrument has started (FROGGY sings syllable n for note n).
+    uint32_t lyricNotes[256]{};
+    // The same counts for the UI (the karaoke display of FROGGY): written by the audio thread, read by the screen.
+    std::atomic<uint32_t> lyricNotesShown[256]{};
+public:
+    uint32_t lyricNotesStarted(int sampleId) const { return sampleId>=0&&sampleId<256?lyricNotesShown[sampleId].load(std::memory_order_relaxed):0; }
+private:
     StagedTable<StudioSynthRow, 256> studioSynthParams;
     struct GranularControl {
         bool enabled=false;

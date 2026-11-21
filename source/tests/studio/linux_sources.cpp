@@ -27,7 +27,7 @@ int main(int argc,char** argv){
     assert(!s.command("invalid","{}"));assert(!s.command("play","{"));assert(!s.command("play","[]"));
     send(s,"query_dialog");bool requested=false;for(int i=0;i<100&&!requested;++i){requested=s.take_query_request();std::this_thread::sleep_for(5ms);}assert(requested);assert(!s.take_query_request());
     send(s,"search",{{"provider","archive"},{"genre","jazz"},{"query","fixture"}});
-    auto j=wait(s,[](const json& j){return j.value("status","")=="results"&&!j.value("busy",false);});assert(j["results"].size()==2);assert(j["results"][0]["description"]=="Real fixture metadata");
+    auto j=wait(s,[](const json& j){return j.value("status","")=="results"&&!j.value("busy",false);});assert(j["results"].size()==2);assert(j["results"][1]["description"].get<std::string>()==std::string(799,'x'));   // the 800-byte cut never splits a characterassert(j["results"][0]["description"]=="Real fixture metadata");
     send(s,"open",{{"index",0}});j=wait(s,[](const json& j){return j.value("status","")=="tracks";});assert(j["tracks"].size()==2);
     send(s,"listen",{{"index",0}});j=wait(s,[](const json& j){return j.value("playing",false)&&!j.value("busy",false);});assert(j["duration_ms"]==3000);
     double energy=0;std::vector<float> output(480*2);

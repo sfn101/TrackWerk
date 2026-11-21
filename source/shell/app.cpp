@@ -267,6 +267,12 @@ bool open_boot_project(const AppConfig& cfg, SongcoreHost& host) {
 void make_app_folders(const AppConfig& cfg, ui::FileSystem& filesystem) {
     if (const int moved = ui::move_old_preset_folders(filesystem); moved > 0)
         std::printf("files:   moved %d entries from the old preset folders into Presets/\n", moved);
+    {
+        int refused = 0;
+        const int installed = ui::import_preset_inbox(filesystem, &refused);
+        if (installed > 0 || refused > 0)
+            std::printf("files:   preset inbox: %d installed, %d left in Presets/Inbox (not readable)\n", installed, refused);
+    }
 
     filesystem.projects_directory();
     filesystem.samples_directory();
@@ -571,6 +577,7 @@ class FrameLoop {
     void update_skin(bool useTouch, bool padChoice);
     void update_overlay();
     void sync_audio_output(Uint64 now);
+    void poll_audio_drivers_chord(Uint64 now);
     void handle_input(Uint64 now);
     void handle_sdl_event(const SDL_Event& e, Uint64 now);
     void reopen_audio_if_lost(Uint64 now);
@@ -637,6 +644,13 @@ class FrameLoop {
     // driver says nothing, and can need a few seconds after Windows' notice before it opens.
     Uint64 audioArrivalMs = 0;
     int    audioRetries   = 0;
+
+    // L1+R1 held: opens AUDIO DRIVERS. The hold keeps a plain L+R (CANCEL) untouched, and any other
+    // press during the hold cancels it, so L+R+A / L+R+START keep their own meanings.
+    static constexpr Uint64 SHOULDER_CHORD_HOLD_MS = 1000;   // long enough that a slow L+R (CANCEL) is never taken for it
+    Uint64 shoulderChordAt        = 0;
+    bool   shoulderChordFired     = false;
+    bool   shoulderChordSuppressed = false;
 
     bool physicalPad = false;   // set by run(), then by `padDirty`
     bool padDirty    = false;
@@ -990,10 +1004,18 @@ void FrameLoop::sync_audio_output(Uint64 now) {
                 state.statusMessage = "AUDIO OUT: " + want;
                 state.statusSuccess = true;
             }
+            if (state.audioDrivers.isOpen) {
+                state.audioDrivers.message = "PLAYING: " + want;
+                state.audioDrivers.messageOk = true;
+            }
         } else {
             state.statusMessage = "AUDIO OUT: " + err;
             state.statusSuccess = false;
             std::printf("audio:   %s could not open: %s\n", want.c_str(), err.c_str());
+            if (state.audioDrivers.isOpen) {
+                state.audioDrivers.message = err;
+                state.audioDrivers.messageOk = false;
+            }
         }
     }
 
@@ -1005,6 +1027,10 @@ void FrameLoop::sync_audio_output(Uint64 now) {
         if (pick < 0 && playingAudioOut > 0) {
             state.statusMessage = "AUDIO OUT LOST: SYSTEM";
             state.statusSuccess = false;
+            if (state.audioDrivers.isOpen) {
+                state.audioDrivers.message = "OUTPUT LOST: SYSTEM";
+                state.audioDrivers.messageOk = false;
+            }
         }
         playingAudioOut = active;
         derive_midi_auto_offset(audio, engineRef, state);
@@ -1012,6 +1038,38 @@ void FrameLoop::sync_audio_output(Uint64 now) {
     }
     shownAudioOut = sv.audioOutIndex = active;
     state.audioOutText = outs.empty() ? std::string() : outs[static_cast<size_t>(active)];
+    // The AUDIO DRIVERS overlay draws this list; it is the same vector the SETTINGS row cycles.
+    state.audioDrivers.sync_outputs(outs, active);
+}
+
+// L1+R1 held: the global AUDIO DRIVERS overlay. A plain L+R stays CANCEL, so the opening waits out a
+// hold; a third button during it (L+R+A, L+R+START) cancels, and a modal already up keeps its keys.
+void FrameLoop::poll_audio_drivers_chord(Uint64 now) {
+    const bool held = input.is_held(ui::Button::L_SHIFT) && input.is_held(ui::Button::R_SHIFT);
+    if (!held) {
+        shoulderChordAt         = 0;
+        shoulderChordFired      = false;
+        shoulderChordSuppressed = false;
+        return;
+    }
+    if (state.showActive || state.attractActive || state.splashProgress >= 0 ||
+        state.audioDrivers.isOpen || shoulderChordSuppressed || !state.caps.audioOutputs) {
+        shoulderChordAt = 0;
+        return;
+    }
+    if (shoulderChordFired) return;
+    if (shoulderChordAt == 0) {
+        shoulderChordAt = now;
+        return;
+    }
+    if (now - shoulderChordAt < SHOULDER_CHORD_HOLD_MS) return;
+
+    shoulderChordFired = true;
+    dispatch.open_audio_drivers();
+    if (state.audioDrivers.isOpen) {
+        sawInput = true;
+        std::printf("audio:   AUDIO DRIVERS overlay (L1+R1)\n");
+    }
 }
 
 void FrameLoop::handle_input(Uint64 now) {
@@ -1029,6 +1087,11 @@ void FrameLoop::handle_input(Uint64 now) {
     while (input.poll(be)) {
         // ⚠️ Key repeat comes from input.tick(), with no SDL event behind it.
         sawInput = true;
+        // A third button during the hold makes it a different chord (L+R+A / L+R+START).
+        if (be.action == ui::ButtonAction::PRESSED && be.button != ui::Button::L_SHIFT &&
+            be.button != ui::Button::R_SHIFT && input.is_held(ui::Button::L_SHIFT) &&
+            input.is_held(ui::Button::R_SHIFT))
+            shoulderChordSuppressed = true;
         if(state.showActive){   // the show view: START plays / stops, B or SELECT + START leaves
             if(be.action==ui::ButtonAction::PRESSED&&be.button==ui::Button::START){
                 if(be.mods.select){state.showActive=false;state.splashSkipButton=static_cast<int>(ui::Button::SELECT);}
@@ -1066,6 +1129,8 @@ void FrameLoop::handle_input(Uint64 now) {
             dispatch.open_imported_sample_editor();
         }
     }
+
+    poll_audio_drivers_chord(now);
 
     // Somebody is here: keeps the poll rate fast (pace_tick).
     if (sawInput) lastInputMs = now;
@@ -1152,8 +1217,18 @@ void FrameLoop::handle_sdl_event(const SDL_Event& e, Uint64 now) {
             touchRevealed = !touchRevealed;
             return;
         }
-        // A virtual button feeds SdlInput's own press/release; a finger outside one is ignored.
-        screen.touch.handle_finger(e, input, now);
+        // A virtual button feeds SdlInput's own press/release; a finger that hits none may touch the XY pad
+        // (Studio > Synth): the dot follows the finger.
+        const bool onButton = screen.touch.handle_finger(e, input, now);
+        if (!onButton) {
+            int cx = 0, cy = 0;
+            const int phase = e.type == SDL_FINGERDOWN ? 0 : e.type == SDL_FINGERMOTION ? 1 : 2;
+            if (phase == 2 || screen.touch.canvas_point(e, cx, cy)) {
+                const auto oldProjectVersion = state.projectVersion;
+                if (ui::studio_touch_canvas(state, host, engineRef, cx, cy, phase, static_cast<uint64_t>(e.tfinger.fingerId)) && state.projectVersion != oldProjectVersion)
+                    dispatch.arm_studio_autosave();
+            }
+        }
     } else {
         input.handle_event(e, now);
     }

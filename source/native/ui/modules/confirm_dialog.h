@@ -19,6 +19,7 @@ struct ConfirmDialogState {
         CLEAN_SEQ,     // PROJECT → COMPACT → SEQ
         CLEAN_INST,    // PROJECT → COMPACT → INST
         NEW_PROJECT,   // PROJECT → NEW, when DIRTY
+        LOAD_PROJECT,  // PROJECT → LOAD, when DIRTY: a load replaces the work and deletes its autosave
         CHANGE_TYPE,   // INSTRUMENT → TYPE, when the slot already has a source loaded
         EXIT,          // PROJECT → EXIT, when DIRTY (the shell only)
 
@@ -27,8 +28,8 @@ struct ConfirmDialogState {
         RECOVER,
 
         COLLECT_EXISTS,   // PROJECT → COLLECT, when Songs/<name> is already there
+        SAVE_EXISTS,      // PROJECT → SAVE, when Projects/<name>.ptp is another document's file
         FIRST_BEAT,       // help → START (First beat), when DIRTY: the tutorial starts a new project
-        LOAD_DISCARD,     // PROJECT → LOAD, when DIRTY: YES opens the browser
         // A typed-name save onto a taken file: <THING> EXISTS - OVERWRITE?. `arg` is the save's
         // QwertyContext; A overwrites, B opens the keyboard on a -COPY name.
         SAVE_OVERWRITE,
@@ -41,7 +42,7 @@ struct ConfirmDialogState {
     static constexpr int REPAIR_FROM_LOAD   = 0;
     static constexpr int REPAIR_FROM_RESUME = 1;
 
-    // COLLECT_EXISTS's answers, left to right; `arg` is the one under the cursor.
+    // COLLECT_EXISTS's and SAVE_EXISTS's answers, left to right; `arg` is the one under the cursor.
     static constexpr int COLLECT_REPLACE  = 0;
     static constexpr int COLLECT_NEW_COPY = 1;
     static constexpr int COLLECT_CANCEL   = 2;
@@ -54,6 +55,8 @@ struct ConfirmDialogState {
     int arg = 0;
 
     bool is_open() const     { return kind != Kind::NONE; }
+    // REPLACE / NEW COPY / CANCEL, picked with LEFT/RIGHT, instead of A=YES B=NO.
+    bool is_choice() const   { return kind == Kind::COLLECT_EXISTS || kind == Kind::SAVE_EXISTS; }
     void open(Kind k, int a = 0) { kind = k; arg = a; details.clear(); }
     void close()             { kind = Kind::NONE; arg = 0; }
 };

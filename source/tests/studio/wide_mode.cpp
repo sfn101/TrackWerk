@@ -279,6 +279,13 @@ int main(int argc, char** argv) {
               "16:9: the AUDIO DRIVERS box sits in the middle");
         state.audioDrivers.isOpen = false;
 
+        // The start-up RECOVER WORK? question, over PROJECT.
+        state.currentScreen = ScreenType::PROJECT;
+        state.confirm.open(ConfirmDialogState::Kind::RECOVER);
+        layout.draw(*canvas, state);
+        write_bmp(*canvas, dir / "recover-wide.bmp");
+        state.confirm = ConfirmDialogState{};
+
         // The Studio synth pages: every family's first sheet, the XY pad, the frog stage, FROGGY's sheet and its
         // lyric keyboard. Each draws inside the centred 640; the strips either side stay as on the first page.
         auto engine = std::make_unique<AudioEngine>();

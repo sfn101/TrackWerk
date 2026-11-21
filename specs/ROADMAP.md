@@ -48,6 +48,7 @@ More visualizers (item 20) and wide mode (item 10) are separate features. Upstre
   1. Rebuild `more-visualizers` from `main` without wide mode: only the 14 styles, their names, help (`SET_VISUALIZER`), manual table and spec. Its check tests the styles at 4:3 only.
   2. Wide mode's own check (`ptwide-mode-check`) draws every visualizer style the app has at 16:9 and checks each stays in its box, reading the list from `SettingsModule::visualizer_names()`, so it passes with the original 9 styles or all 23.
   3. Each branch builds and passes CI alone, and both merged together too. Neither contains code that knows about the other.
+- **Split done 2026-11-21** on branch `more-visualizers-2`, cut from `main` (which now has wide mode): one commit makes `ptwide-mode-check` draw every style at 16:9 from the app's own list, and one commit adds the 14 styles with a 4:3-only `ptvisualizer-check`. Checked on Windows: `main` plus the first commit passes with 9 styles, both commits pass with 23. For an upstream PR without VI: the styles fill the box they are given, but they reach the screen through `OscilloscopeModule::draw_sized` (`w_`, `h_`, VI's commit `fddc165`) and the stopped clock `demoMs_` (commit `3bc4261`); without those, use `WIDTH` / `HEIGHT` and the animation clock.
 - **Done when** both branches stand alone as above, the user has tested them on Windows, and CI is green. Then mark item 20 Done (and item 10 when its own work is finished).
 
 ## Needs device testing

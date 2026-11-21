@@ -9,6 +9,8 @@
 #include "songcore/project_ops.h"
 #include "studio/synth.h"
 #include "ui/layout.h"
+#include "ui/modules/oscilloscope.h"
+#include "ui/modules/settings_editor.h"
 #include "ui/scene_layout.h"
 #include "ui/scene_presets.h"
 #include "ui/settings_store.h"
@@ -17,6 +19,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <utility>
 #include <filesystem>
 #include <fstream>
 #include <memory>
@@ -348,6 +351,37 @@ int main(int argc, char** argv) {
                   std::abs(st.studioHarmonics - 127) <= 2 && std::abs(st.studioTimbre - 127) <= 4,
               "16:9: the frog stage's middle puts the firefly in the middle");
         studio_touch_canvas(st, host, *engine, 0, 0, 2);
+    }
+
+    // ── Every visualizer style the app has, at 16:9: inside its box in the full-width strip and on VI ──
+    // The list comes from the app, so this holds with the original styles or with more (roadmap 20).
+    {
+        std::vector<float> wave(620);
+        for (size_t i = 0; i < wave.size(); ++i) wave[i] = 0.6f * static_cast<float>(((i * 37) % 200)) / 100.f - 0.6f;
+        OscilloscopeState os;
+        os.waveform = wave.data();
+        os.theme = theme_classic();
+        os.playing = true;
+        const int count = static_cast<int>(SettingsModule::visualizer_names().size());
+        int outside = 0;
+        // VI (roadmap 3) is the second box; without VI, keep only the strip.
+        for (const auto& [boxW, boxH] : {std::pair<int, int>{scope_width(), OscilloscopeModule::HEIGHT},
+                                         std::pair<int, int>{main_area_width(), DESIGN_H - EDITOR_Y - SCREEN_SPACER}}) {
+            for (int style = 0; style < count; ++style) {
+                os.theme.visualizerType = static_cast<VisualizerType>(style);
+                Canvas c;
+                c.fill_rect(0, 0, DESIGN_W, DESIGN_H, 0xFF123456u);
+                OscilloscopeModule m;
+                for (int f = 0; f < 4; ++f) { os.animationMs = 7000 + uint64_t(f) * 40; m.draw_sized(c, 10, 82, boxW, boxH, os); }
+                bool inside = true;
+                for (int y = 0; y < DESIGN_H && inside; ++y)
+                    for (int x = 0; x < DESIGN_W; ++x)
+                        if (!(x >= 10 && x < 10 + boxW && y >= 82 && y < 82 + boxH) &&
+                            c.pixels()[static_cast<size_t>(y) * DESIGN_W + x] != 0xFF123456u) { inside = false; break; }
+                if (!inside) { ++outside; std::printf("      %s spills out of a %dx%d box\n", SettingsModule::visualizer_names()[static_cast<size_t>(style)].c_str(), boxW, boxH); }
+            }
+        }
+        check(outside == 0, "16:9: all " + std::to_string(count) + " visualizer styles stay in their box, strip and VI");
     }
 
     // The scene picker previews the wide layout; a few looks, rail-left and scope-bottom ones among them.

@@ -2,7 +2,7 @@
 
 **Small machine. Serious music.** An eight-track music studio for Android, selected Linux handhelds and Windows, by **Kid Bunka**.
 
-> **This fork adds a native Windows build.** TrackWerk 1.2.0 for Windows 10/11 x64: one self-contained `TrackWerk.exe`, nothing to install. [Download for Windows](https://github.com/sfn101/TrackWerk/releases/tag/v1.2.0-windows). It's an unofficial community build from this fork's source, not an official Kid Bunka release; see [Windows build](#windows-build-this-fork).
+> **This fork** (sfn101/TrackWerk) is TrackWerk 1.3.0 plus its own features, among them Studio SOURCE on Windows. The official Windows download is in upstream's [1.3.0 release](https://github.com/kidbee85-beep/TrackWerk/releases/tag/v1.3.0). To try the fork's features on Windows, build it from source: see [Windows build (this fork)](#windows-build-this-fork).
 
 [Website](https://kidbee85-beep.github.io/TrackWerk/) · [Illustrated English guide](https://kidbee85-beep.github.io/TrackWerk/guide.html) · [Download 1.3.0](https://github.com/kidbee85-beep/TrackWerk/releases/tag/v1.3.0) · [Previous 1.2 update film](https://youtu.be/8DiovzmRM6w) · [YouTube Short](https://www.youtube.com/shorts/w2DIKKX_xjc) · [Instagram Reel](https://www.instagram.com/reel/Df0bTJlR86j/) · [Optional support](https://www.paypal.com/donate/?business=kidbee85%40gmail.com&currency_code=CHF)
 
@@ -43,7 +43,7 @@ Write sixteen steps, join phrases into chains, then arrange them over eight trac
 | Windows x64 | MSVC build required | Withheld pending successful build and startup test |
 | Linux desktop | Debian 13 .deb / SDL 2.32.4+ | ARM64 and x86-64; final desktop UI acceptance remains open |
 | Android | Signed APK / Android 8+ | ARM64, ARMv7 and x86_64; versionCode 103000; same app ID and signer as 1.0 |
-| Windows | 10/11 x64, portable ZIP | [Unofficial build from this fork](https://github.com/sfn101/TrackWerk/releases/tag/v1.2.0-windows); keyboard, gamepad, WASAPI or ASIO audio |
+| Windows | 10/11 x64, portable ZIP | [Official 1.3.0 release](https://github.com/kidbee85-beep/TrackWerk/releases/tag/v1.3.0); this fork's features: build from source |
 
 Use First Install for a new card and Program Update for an existing installation. Back up the data folder and follow START-HERE inside the matching ZIP. The Miyoo updater recognises the previous public and known development binaries, using canonical or legacy folders without a rename. Complete the metadata step in START-HERE-1.3.0 so the menu/version labels match. Install the Android APK over the existing app to retain its data. Do not uninstall just to update.
 
@@ -53,7 +53,7 @@ Networking, MIDI and external audio inputs depend on the platform and hardware. 
 
 ## Windows build (this fork)
 
-Download `TrackWerk-1.2.0-windows-x64.zip` from the [Windows release](https://github.com/sfn101/TrackWerk/releases/tag/v1.2.0-windows), unzip it anywhere and run `TrackWerk.exe`. Songs, samples and settings live in `Documents\TrackWerk`, and the session log is written to `Documents\TrackWerk\trackwerk-log.txt`.
+Build the fork from `source/` (below), then run `shell/build/Release/pockettracker-sdl.exe`. Songs, samples and settings live in `Documents\TrackWerk`, and the session log is written to `Documents\TrackWerk	rackwerk-log.txt`. For Studio SOURCE's YouTube, run `powershell -File shell/windows/fetch-helpers.ps1` once before configuring, so `yt-dlp`, QuickJS and FFmpeg sit beside the exe.
 
 - **Controls:** the arrows or WASD act as the D-pad, K/Enter is A, J/Escape is B, U/I are L/R, Space is START and F10 quits. A gamepad works too.
 - **Audio:** SETTINGS > AUDIO OUT offers SYSTEM (WASAPI shared mode) or any installed ASIO driver.
@@ -65,7 +65,7 @@ Download `TrackWerk-1.2.0-windows-x64.zip` from the [Windows release](https://gi
   powershell -ExecutionPolicy Bypass -File shell/build-windows.ps1
   ```
 
-The MSVC build fixes are on the [`windows-msvc-build`](https://github.com/sfn101/TrackWerk/tree/windows-msvc-build) branch and were proposed upstream in [kidbee85-beep/TrackWerk#1](https://github.com/kidbee85-beep/TrackWerk/issues/1). The build has been launched and checked for audio and gamepad input; not every feature has been tested on Windows. Linux-only features (archive/radio sources, iPhone and sample recorders) aren't available.
+The MSVC build fix from this fork is part of upstream 1.3.0 (commit [`b34487b`](https://github.com/kidbee85-beep/TrackWerk/commit/b34487bf4a6a5b6f00d98e176fec2550e009af04)). Linux-only features (the iPhone and sample recorders) aren't available on Windows yet.
 
 ## Source, builds and credits
 

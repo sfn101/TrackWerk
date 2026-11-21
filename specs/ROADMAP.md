@@ -13,7 +13,7 @@ Work top to bottom. Each item has its own spec; finish (build, test on Windows, 
 | 7 | Refuse files from a newer TrackWerk | [refuse-newer-files.md](refuse-newer-files.md) | Done |
 | 8 | Save under a new name | [save-under-new-name.md](save-under-new-name.md) | Done |
 | 9 | Sharp scaling | [sharp-scaling.md](sharp-scaling.md) | Done |
-| U | **Merge upstream 1.3.0** (highest priority, before wide mode) | [upstream-1.3-merge.md](upstream-1.3-merge.md) | Next |
+| U | Merge upstream 1.3.0 | [upstream-1.3-merge.md](upstream-1.3-merge.md) | Done |
 | 10 | Wide mode (16:9) | [wide-mode.md](wide-mode.md) | Built on branch `wide-mode`, not merged. After U: see the wide mode note below |
 | 11 | Fake stereo loads as mono | [fake-stereo-mono.md](fake-stereo-mono.md) | Spec ready |
 | 12 | Drumlab: manual sequencing and layout | [drumlab-manual.md](drumlab-manual.md) | Spec ready |

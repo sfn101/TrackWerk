@@ -35,6 +35,7 @@ Appended to `VisualizerType` after PLASMA (settings and themes store the number,
 - **Light:** software canvas, cells of 4-6 px for per-pixel effects, a few hundred lines for 3D, no
   allocation while drawing, fixed-size state for FIRE and RIDGES. Each frame well under the cost of
   PLASMA at the same size.
+- **Smooth, and with the song (changed 2026-11-21 after the hand test):** motion never jumps. Each style moves on a music clock that runs faster when the song is loud (0.6× to 2×) but only forward; the loudness is smoothed; and a kick, from the loudness rising above its recent average, punches on a hit and fades in about a quarter second. The 3D shapes turn on that clock and swell on a hit (the torus tube, the globe's equator, the dot ball's ripple), FIRE steps at a calm 30 a second, and RAIN uses small glyphs.
 - **Still when stopped:** like COPPER, STARFIELD and PLASMA, they hold their last frame while no song
   plays (or with Motion off).
 - Any size: the 620×70 strip, the 834-wide strip in 16:9, and VI.

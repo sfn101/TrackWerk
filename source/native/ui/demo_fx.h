@@ -39,6 +39,12 @@ struct EffectMemory {
     int8_t   ridges[kRidgeRows][kRidgePoints] = {};
     int      ridgeHead = 0;
     uint64_t ridgeMs = 0;
+    // How every style follows the song: a clock that runs faster when it is loud but never jumps,
+    // the loudness smoothed, and a kick that punches on a hit and fades (demo_fx_styles.cpp listen()).
+    uint64_t pulseMs = 0;
+    float    musicClock = 0.f, level = 0.f, slowLevel = 0.f, kick = 0.f;
+    float    fireAcc = 0.f;
+    uint32_t fireTick = 0;
 };
 // TUNNEL and later: drawn by style().
 bool is_style(VisualizerType);

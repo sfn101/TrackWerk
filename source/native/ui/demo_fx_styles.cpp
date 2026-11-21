@@ -67,26 +67,56 @@ Argb depth_ink(const Theme& t, float depth, Argb accent) {
 
 void line(Canvas& c, P2 a, P2 b, Argb ink) { c.line(a.x, a.y, b.x, b.y, ink); }
 
+// ── Following the song ──────────────────────────────────────────────────────────────────────────
+// The loudness of one frame is noisy, and time × loudness jumps back and forth as it changes, which
+// reads as shaking. So the styles get: `clock`, ms that run faster when it is loud (0.6× quiet, 2×
+// loud) and only ever move forward; `level`, the loudness smoothed (quick up, slow down); and `kick`,
+// which jumps on a hit (the loudness rising above its recent average) and fades in about a quarter
+// second. All three hold still with the animation clock while stopped.
+struct Music { float clock, level, kick; };
+
+Music listen(EffectMemory& m, uint64_t ms, float e) {
+    if (ms != m.pulseMs) {
+        const float dt = m.pulseMs == 0 || ms < m.pulseMs ? 16.f : std::min(100.f, float(ms - m.pulseMs));
+        m.pulseMs = ms;
+        m.level += (e - m.level) * std::min(1.f, dt / (e > m.level ? 50.f : 350.f));
+        m.slowLevel += (e - m.slowLevel) * std::min(1.f, dt / 600.f);
+        m.kick = std::max(m.kick * std::exp(-dt / 180.f), std::min(1.f, (m.level - m.slowLevel) * 3.f));
+        m.musicClock += dt * (.6f + 1.4f * m.level);
+    }
+    return {m.musicClock, m.level, m.kick};
+}
+
 // ── 2D ──────────────────────────────────────────────────────────────────────────────────────────
 
-void tunnel(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, float e) {
+// Flying down an endless chequered tube: the speed follows the song, the tube sways on a slow curve,
+// and a hit pulls the walls in and lights them for a moment.
+void tunnel(Canvas& c, int x, int y, int w, int h, const Theme& t, const Music& mu) {
     const int cell = cell_for(w, h);
     const float reach = std::max(1.f, std::min(w, h) * .65f);
-    const float spin = float(ms) * .00035f, travel = float(ms) * (.05f + .05f * e);
+    const float spin = mu.clock * .00012f, travel = mu.clock * .04f;
+    const float swayX = std::sin(mu.clock * .00045f) * w * .12f, swayY = std::cos(mu.clock * .00031f) * h * .12f;
+    const float squeeze = 1.f + .18f * mu.kick;
     for (int py = 0; py < h; py += cell)
         for (int px = 0; px < w; px += cell) {
             const float dx = px + cell * .5f - w * .5f, dy = (py + cell * .5f - h * .5f) * 1.6f;
             const float dist = std::sqrt(dx * dx + dy * dy) + 1.f;
-            const int u = int((std::atan2(dy, dx) / kPi + 1.f) * 64.f + spin * 64.f);
-            const int v = int(1800.f / dist + travel);
-            const int depth = std::clamp(int(dist / reach * 255.f), 0, 255);
+            // The far end drifts with the curve; near the edge the tube is straight.
+            const float bend = std::max(0.f, 1.f - dist / reach);
+            const float bx = dx - swayX * bend, by = dy - swayY * bend * 1.6f;
+            const float d2 = (std::sqrt(bx * bx + by * by) + 1.f) * squeeze;
+            const int u = int((std::atan2(by, bx) / kPi + 1.f) * 64.f + spin * 64.f);
+            const int v = int(2400.f / d2 + travel);
+            const int depth = std::clamp(int(d2 / reach * 255.f), 0, 255);
             const int pattern = ((u >> 3) ^ (v >> 3)) & 1;
-            const int shade = (pattern ? 200 : 90) * depth / 255 + int(e * 30.f);
-            c.fill_rect(x + px, y + py, std::min(cell, w - px), std::min(cell, h - py), ramp(t, shade));
+            const int shade = (pattern ? 200 : 80) * depth / 255 + int(mu.kick * 45.f * depth / 255);
+            c.fill_rect(x + px, y + py, std::min(cell, w - px), std::min(cell, h - py), ramp(t, std::min(255, shade)));
         }
 }
 
-void fire(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, float e, EffectMemory& m) {
+// Classic fire, stepped at a calm 30 steps a second whatever the frame rate; louder music, taller
+// flames, and a hit throws a burst of sparks.
+void fire(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, const Music& mu, EffectMemory& m) {
     const int cell = 4;
     const int cols = std::min(w / cell + 1, EffectMemory::kFireCols);
     const int rows = std::min(h / cell + 1, EffectMemory::kFireRows);
@@ -97,19 +127,26 @@ void fire(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, fl
     }
     const auto at = [&](int r, int col) -> uint8_t& { return m.fire[r * EffectMemory::kFireCols + col]; };
     if (ms != m.fireMs) {   // the clock holds still while stopped, and so do the flames
+        const float dt = m.fireMs == 0 || ms < m.fireMs ? 33.f : std::min(200.f, float(ms - m.fireMs));
         m.fireMs = ms;
-        const uint32_t tick = uint32_t(ms / 16);
-        for (int col = 0; col < cols; ++col)
-            at(rows - 1, col) = (mix32(tick * 7919U + uint32_t(col)) & 255) > 70 ? uint8_t(215 + int(e * 40.f)) : 0;
-        // Each cell cools a little as it rises; louder music, taller flames.
-        const int cool = std::max(1, int(150.f * (1.2f - .6f * e)) / rows);
-        for (int r = 0; r < rows - 1; ++r)
-            for (int col = 0; col < cols; ++col) {
-                const int below = at(r + 1, col), left = at(r + 1, std::max(0, col - 1));
-                const int right = at(r + 1, std::min(cols - 1, col + 1));
-                const int far = at(std::min(rows - 1, r + 2), col);
-                at(r, col) = uint8_t(std::max(0, (below + left + right + far) / 4 - cool));
-            }
+        m.fireAcc += dt;
+        for (int steps = 0; m.fireAcc >= 33.f && steps < 3; ++steps) {
+            m.fireAcc -= 33.f;
+            const uint32_t tick = ++m.fireTick;
+            const int heat = 170 + int(mu.level * 60.f + mu.kick * 25.f);
+            for (int col = 0; col < cols; ++col)
+                at(rows - 1, col) = (mix32(tick * 7919U + uint32_t(col)) & 255) > 90 ? uint8_t(std::min(255, heat)) : 0;
+            // Each cell cools a little as it rises; louder music, taller flames.
+            const int cool = std::max(1, int(170.f * (1.3f - .7f * mu.level)) / rows);
+            for (int r = 0; r < rows - 1; ++r)
+                for (int col = 0; col < cols; ++col) {
+                    const int below = at(r + 1, col), left = at(r + 1, std::max(0, col - 1));
+                    const int right = at(r + 1, std::min(cols - 1, col + 1));
+                    const int far = at(std::min(rows - 1, r + 2), col);
+                    at(r, col) = uint8_t(std::max(0, (below + left + right + far) / 4 - cool));
+                }
+        }
+        m.fireAcc = std::min(m.fireAcc, 33.f);
     }
     for (int r = 0; r < rows; ++r)
         for (int col = 0; col < cols; ++col) {
@@ -120,35 +157,36 @@ void fire(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, fl
         }
 }
 
-void rain(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, float e) {
+// Falling code in small glyphs, dense columns at their own calm speeds; the song speeds the fall.
+void rain(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, const Music& mu) {
     static constexpr char kGlyphs[] = "0123456789ABCDEF<>+-=*#:";
-    constexpr int step = 12;
-    const int rows = h / step + 1;
-    for (int col = 0; col * step < w; ++col) {
+    constexpr int stepX = 7, stepY = 8;
+    const int rows = h / stepY + 1;
+    for (int col = 0; col * stepX < w; ++col) {
         const uint32_t r = mix32(uint32_t(col) * 2654435761U + 5U);
-        const int trail = 5 + int(r % 9);
-        const float speed = (5.f + float((r >> 4) % 9)) * (1.f + e);   // rows a second
-        const int head = int(float(ms) * speed / 1000.f + float((r >> 9) % 97)) % (rows + trail);
+        const int trail = 6 + int(r % 12);
+        const float speed = 3.f + float((r >> 4) % 6);   // rows a second at the quiet pace
+        const int head = int(mu.clock * speed / 1000.f + float((r >> 9) % 97)) % (rows + trail);
         for (int k = 0; k < trail; ++k) {
             const int row = head - k;
             if (row < 0 || row >= rows) continue;
-            const uint32_t pick = mix32(uint32_t(col * 131 + row * 17) + (k == 0 ? uint32_t(ms / 120) : 0U));
+            const uint32_t pick = mix32(uint32_t(col * 131 + row * 17) + (k == 0 ? uint32_t(ms / 150) : 0U));
             const char ch = kGlyphs[pick % (sizeof(kGlyphs) - 1)];
-            const Argb ink = k == 0 ? t.textValue : mix_rgb(ramp(t, 60), t.vizWave, 100 - k * 100 / trail);
-            c.draw_glyph(glyph_for_codepoint(uint32_t(ch)), x + col * step + 1, y + row * step, ink, 2);
+            const Argb ink = k == 0 ? t.textValue : mix_rgb(ramp(t, 50), t.vizWave, 100 - k * 100 / trail);
+            c.draw_glyph(glyph_for_codepoint(uint32_t(ch)), x + col * stepX + 1, y + row * stepY, ink, 1);
         }
     }
 }
 
-void twister(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, float e) {
+void twister(Canvas& c, int x, int y, int w, int h, const Theme& t, const Music& mu) {
     const int count = std::clamp(w / 280, 1, 3);
-    const float radius = std::max(6.f, std::min(float(h) * .45f, float(w) / float(count * 4)));
+    const float radius = std::max(6.f, std::min(float(h) * .45f, float(w) / float(count * 4))) * (1.f + .15f * mu.kick);
     const Argb faces[4] = {ramp(t, 170), t.vizWave, ramp(t, 230), t.rowSelection};
     for (int i = 0; i < count; ++i) {
         const int cx = x + (2 * i + 1) * w / (2 * count);
         for (int py = 0; py < h; py += 2) {
-            const float a = std::sin(float(py) * .018f + float(ms) * .0012f + float(i) * 1.7f) * (1.4f + e) +
-                            float(ms) * .0009f;
+            const float a = std::sin(float(py) * .018f + mu.clock * .0012f + float(i) * 1.7f) * (1.2f + mu.level) +
+                            mu.clock * .0009f;
             int xs[5];
             for (int k = 0; k < 5; ++k) xs[k] = cx + int(std::sin(a + float(k) * kPi * .5f) * radius);
             for (int k = 0; k < 4; ++k) {
@@ -160,14 +198,14 @@ void twister(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms,
     }
 }
 
-void rings(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, const float* wave, float e) {
+void rings(Canvas& c, int x, int y, int w, int h, const Theme& t, const float* wave, const Music& mu) {
     const int cx = x + w / 2, cy = y + h / 2;
     const float squash = std::min(1.f, float(h) / float(w) * 1.8f);
     const float reach = std::sqrt(float(w * w) * .25f + float(h * h) * .25f / (squash * squash));
     constexpr int kRings = 9, kSides = 48;
     for (int k = 0; k < kRings; ++k) {
-        const float r = std::fmod(float(ms) * (.035f + .04f * e) + float(k) * reach / kRings, reach);
-        const Argb ink = ramp(t, 250 - int(r / reach * 190.f));
+        const float r = std::fmod(mu.clock * .04f + float(k) * reach / kRings, reach);
+        const Argb ink = ramp(t, std::min(255, 250 - int(r / reach * 190.f) + int(mu.kick * 40.f)));
         int px = cx + int(r), py = cy;
         for (int s = 1; s <= kSides; ++s) {
             const float a = float(s) * 2.f * kPi / kSides;
@@ -176,8 +214,8 @@ void rings(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, c
             px = nx; py = ny;
         }
     }
-    // The waveform bends the inner ring.
-    const float base = std::min(float(w), float(h) / squash) * .2f;
+    // The waveform bends the inner ring; a hit swells it.
+    const float base = std::min(float(w), float(h) / squash) * (.2f + .06f * mu.kick);
     int px = 0, py = 0;
     for (int s = 0; s <= 96; ++s) {
         const float a = float(s % 96) * 2.f * kPi / 96.f;
@@ -188,18 +226,18 @@ void rings(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, c
     }
 }
 
-void lissajous(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, const float* wave, float e) {
+void lissajous(Canvas& c, int x, int y, int w, int h, const Theme& t, const float* wave, const Music& mu) {
     const int cx = x + w / 2, cy = y + h / 2;
     const float sx = w * .44f, sy = h * .42f;
-    const float pa = float(ms) * .0007f, pb = float(ms) * .0011f;
+    const float pa = mu.clock * .0007f, pb = mu.clock * .0011f;
     for (int pass = 1; pass >= 0; --pass) {   // a dim echo a little behind, then the figure
         const float lag = pass * .25f;
         int px = 0, py = 0;
         for (int i = 0; i <= 360; ++i) {
             const float p = float(i) * 2.f * kPi / 360.f;
             const float along = float(i % 360) / 360.f;
-            const float fx = std::sin(3.f * p + pa - lag) + .35f * wave_at(wave, along) * (.4f + e);
-            const float fy = std::sin(2.f * p + pb - lag) + .35f * wave_at(wave, std::fmod(along + .25f, 1.f)) * (.4f + e);
+            const float fx = std::sin(3.f * p + pa - lag) + .35f * wave_at(wave, along) * (.3f + mu.level);
+            const float fy = std::sin(2.f * p + pb - lag) + .35f * wave_at(wave, std::fmod(along + .25f, 1.f)) * (.3f + mu.level);
             const int nx = cx + int(fx / 1.35f * sx), ny = cy + int(fy / 1.35f * sy);
             const Argb ink = pass ? ramp(t, 100) : mix_rgb(t.vizWave, t.rowCursor, int(along * 100.f));
             if (i) c.line(px, py, nx, ny, ink);
@@ -208,14 +246,14 @@ void lissajous(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t m
     }
 }
 
-void blobs(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, float e) {
+void blobs(Canvas& c, int x, int y, int w, int h, const Theme& t, const Music& mu) {
     const int cell = cell_for(w, h);
     constexpr int kBlobs = 5;
     float bx[kBlobs], by[kBlobs], rr[kBlobs];
-    const float size = float(std::min(w, h)) * (.22f + .08f * e);
+    const float size = float(std::min(w, h)) * (.2f + .06f * mu.level + .06f * mu.kick);
     for (int k = 0; k < kBlobs; ++k) {
-        bx[k] = w * (.5f + .38f * std::sin(float(ms) * (.0004f + k * .00013f) + k * 1.3f));
-        by[k] = h * (.5f + .36f * std::cos(float(ms) * (.0005f + k * .00011f) + k * 2.1f));
+        bx[k] = w * (.5f + .38f * std::sin(mu.clock * (.0004f + k * .00013f) + k * 1.3f));
+        by[k] = h * (.5f + .36f * std::cos(mu.clock * (.0005f + k * .00011f) + k * 2.1f));
         rr[k] = size * size * (.6f + .1f * k);
     }
     for (int py = 0; py < h; py += cell)
@@ -234,10 +272,10 @@ void blobs(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, f
         }
 }
 
-void rotozoom(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, float e) {
+void rotozoom(Canvas& c, int x, int y, int w, int h, const Theme& t, const Music& mu) {
     const int cell = cell_for(w, h);
-    const float a = float(ms) * .0005f, zoom = 1.6f + std::sin(float(ms) * .0007f) * (.7f + .3f * e);
-    const float ca = std::cos(a) * zoom, sa = std::sin(a) * zoom, drift = float(ms) * .04f;
+    const float a = mu.clock * .0004f, zoom = (1.6f + std::sin(mu.clock * .0005f) * .7f) * (1.f - .25f * mu.kick);
+    const float ca = std::cos(a) * zoom, sa = std::sin(a) * zoom, drift = mu.clock * .04f;
     for (int py = 0; py < h; py += cell)
         for (int px = 0; px < w; px += cell) {
             const float dx = px - w * .5f, dy = py - h * .5f;
@@ -249,37 +287,40 @@ void rotozoom(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms
 }
 
 // ── light 3D ────────────────────────────────────────────────────────────────────────────────────
+// They turn on the music clock (faster when loud, never jerking) and punch out on a hit.
 
-void cube(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, float e) {
+void cube(Canvas& c, int x, int y, int w, int h, const Theme& t, const Music& mu) {
     static constexpr int kEdges[12][2] = {{0, 1}, {1, 3}, {3, 2}, {2, 0}, {4, 5}, {5, 7},
                                           {7, 6}, {6, 4}, {0, 4}, {1, 5}, {2, 6}, {3, 7}};
     const int n = copies_for(w, h);
-    // Small enough that a near corner, enlarged by the perspective, stays in the box.
-    const float scale = float(std::min(h, w / n)) * .2f * (1.f + .15f * e);
+    // Small enough that a near corner, enlarged by the perspective and a hit, stays in the box.
+    const float scale = float(std::min(h, w / n)) * .18f * (1.f + .3f * mu.kick);
     for (int i = 0; i < n; ++i) {
         const int cx = x + (2 * i + 1) * w / (2 * n), cy = y + h / 2;
-        for (int shape = 0; shape < 2; ++shape) {   // the outer cube, then a smaller one turning the other way
-            const float dir = shape ? -1.3f : 1.f, size = shape ? .5f : 1.f;
-            const float ax = float(ms) * .0009f * dir + i, ay = float(ms) * .0013f * dir, az = float(ms) * .0005f;
+        for (int shape = 0; shape < 2; ++shape) {   // the outer cube, then an inner one turning the other way
+            const float dir = shape ? -1.3f : 1.f, size = shape ? .4f + .3f * mu.level : 1.f;
+            const float ax = mu.clock * .0009f * dir + i, ay = mu.clock * .0013f * dir, az = mu.clock * .0005f;
             P2 p[8];
             for (int v = 0; v < 8; ++v)
                 p[v] = project(rotate({(v & 1 ? 1.f : -1.f) * size, (v & 2 ? 1.f : -1.f) * size,
                                        (v & 4 ? 1.f : -1.f) * size}, ax, ay, az), cx, cy, scale);
             for (const auto& edge : kEdges)
                 line(c, p[edge[0]], p[edge[1]],
-                     depth_ink(t, (p[edge[0]].depth + p[edge[1]].depth) * .5f, shape ? t.vizWave : t.textTitle));
+                     depth_ink(t, (p[edge[0]].depth + p[edge[1]].depth) * .5f - mu.kick * .6f, shape ? t.vizWave : t.textTitle));
         }
     }
 }
 
-void globe(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, float e) {
+void globe(Canvas& c, int x, int y, int w, int h, const Theme& t, const Music& mu) {
     const int n = copies_for(w, h);
-    const float scale = float(std::min(h, w / n)) * .36f * (1.f + .1f * e);
+    const float scale = float(std::min(h, w / n)) * .33f * (1.f + .12f * mu.kick);
     for (int i = 0; i < n; ++i) {
         const int cx = x + (2 * i + 1) * w / (2 * n), cy = y + h / 2;
-        const float yaw = float(ms) * .0008f + i, tilt = .35f;
+        const float yaw = mu.clock * .0008f + i, tilt = .35f;
+        // A hit bulges the equator out and lets it settle back.
         const auto at = [&](float lat, float lon) {
-            return project(rotate({std::cos(lat) * std::cos(lon), std::sin(lat), std::cos(lat) * std::sin(lon)},
+            const float cl = std::cos(lat), bulge = 1.f + .22f * mu.kick * cl * cl * cl * cl;
+            return project(rotate({cl * std::cos(lon) * bulge, std::sin(lat), cl * std::sin(lon) * bulge},
                                   tilt, yaw, 0.f), cx, cy, scale);
         };
         for (int la = -2; la <= 2; ++la) {   // latitudes
@@ -300,7 +341,7 @@ void globe(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, f
                 prev = q;
             }
         }
-        // A tilted orbit with a satellite, like the splash's.
+        // A tilted orbit with a satellite, like the splash's; the satellite runs with the song.
         P2 prev = project(rotate({1.45f, 0.f, 0.f}, .5f, yaw * .3f, .2f), cx, cy, scale);
         for (int s = 1; s <= 36; ++s) {
             const float a = float(s) * 2.f * kPi / 36.f;
@@ -308,26 +349,26 @@ void globe(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, f
             line(c, prev, q, depth_ink(t, q.depth, t.textTitle));
             prev = q;
         }
-        const float sa = float(ms) * .0025f + i;
+        const float sa = mu.clock * .0025f + i;
         const P2 sat = project(rotate({std::cos(sa) * 1.45f, 0.f, std::sin(sa) * 1.45f}, .5f, yaw * .3f, .2f), cx, cy, scale);
-        c.fill_rect(sat.x - 1, sat.y - 1, 3, 3, t.textValue);
+        const int dot = 3 + int(mu.kick * 3.f);
+        c.fill_rect(sat.x - dot / 2, sat.y - dot / 2, dot, dot, t.textValue);
     }
 }
 
-void terrain(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, const float* wave, float e) {
+void terrain(Canvas& c, int x, int y, int w, int h, const Theme& t, const float* wave, const Music& mu) {
     constexpr int kRows = 18, kCols = 28;
     const int cx = x + w / 2, horizon = y + h * 3 / 10;
-    const float focal = float(h) * .9f, scroll = std::fmod(float(ms) * .0018f, 1.f);
-    const float travel = float(ms) * .0018f;
-    // A striped sun sitting on the horizon.
-    const int sun = std::max(4, h / 6);
+    const float focal = float(h) * .9f, travel = mu.clock * .0018f, scroll = std::fmod(travel, 1.f);
+    // A striped sun sitting on the horizon; a hit lifts it.
+    const int sun = std::max(4, int(float(h) / 6.f * (1.f + .15f * mu.kick)));
     for (int band = 0; band < sun; band += 3)
         c.fill_rect(cx - int(std::sqrt(float(sun * sun - band * band))), horizon - band - 2,
                     2 * int(std::sqrt(float(sun * sun - band * band))), 2, mix_rgb(t.textTitle, t.rowCursor, band * 100 / sun));
     const auto height = [&](float xw, float zw) {
         const float hills = (std::sin(xw * .9f + zw * .7f) + std::sin(xw * .37f - zw * 1.3f + 1.f)) * .22f;
-        const float near = wave_at(wave, std::clamp((xw + 4.f) / 8.f, 0.f, 1.f)) * .5f * e;
-        return std::max(0.f, std::fabs(xw) > .7f ? hills * (1.f + 1.5f * e) + near : near * .4f);
+        const float near = wave_at(wave, std::clamp((xw + 4.f) / 8.f, 0.f, 1.f)) * .4f * mu.level;
+        return std::max(0.f, std::fabs(xw) > .7f ? hills * (1.f + 1.2f * mu.level + .8f * mu.kick) + near : near * .4f);
     };
     P2 grid[kRows][kCols];
     for (int r = 0; r < kRows; ++r) {
@@ -346,19 +387,21 @@ void terrain(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms,
     }
 }
 
-void torus(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, float e) {
+// A turning ring doughnut; the tube swells on a hit and a ripple runs round it with the song.
+void torus(Canvas& c, int x, int y, int w, int h, const Theme& t, const Music& mu) {
     constexpr int kMajor = 18, kMinor = 10;
     const int n = copies_for(w, h);
-    const float scale = float(std::min(h, w / n)) * .3f * (1.f + .12f * e);
+    const float scale = float(std::min(h, w / n)) * .28f * (1.f + .1f * mu.kick);
     for (int i = 0; i < n; ++i) {
         const int cx = x + (2 * i + 1) * w / (2 * n), cy = y + h / 2;
-        const float ax = float(ms) * .0007f + i, ay = float(ms) * .0011f, az = float(ms) * .0004f;
+        const float ax = mu.clock * .0007f + i, ay = mu.clock * .0011f, az = mu.clock * .0004f;
         P2 p[kMajor][kMinor];
         for (int a = 0; a < kMajor; ++a)
             for (int b = 0; b < kMinor; ++b) {
                 const float u = float(a) * 2.f * kPi / kMajor, v = float(b) * 2.f * kPi / kMinor;
-                const float ring = 1.f + .42f * std::cos(v);
-                p[a][b] = project(rotate({ring * std::cos(u), .42f * std::sin(v), ring * std::sin(u)}, ax, ay, az),
+                const float tube = .38f * (1.f + .35f * mu.kick + .25f * mu.level * std::sin(3.f * u - mu.clock * .004f));
+                const float ring = 1.f + tube * std::cos(v);
+                p[a][b] = project(rotate({ring * std::cos(u), tube * std::sin(v), ring * std::sin(u)}, ax, ay, az),
                                   cx, cy, scale * .72f);
             }
         for (int a = 0; a < kMajor; ++a)
@@ -372,19 +415,21 @@ void torus(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, f
     }
 }
 
-void dotball(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, float e) {
-    constexpr int kDots = 72;
+// A ball of dots; a ripple runs over it with the song and a hit pushes the dots out.
+void dotball(Canvas& c, int x, int y, int w, int h, const Theme& t, const Music& mu) {
+    constexpr int kDots = 96;
     const int n = copies_for(w, h);
-    const float scale = float(std::min(h, w / n)) * .36f * (1.f + .2f * e);
+    const float scale = float(std::min(h, w / n)) * .33f;
     for (int i = 0; i < n; ++i) {
         const int cx = x + (2 * i + 1) * w / (2 * n), cy = y + h / 2;
-        const float ax = float(ms) * .0006f + i, ay = float(ms) * .0010f;
+        const float ax = mu.clock * .0006f + i, ay = mu.clock * .0010f;
         P2 p[kDots];
         int order[kDots];
         for (int d = 0; d < kDots; ++d) {
             // A Fibonacci sphere: the dots spread evenly over the surface.
             const float k = (float(d) + .5f) / kDots, lat = std::acos(1.f - 2.f * k), lon = float(d) * 2.39996f;
-            p[d] = project(rotate({std::sin(lat) * std::cos(lon), std::cos(lat), std::sin(lat) * std::sin(lon)},
+            const float r = 1.f + .18f * mu.kick + .1f * mu.level * std::sin(lat * 5.f - mu.clock * .005f);
+            p[d] = project(rotate({std::sin(lat) * std::cos(lon) * r, std::cos(lat) * r, std::sin(lat) * std::sin(lon) * r},
                                   ax, ay, 0.f), cx, cy, scale);
             order[d] = d;
         }
@@ -392,7 +437,7 @@ void dotball(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms,
         std::sort(order, order + kDots, [&](int a, int b) { return p[a].depth > p[b].depth; });
         for (int k = 0; k < kDots; ++k) {
             const P2& q = p[order[k]];
-            const int size = std::max(1, int((1.4f - q.depth) * scale * .045f));
+            const int size = std::max(1, int((1.4f - q.depth) * scale * (.04f + .02f * mu.kick)));
             c.fill_rect(q.x - size / 2, q.y - size / 2, size, size,
                         mix_rgb(ramp(t, 120), order[k] % 3 ? t.vizWave : t.textTitle,
                                 std::clamp(int((1.f - q.depth) * 50.f), 0, 100)));
@@ -442,21 +487,21 @@ bool is_style(VisualizerType v) { return static_cast<int>(v) >= static_cast<int>
 
 void style(Canvas& c, int x, int y, int w, int h, const Theme& t, VisualizerType v, uint64_t ms,
            const float* wave, float energy, EffectMemory& memory) {
-    const float e = std::clamp(energy, 0.f, 1.f);
+    const Music mu = listen(memory, ms, std::clamp(energy, 0.f, 1.f));
     switch (v) {
-        case VisualizerType::TUNNEL:    tunnel(c, x, y, w, h, t, ms, e); break;
-        case VisualizerType::FIRE:      fire(c, x, y, w, h, t, ms, e, memory); break;
-        case VisualizerType::RAIN:      rain(c, x, y, w, h, t, ms, e); break;
-        case VisualizerType::TWISTER:   twister(c, x, y, w, h, t, ms, e); break;
-        case VisualizerType::RINGS:     rings(c, x, y, w, h, t, ms, wave, e); break;
-        case VisualizerType::LISSAJOUS: lissajous(c, x, y, w, h, t, ms, wave, e); break;
-        case VisualizerType::BLOBS:     blobs(c, x, y, w, h, t, ms, e); break;
-        case VisualizerType::ROTOZOOM:  rotozoom(c, x, y, w, h, t, ms, e); break;
-        case VisualizerType::CUBE:      cube(c, x, y, w, h, t, ms, e); break;
-        case VisualizerType::GLOBE:     globe(c, x, y, w, h, t, ms, e); break;
-        case VisualizerType::TERRAIN:   terrain(c, x, y, w, h, t, ms, wave, e); break;
-        case VisualizerType::TORUS:     torus(c, x, y, w, h, t, ms, e); break;
-        case VisualizerType::DOTBALL:   dotball(c, x, y, w, h, t, ms, e); break;
+        case VisualizerType::TUNNEL:    tunnel(c, x, y, w, h, t, mu); break;
+        case VisualizerType::FIRE:      fire(c, x, y, w, h, t, ms, mu, memory); break;
+        case VisualizerType::RAIN:      rain(c, x, y, w, h, t, ms, mu); break;
+        case VisualizerType::TWISTER:   twister(c, x, y, w, h, t, mu); break;
+        case VisualizerType::RINGS:     rings(c, x, y, w, h, t, wave, mu); break;
+        case VisualizerType::LISSAJOUS: lissajous(c, x, y, w, h, t, wave, mu); break;
+        case VisualizerType::BLOBS:     blobs(c, x, y, w, h, t, mu); break;
+        case VisualizerType::ROTOZOOM:  rotozoom(c, x, y, w, h, t, mu); break;
+        case VisualizerType::CUBE:      cube(c, x, y, w, h, t, mu); break;
+        case VisualizerType::GLOBE:     globe(c, x, y, w, h, t, mu); break;
+        case VisualizerType::TERRAIN:   terrain(c, x, y, w, h, t, wave, mu); break;
+        case VisualizerType::TORUS:     torus(c, x, y, w, h, t, mu); break;
+        case VisualizerType::DOTBALL:   dotball(c, x, y, w, h, t, mu); break;
         case VisualizerType::RIDGES:    ridges(c, x, y, w, h, t, ms, wave, memory); break;
         default: break;
     }

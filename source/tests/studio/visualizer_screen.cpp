@@ -7,6 +7,7 @@
 #include "songcore/host.h"
 #include "ui/button_mapper.h"
 #include "ui/input_dispatcher.h"
+#include "ui/demo_fx.h"
 #include "ui/layout.h"
 #include "ui/std_filesystem.h"
 #include "ui/theme_io.h"
@@ -206,6 +207,29 @@ int main(int argc, char** argv) {
             check(parse_theme(serialize_theme(os.theme), back) && back.visualizerType == v,
                   name + " saves and loads by name");
         }
+    }
+
+    // ── following the song smoothly: loudness flipping every frame never makes the motion jump back ──
+    {
+        demo_fx::EffectMemory mem;
+        Canvas c;
+        const std::vector<float> loud(620, .5f);
+        float lastClock = 0.f;
+        bool forward = true, bounded = true, kickOk = true;
+        for (int f = 1; f <= 300; ++f) {
+            const uint64_t ms = 7000 + uint64_t(f) * 16;
+            demo_fx::style(c, 10, 82, 499, 392, theme_classic(), VisualizerType::TUNNEL, ms,
+                           f % 2 ? loud.data() : nullptr, f % 2 ? 1.f : 0.f, mem);
+            const float step = mem.musicClock - lastClock;
+            if (f > 1 && step <= 0.f) forward = false;
+            if (f > 1 && (step < 16.f * .6f - .01f || step > 16.f * 2.f + .01f)) bounded = false;
+            if (mem.kick < 0.f || mem.kick > 1.f) kickOk = false;
+            lastClock = mem.musicClock;
+        }
+        check(forward && bounded, "the music clock only moves forward, 0.6x to 2x, with the loudness flipping every frame");
+        check(kickOk, "the kick stays between 0 and 1");
+        demo_fx::style(c, 10, 82, 499, 392, theme_classic(), VisualizerType::TUNNEL, 7000 + 300 * 16, loud.data(), 1.f, mem);
+        check(mem.musicClock == lastClock, "stopped (the same clock): nothing moves");
     }
 
     std::printf(failures ? "%d FAILED\n" : "all passed\n", failures);

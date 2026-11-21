@@ -75,6 +75,7 @@ Every new feature ships with its help in the same branch: its SELECT help entry 
 - **Remotes:** `fork` is `sfn101/TrackWerk`, where all work is pushed; local `main` tracks `fork/main`. `origin` is upstream, `kidbee85-beep/TrackWerk`.
 - **Day-to-day work:** branch from `main`, commit and push to `fork`.
 - **Pull requests:** never open one, on the fork or upstream, unless the user asks for that PR. To run CI on a branch without a PR: `gh workflow run build.yml -R sfn101/TrackWerk --ref <branch>`.
+- **Commits:** no `Co-Authored-By: Claude` line in commit messages, on any branch. This is the user's own rule, so it overrides the default attribution. Earlier commits keep theirs.
 - **Releases:** publish Windows releases on the fork as unofficial builds, tagged at the exact commit the exe was built from.
 
 ## Working with upstream

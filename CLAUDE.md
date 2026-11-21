@@ -27,6 +27,7 @@ cmake --build shell/build --config Release
 ```
 
 - **Output:** `shell/build/Release/pockettracker-sdl.exe`.
+- **SOURCE helpers:** Studio SOURCE's YouTube needs `yt-dlp.exe`, `qjs.exe` and `ffmpeg.exe` in `shell/windows/helpers/` (git-ignored). In every new checkout or worktree, run `powershell -File shell/windows/fetch-helpers.ps1` once, or copy that folder from another checkout, then configure again. Otherwise YouTube shows greyed out.
 - **Build times:** the first build takes about 5 minutes; after that, only changed files recompile.
 - **SDL2 flag:** `-DCMAKE_DISABLE_FIND_PACKAGE_SDL2=ON` is required on this machine, because MSYS2's MinGW SDL2 is installed and MSVC can't link it.
 - **Running:** close any running `pockettracker-sdl`/`TrackWerk` process before rebuilding, or the link fails.

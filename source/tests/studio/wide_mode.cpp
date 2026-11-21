@@ -1,15 +1,22 @@
 // ptwide-mode-check: wide mode (specs/wide-mode.md). The 854×480 canvas, the right bar at the right
 // edge, the PHRASE side view (the note each other track plays on the same step), and the SCREEN
-// setting's round trip. Builds with GCC and MSVC; no assert.
+// setting's round trip, and upstream 1.3.0's screens (AUDIO DRIVERS, the Studio synth pages, the XY pad
+// and its touch, the frog stage, the lyric keyboard). Builds with GCC and MSVC; no assert.
 // usage: ptwide-mode-check <new run directory>   (it also writes each drawn screen there as a .bmp)
+#include "audio-engine.h"
+#include "songcore/host.h"
+#include "songcore/project_io.h"
 #include "songcore/project_ops.h"
+#include "studio/synth.h"
 #include "ui/layout.h"
 #include "ui/scene_layout.h"
 #include "ui/scene_presets.h"
 #include "ui/settings_store.h"
 #include "ui/std_filesystem.h"
+#include "ui/studio.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <memory>
@@ -258,6 +265,78 @@ int main(int argc, char** argv) {
         }
     }
 
+    // ── Upstream 1.3.0's screens, centred like ours ──
+    {
+        // AUDIO DRIVERS: a 620-wide box in the middle of the 854 canvas, over any screen.
+        state.currentScreen = ScreenType::PHRASE;
+        state.audioDrivers.isOpen = true;
+        state.audioDrivers.sync_outputs({"SPEAKERS", "HEADPHONES"}, 0);
+        layout.draw(*canvas, state);
+        write_bmp(*canvas, dir / "audio-drivers-wide.bmp");
+        const auto at = [&](int x, int y) { return canvas->pixels()[static_cast<size_t>(y) * DESIGN_W + x]; };
+        const int boxL = (DESIGN_W - 620) / 2, boxR = boxL + 619;
+        check(at(boxL, 240) == state.theme.textTitle && at(boxR, 240) == state.theme.textTitle,
+              "16:9: the AUDIO DRIVERS box sits in the middle");
+        state.audioDrivers.isOpen = false;
+
+        // The Studio synth pages: every family's first sheet, the XY pad, the frog stage, FROGGY's sheet and its
+        // lyric keyboard. Each draws inside the centred 640; the strips either side stay as on the first page.
+        auto engine = std::make_unique<AudioEngine>();
+        songcore::SongcoreHost host{engine.get(), 48000};
+        check(host.push_project(songcore::serialize_project(songcore::make_default_project())), "a Studio project loads");
+        AppState st;
+        st.project = &host.edit_project();
+        st.theme = theme_classic();
+        st.studioOpen = true;
+        st.studioTab = 0;
+        st.currentInstrument = st.studioSynthInstrument = 2;
+        st.studioHarmonics = st.studioTimbre = st.studioMorph = 128;
+        struct Page { const char* name; int model; int page; bool keyboard; };   // page -1: the XY pad (the last)
+        const Page pages[] = {
+            {"synth-0", 0, 0, false}, {"synth-24", 24, 0, false}, {"synth-78", 78, 0, false}, {"synth-102", 102, 0, false},
+            {"xy-pad", studio::kDubSirenModel, -1, false}, {"frog-stage", studio::kSingFrogModel, 0, false},
+            {"froggy-sheet", studio::kSingFrogModel, 1, false}, {"lyric-keyboard", studio::kSingFrogModel, 1, true},
+        };
+        const auto strips = [&] {
+            std::vector<uint32_t> v;
+            for (int y = 0; y < DESIGN_H; ++y)
+                for (int x = 0; x < DESIGN_W; ++x)
+                    if (x < wide_dx() || x >= wide_dx() + DESIGN_W_4_3) v.push_back(at(x, y));
+            return v;
+        };
+        std::vector<uint32_t> first;
+        int spilled = 0;
+        for (const Page& p : pages) {
+            st.studioModel = p.model;
+            st.studioSynthPage = p.page < 0 ? studio_synth_page_count(st) - 1 : p.page;
+            st.qwerty.isOpen = p.keyboard;
+            st.qwerty.context = QwertyContext::LYRIC_EDIT;
+            layout.draw(*canvas, st);
+            write_bmp(*canvas, dir / (std::string(p.name) + "-wide.bmp"));
+            if (first.empty()) first = strips();
+            else if (strips() != first) { ++spilled; std::printf("      %s draws outside the centred Studio
+", p.name); }
+        }
+        check(spilled == 0, "16:9: every 1.3.0 Studio page stays inside the centred 640");
+        st.qwerty.isOpen = false;
+
+        // XY pad touch: canvas points are on the wide canvas, the pad sits wide_dx() to the right of its 4:3 place.
+        st.studioModel = studio::kDubSirenModel;
+        st.studioSynthPage = studio_synth_page_count(st) - 1;
+        check(!studio_touch_canvas(st, host, *engine, 398 + 8, 254 + 8, 0), "16:9: the pad's 4:3 place is no longer the pad");
+        check(studio_touch_canvas(st, host, *engine, wide_dx() + 398 + 8, 254 + 8, 0) && st.studioHarmonics == 0 &&
+                  st.studioTimbre == 255, "16:9: a finger on the pad's top-left corner sets x 0, y max");
+        check(studio_touch_canvas(st, host, *engine, wide_dx() + 398 + 8 + 201, 254 + 8 + 75, 1) &&
+                  st.studioHarmonics == 255 && st.studioTimbre == 0, "16:9: dragging to the far corner sets x max, y 0");
+        studio_touch_canvas(st, host, *engine, 0, 0, 2);
+        st.studioModel = studio::kSingFrogModel;
+        st.studioSynthPage = 0;
+        check(studio_touch_canvas(st, host, *engine, wide_dx() + 304 + 10 + 146, 254 + 8 + 24, 0) &&
+                  std::abs(st.studioHarmonics - 127) <= 2 && std::abs(st.studioTimbre - 127) <= 4,
+              "16:9: the frog stage's middle puts the firefly in the middle");
+        studio_touch_canvas(st, host, *engine, 0, 0, 2);
+    }
+
     // The scene picker previews the wide layout; a few looks, rail-left and scope-bottom ones among them.
     state.currentScreen = ScreenType::PHRASE;
     for (int look : {0, 7, 15, 31}) {
@@ -272,6 +351,7 @@ int main(int argc, char** argv) {
     layout.draw(*canvas, state);
     write_bmp(*canvas, dir / "splash-wide.bmp");
     state.splashProgress = -1;
+    // VI (roadmap 3), the full width beside the rail; these three lines go if VI does.
     state.currentScreen = ScreenType::VISUALIZER;
     layout.draw(*canvas, state);
     write_bmp(*canvas, dir / "vi-wide.bmp");

@@ -659,6 +659,7 @@ bool studio_touch_canvas(AppState& s,songcore::SongcoreHost& host,AudioEngine& e
  if(phase!=0&&s.canvasTouchActive&&finger!=s.canvasFinger)return false;   // another finger: not ours
  if(phase==2){const bool was=s.canvasTouchActive;s.canvasTouchActive=false;return was;}
  if(!s.studioOpen||s.studioTab!=0||s.qwerty.isOpen||!studio_synth_xy_page(s)||studio_synth_picker_open(s)){s.canvasTouchActive=false;return false;}
+ cx-=wide_dx();   // the Studio is drawn centred on a wide canvas (layout.cpp)
  int x,y,w,h;bool frog;pad_rect(s,x,y,w,h,frog);
  if(phase==0){
   if(cx<x||cx>=x+w||cy<y||cy>=y+h)return false;

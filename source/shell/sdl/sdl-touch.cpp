@@ -2,6 +2,7 @@
 
 #include "sdl/sdl-input.h"
 
+#include "ui/canvas.h"           // DESIGN_W: 640, or 854 in wide mode
 #include "skin/button_glyphs.h"  // shared with the portrait cluster
 
 #include <algorithm>
@@ -84,8 +85,8 @@ bool SdlTouch::canvas_point(const SDL_Event& e, int& canvasX, int& canvasY) cons
     if (portrait_ || frame_.w <= 0 || frame_.h <= 0 || outW_ <= 0 || outH_ <= 0) return false;
     const int px = static_cast<int>(e.tfinger.x * outW_), py = static_cast<int>(e.tfinger.y * outH_);
     if (px < frame_.x || py < frame_.y || px >= frame_.x + frame_.w || py >= frame_.y + frame_.h) return false;
-    canvasX = (px - frame_.x) * 640 / frame_.w;
-    canvasY = (py - frame_.y) * 480 / frame_.h;
+    canvasX = (px - frame_.x) * pt::ui::DESIGN_W / frame_.w;
+    canvasY = (py - frame_.y) * pt::ui::DESIGN_H / frame_.h;
     return true;
 }
 

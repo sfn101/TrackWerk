@@ -53,7 +53,7 @@ public:
     // Returns true when the finger belongs to a virtual button (pressed, held or released by it).
     bool handle_finger(const SDL_Event& e, SdlInput& input, uint64_t now_ms);
 
-    // A finger event in the 640x480 canvas coordinates of the centred frame (landscape); false outside the frame or
+    // A finger event in the canvas coordinates (640x480, 854x480 wide) of the centred frame (landscape); false outside the frame or
     // before the first layout. For direct touch on the XY pad: a finger that hits no virtual button may still touch the screen.
     bool canvas_point(const SDL_Event& e, int& canvasX, int& canvasY) const;
 

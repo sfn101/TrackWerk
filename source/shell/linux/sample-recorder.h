@@ -11,7 +11,8 @@ namespace ptshell {
 // object. Discovery is lazy and cached; driver enumeration, opening, PCM reads,
 // closing and disk writes run on background workers, never on the UI caller.
 // Stop requests cancellation but does not pretend a blocked OS driver is closed.
-// There is deliberately no path from this input to the audio output.
+// The recorded take still never feeds the output, but an explicit monitor path exists: the worker
+// fills a lock-free ring and the output callback drains it (`set_monitor` / `render_monitor`).
 class SdlSampleRecorder final : public pt::ui::CaptureBackend {
 public:
     explicit SdlSampleRecorder(std::string appRoot);
@@ -23,6 +24,10 @@ public:
     bool start(int deviceId, int channels, int rate) override;
     void stop() override;
     std::string state_json() override;
+    // Monitoring: the capture worker fills an SPSC ring and the output callback drains it. No lock, no
+    // allocation and no second device on the audio thread. Recording stop turns it off.
+    bool set_monitor(bool on) override;
+    void render_monitor(float* stereo, int frames, int sampleRate);
 
 private:
     struct Impl;

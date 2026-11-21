@@ -257,6 +257,8 @@ void AudioEngine::triggerSamplerNote(const ScheduledNote& note, int frame, int64
                               sampleRate, note.startPointOverride, note.endPointOverride,
                               note.tableId, effectiveTicRates, note.noteOctave, note.notePitch, startRows);
             studioVoices[v].start(liveStudioCode(note.sampleId));
+            studioVoices[v].set_note_index(lyricNotes[note.sampleId&255]++);
+            lyricNotesShown[note.sampleId&255].store(lyricNotes[note.sampleId&255],std::memory_order_relaxed);
             if(studioVoices[v].active())voices[v].studioTuneRatio=songcore::detune_multiplier(instrumentParams[note.sampleId].studioDetune);
             voices[v].setChord(chordSemis, studioVoices[v].active() ? 0 : chordCount, strumWait);
             voices[v].instrId = note.sampleId;
@@ -959,7 +961,7 @@ void AudioEngine::mixSamplerPieceAs(Voice& voice, const BlockMix& b, int from, i
         }
     }
     const studio::Synth::SourceLoan sourceLoan(synth,loanData,loanLength,loanGeneration,loanRate);
-    if(synth.active()){synth.set_fm_voice(liveStudioFmVoice(voice.instrId));synth.update(liveStudioCode(voice.instrId),liveStudioParams(voice.instrId));}
+    if(synth.active()){synth.set_fm_voice(liveStudioFmVoice(voice.instrId));synth.set_lyric(liveStudioLyric(voice.instrId));synth.update(liveStudioCode(voice.instrId),liveStudioParams(voice.instrId));}
     const bool generated = synth.active();
     const int granularIndex=int(&voice-voices);
     const bool granular=configureGranularVoice(granularIndex,b.sampleRate);

@@ -11,6 +11,7 @@ namespace pt::ui {
 const InputDispatcher::Layer InputDispatcher::LAYERS[] = {
     {&InputDispatcher::load_running,       &InputDispatcher::loading_layer},
     {&InputDispatcher::help_full_open,     &InputDispatcher::help_layer},
+    {&InputDispatcher::audio_drivers_open, &InputDispatcher::audio_drivers_layer},
     {&InputDispatcher::local_sample_range_open,&InputDispatcher::local_sample_range_layer},
     {&InputDispatcher::confirm_open,       &InputDispatcher::confirm_layer},
     {&InputDispatcher::sample_close_open,  &InputDispatcher::sample_close_layer},

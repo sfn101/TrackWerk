@@ -14,6 +14,10 @@ public:
     bool start(int deviceId, int channels, int rate) override;
     void stop() override;
     std::string state_json() override;
+    // Monitoring is the SDL recorder's; the phone helper owns its device and cannot share the output.
+    bool set_monitor(bool on) override;
+    // SdlAudioEngine's monitor hook. Never locks or allocates: it drains the recorder's SPSC ring.
+    static void monitor_hook(void* self, float* stereo, int frames, int sampleRate);
 private:
     struct Impl;
     std::unique_ptr<Impl> impl_;

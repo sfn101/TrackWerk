@@ -1,0 +1,1 @@
+TrackWerk 1.3: new synths FROGGY (sings the words you type), CROAKER, ACID BOX, REESE BASS and DUB SIREN; an animated frog stage; synth tabs sorted by purpose with their own control sheets; MIDI export; preset inbox; PRB step probability; save backups and durable saves; touch dragging on the XY pad.

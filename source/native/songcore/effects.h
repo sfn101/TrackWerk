@@ -143,10 +143,33 @@ inline constexpr bool nth_always(int value) { return (value & 0xFF) == 0x00 || (
 // phrase row with a note, or a table row in a column that steps once per note; ARP and RPT repeat it.
 constexpr int FX_CHD      = 0x3F;
 
-/** Every NTH on the row must agree. */
-inline bool step_plays_on_pass(const PhraseStep& s, int pass) {
-    for (int slot = 1; slot <= 3; ++slot)
+// PRB xx: the row plays with the chance xx/256 on each pass of its phrase; 00 and FF always. The draw is
+// a fixed function of the row's place (`salt`: track, phrase and row) and the pass, never of a clock or
+// a random stream, so a render, a second play-through and the MIDI export all hold back the same rows
+// (and a different row or pass draws differently, so a 50 % row does not copy its neighbour).
+constexpr int FX_PRB      = 0x40;
+
+inline constexpr bool prb_always(int value) { return (value & 0xFF) == 0x00 || (value & 0xFF) == 0xFF; }
+inline constexpr uint32_t prb_hash(uint32_t salt, int pass) {
+    uint32_t x = salt * 0x9E3779B1u + static_cast<uint32_t>(pass) * 0x85EBCA6Bu + 0x27D4EB2Fu;
+    x ^= x >> 15; x *= 0x2C1B3C6Du; x ^= x >> 12; x *= 0x297A2D39u; x ^= x >> 15;
+    return x;
+}
+inline constexpr bool prb_plays(int value, uint32_t salt, int pass) {
+    return prb_always(value) || static_cast<int>(prb_hash(salt, pass) >> 24) < (value & 0xFF);
+}
+/** The identity a PRB draw is keyed on: which track, phrase and row. */
+inline constexpr uint32_t prb_salt(int track, int phrase, int row) {
+    return (static_cast<uint32_t>(track) + 1u) * 0x1000193u ^ (static_cast<uint32_t>(phrase) + 1u) * 0x2545F491u ^
+           (static_cast<uint32_t>(row) + 1u) * 0x6C8E9CF5u;
+}
+
+/** Every NTH and every PRB on the row must agree. */
+inline bool step_plays_on_pass(const PhraseStep& s, int pass, uint32_t salt = 0) {
+    for (int slot = 1; slot <= 3; ++slot) {
         if (step_fx_type(s, slot) == FX_NTH && !nth_plays(step_fx_value(s, slot), pass)) return false;
+        if (step_fx_type(s, slot) == FX_PRB && !prb_plays(step_fx_value(s, slot), salt ^ static_cast<uint32_t>(slot) * 0x68E31DA4u, pass)) return false;
+    }
     return true;
 }
 
@@ -180,7 +203,7 @@ inline std::string effect_name(int code) {
         case FX_LPF: return "LPF"; case FX_HPF: return "HPF"; case FX_BPF: return "BPF";
         case FX_DRV: return "DRV"; case FX_CRU: return "CRU";
         case FX_FIN: return "FIN"; case FX_TSX: return "TSX"; case FX_LPO: return "LPO";
-        case FX_INS: return "INS"; case FX_TIM: return "TIM"; case FX_NTH: return "NTH";
+        case FX_INS: return "INS"; case FX_TIM: return "TIM"; case FX_NTH: return "NTH"; case FX_PRB: return "PRB";
         case FX_CHD: return "CHD";
         case FX_VTR: return "VTR"; case FX_VMV: return "VMV";
         case FX_SCA: return "SCA"; case FX_SCG: return "SCG";
@@ -231,6 +254,7 @@ inline constexpr int EFFECT_TYPES[] = {
     FX_TIM,
     FX_NTH,
     FX_CHD,
+    FX_PRB,
     FX_LPO,
     // The MIDI commands — must stay the LAST six (asserted below)
     FX_MPG, FX_MPB, FX_CCA, FX_CCB, FX_CCC, FX_CCD,

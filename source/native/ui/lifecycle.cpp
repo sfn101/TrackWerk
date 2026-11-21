@@ -8,8 +8,9 @@ bool autosave_exists(FileSystem& fs) {
     return fs.file_exists(fs.autosave_file_path());
 }
 
-bool autosave_write(const songcore::SongcoreHost& host, FileSystem& fs) {
-    return fs.write_file(fs.autosave_file_path(), songcore::serialize_project(host.project()));
+bool autosave_write(const songcore::SongcoreHost& host, FileSystem& fs, bool durable) {
+    const std::string path = fs.autosave_file_path(), text = songcore::serialize_project(host.project());
+    return durable ? fs.write_file(path, text) : fs.write_file_relaxed(path, text);
 }
 
 bool autosave_clear(FileSystem& fs) {

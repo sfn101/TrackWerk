@@ -315,6 +315,11 @@ void InputDispatcher::run_selection_recency() {
 }
 
 void InputDispatcher::on_l_r() {
+    // The L1+R1 hold opened AUDIO DRIVERS: this release belongs to that chord, not to CANCEL.
+    if (s_.audioDrivers.chordOwned) {
+        s_.audioDrivers.chordOwned = false;
+        return;
+    }
     if (route(Gesture::L_R)) return;
 
     // One press clears one thing, newest first: the mix, or the selection with its buffer. ⚠️ A rung

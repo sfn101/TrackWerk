@@ -1,0 +1,19 @@
+# TrackWerk 1.3 release package tools
+
+These tools build local release candidates. They do not access devices, SD cards, accounts or publication APIs. The default program artifacts are unchanged, checksum-verified Claude builds from c9e3f5ac11740ebf949de394915f3333322efa9e. The package provenance calls this repackaging; it does not claim an independent program rebuild or a hardware test of the new installation layout.
+
+Run `python3 release-tools/1.3/build_packages.py` from the repository. Inputs can be selected with `--claude-root`, `--templates`, `--manual-dir`, `--output` and `--only`. The manual directory must contain `TrackWerk-1.3-Manual-EN.pdf` and `TrackWerk-1.3-Handbuch-DE.pdf`.
+
+To substitute independently rebuilt programs, pass `--programs-json` with entries for `brick`, `rgb20s`, `miyoo-mini` and/or `miyoo-plus`, each containing `path`, `sha256`, and the exact `source_commit`. Each supplied file is hash-checked and its ELF architecture is checked. The origin is recorded per program in PROVENANCE.json. APKs are preserved unchanged so the release signer is retained. An independently rebuilt R36-Ultra Debian payload can be selected through `--r36ultra-deb-json`, pointing to a JSON file with `path`, `sha256`, and `source_commit`; dependency and hardware acceptance remain separate.
+
+The ZIP order, timestamps and executable modes are deterministic. Every new ZIP has SHA256SUMS.txt and PROVENANCE.json. reports/package-provenance.json inventories the final outputs; packages/SHA256SUMS-PACKAGES.txt hashes the deliverables. The matching SDL source, factory preset and demo ZIPs are also retained beside the packages.
+
+Miyoo First Install uses the existing verified installer transaction, now with current shortcut names and a complete 1.3 payload. Its new shared-data phase verifies bundled samples/PDFs before mutation and only adds missing files. Existing samples, presets, songs and preferences are retained. It requires an intact Onion installation, audio handover and MainUI. The program updater retains its original explicit predecessor-hash checks, externally checked FAT-card identity, staging, lock, rollback and readback. The 1.3 addition checks Onion prerequisites before writing and then refreshes menu metadata with backups.
+
+`release_metadata.py` plans by default. It verifies the installed program against RELEASE-METADATA.json, updates the version/source labels, Apps/Ports shortcuts, cover art and description, and backs up replaced metadata. Old Onion shortcut-cache databases are backed up and invalidated. Other games and unrelated menu metadata are retained. Every destination rejects symbolic links.
+
+The separate Samples-Handbuch packages contain `install_samples.py`. Choose the existing active data folder with `--data-home`; run once for a plan, then with `--apply`. It verifies the entire payload before writing, creates missing files only and preserves existing files byte for byte. It can be rerun after interruption.
+
+Hardware status reported by Kid Bunka on 20 November 2026: Android, Brick, Miyoo Mini/Mini Flip, Mini Plus and RGB20S ran the program build. Newly assembled full installation layouts were simulated locally. H700, R36S, R36 Ultra and generic PortMaster compatibility remain community tests. R36 Ultra still needs its Debian/SDL dependencies verified on dArkOSRE. Windows/macOS/Linux desktop acceptance is outside this package tool's scope.
+
+Run `python3 release-tools/1.3/test_packages.py` for local ordinary-directory simulations. These cover first installation, preservation of edited samples/presets/preferences, idempotence, a read-only plan, incomplete Onion rejection, two-program rollback after an injected second-write failure, menu migration, preservation of unrelated games, symlink refusal, corrupt sample rejection, archive CRCs and inner/outer checksums. They do not fabricate a physical-device or mounted-volume test.

@@ -10,6 +10,7 @@
 // remain integers; optional granular settings use round-trip-safe physical-unit float numbers.
 
 #include "../studio/fm_sysex.h"
+#include "../studio/sing_text.h"
 #include "midi_map.h"
 #include "model.h"
 #include "../vendor/nlohmann/json.hpp"
@@ -47,6 +48,21 @@ inline int checked_int(const json& value, int def) {
         if ((bits & UINT64_C(0x7ff0000000000000)) == UINT64_C(0x7ff0000000000000)) return def;
         if (n >= std::numeric_limits<int>::min() && n <= std::numeric_limits<int>::max())
             return static_cast<int>(n);  // retain the legacy truncation of ordinary floats
+    }
+    return def;
+}
+// Check before conversion: floating markers may otherwise overflow int64_t inside json::get.
+inline int64_t checked_int64(const json& value, int64_t def) {
+    if (value.is_number_unsigned()) {
+        const auto n=value.get<uint64_t>();
+        return n<=uint64_t(INT64_MAX) ? static_cast<int64_t>(n) : def;
+    }
+    if (value.is_number_integer()) return value.get<int64_t>();
+    if (value.is_number_float()) {
+        const double n=value.get<double>();uint64_t bits;std::memcpy(&bits,&n,sizeof(bits));
+        if ((bits&UINT64_C(0x7ff0000000000000))==UINT64_C(0x7ff0000000000000)) return def;
+        // INT64_MAX rounds to 2^63 as double; the upper comparison must be exclusive.
+        if (n>=-9223372036854775808.0 && n<9223372036854775808.0) return static_cast<int64_t>(n);
     }
     return def;
 }
@@ -192,6 +208,7 @@ inline Table parse_table(const json& j, int index) {
         t.rows.clear();
         for (const auto& e : *it) t.rows.push_back(parse_table_row(e));
     }
+    t.rows.resize(16);  // TABLE cursor and FX helper always address sixteen rows
     return t;
 }
 
@@ -257,7 +274,7 @@ inline Track parse_track(const json& j, int index) {
     auto it = j.find("chainRefs");
     if (it != j.end() && it->is_array()) {
         t.chainRefs.clear();
-        for (const auto& e : *it) t.chainRefs.push_back(e.is_number() ? e.get<int>() : 0);
+        for (const auto& e : *it) t.chainRefs.push_back(checked_int(e, 0));
     }
     t.volume = get_int(j, "volume", t.volume);
     t.mute   = get_bool(j, "mute",  t.mute);
@@ -301,13 +318,17 @@ inline Instrument parse_instrument(const json& j, int index) {
     if (const auto it=j.find("studioSynthParams");it!=j.end()&&it->is_array())
         for(size_t k=0;k<i.studioSynthParams.size()&&k<it->size();++k)
             if((*it)[k].is_number_integer()) {
-                const auto v=(*it)[k].get<int64_t>();
+                const auto v=checked_int((*it)[k], -2);
                 if(v>=-1&&v<=255)i.studioSynthParams[k]=static_cast<int>(v);
             }
     // A voice that is not exactly 256 hex digits of 7-bit bytes is dropped, not half-read.
     if (const auto it=j.find("fmVoice");it!=j.end()&&it->is_string()) {
         studio::fm_sysex::PackedVoice v{};
         if(studio::fm_sysex::from_hex(it->get<std::string>(),v))i.fmVoice=v;
+    }
+    if (const auto it=j.find("lyric");it!=j.end()&&it->is_string()) {
+        i.lyric=it->get<std::string>();
+        i.lyric=studio::sing::utf8_cut(i.lyric,120);
     }
     i.tableId        = get_int(j, "tableId", i.tableId);
     i.tableTicRate   = get_int(j, "tableTicRate", i.tableTicRate);
@@ -316,6 +337,7 @@ inline Instrument parse_instrument(const json& j, int index) {
           i.modSlots.clear();
           for (const auto& m : *it) i.modSlots.push_back(parse_mod_slot(m));
       } }
+    i.modSlots.resize(4);  // MODS and its contextual help address four slots
     { auto it = j.find("instrumentType"); if (it != j.end() && it->is_string()) instrument_type_from_name(it->get<std::string>(), i.instrumentType); }
     i.soundfontPath  = get_opt_str(j, "soundfontPath");
     i.sfBank         = get_int(j, "sfBank", i.sfBank);
@@ -524,7 +546,7 @@ inline Project parse_project(const json& j) {
         if (get_int(ext,"version",0)==1 && ext.contains("master") && ext["master"].is_array()) {
             const auto& values=ext["master"];
             for(size_t i=0;i<p.studioMaster.size()&&i<values.size();++i)
-                if(values[i].is_number_integer()) p.studioMaster[i]=std::clamp(values[i].get<int>(),0,255);
+                if(values[i].is_number_integer()) p.studioMaster[i]=std::clamp(checked_int(values[i], p.studioMaster[i]),0,255);
         }
     }
     p.m8SourceHex = get_str(j,"m8SourceHex","");
@@ -933,6 +955,7 @@ inline void emit_instrument(JsonWriter& w, const Instrument& i) {
         w.end_array();
     }
     if (i.fmVoice) w.field_string("fmVoice", studio::fm_sysex::to_hex(*i.fmVoice));
+    if (!i.lyric.empty()) w.field_string("lyric", i.lyric);
     if(granular_has_settings(i)){w.key("granular");w.out+=granular_object(i).dump();}
     if (i.tableId != -1)    w.field_int("tableId", i.tableId);
     if (i.tableTicRate != 0x06) w.field_int("tableTicRate", i.tableTicRate);

@@ -73,6 +73,8 @@ void TrackerLayout::draw(Canvas& c, const AppState& s) {
     }
     draw_loading_strip(c, s.loading, s.theme);
     draw_live_resample_indicator(c,s);
+    // Last: it is reachable from Studio too, which does not draw the editor's overlays.
+    draw_audio_drivers(c, s.audioDrivers, s.theme);
 }
 
 // The cursor's highlight glides from its last cell to the new one: 110 ms, ease-out, a translucent bar

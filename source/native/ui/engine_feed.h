@@ -105,6 +105,8 @@ private:
         if (!state.isPlaying) engine.decayWaveform();
         engine.getWaveform(waveform_, WAVEFORM_SIZE);
         state.waveform = waveform_;
+        if (state.project && state.currentInstrument >= 0 && state.currentInstrument < static_cast<int>(state.project->instruments.size()))
+            state.lyricNotes = engine.lyricNotesStarted(state.project->instruments[static_cast<size_t>(state.currentInstrument)].sampleId);
 
         const VisualizerType vt = state.theme.visualizerType;
         // COPPER reads each track's signal as OCTA does.

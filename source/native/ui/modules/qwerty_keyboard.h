@@ -32,7 +32,8 @@ enum class QwertyContext {
     REVERB_SAVE,      // write EFFECTS' reverb cells to `contextExtra`/<text>.ptr, and name them <text>
     DELAY_SAVE,       // write EFFECTS' delay cells to `contextExtra`/<text>.ptd, and name them <text>
     SOURCE_SEARCH,   // Digging search text on platforms without a system text dialog
-    PROJECT_SAVE_AS  // save the song as <text>.ptp in the folder SAVE uses, and name it <text>
+    PROJECT_SAVE_AS, // save the song as <text>.ptp in the folder SAVE uses, and name it <text>
+    LYRIC_EDIT       // FROGGY's words for the current instrument (Studio > Synth > Lyrics)
 };
 
 // 3 key rows of 10, then the space bar. The ABORT/APPLY row is virtual.

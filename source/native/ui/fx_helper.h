@@ -29,7 +29,7 @@ inline constexpr int FX_GRID_COLS = 6;
 inline constexpr int FX_SEQUENCE_CODES[] = {
     songcore::FX_KILL,   // also in INSTRUMENT
     songcore::FX_HOP, songcore::FX_THO, songcore::FX_TBL, songcore::FX_TIC,
-    songcore::FX_GRV, songcore::FX_LAT, songcore::FX_CHA, songcore::FX_NTH, songcore::FX_RND, songcore::FX_RNL,
+    songcore::FX_GRV, songcore::FX_LAT, songcore::FX_CHA, songcore::FX_NTH, songcore::FX_PRB, songcore::FX_RND, songcore::FX_RNL,
     songcore::FX_INS,   // beside RND/RNL, which drive it
     songcore::FX_ARC, songcore::FX_ARPEGGIO,
     songcore::FX_CHD,   // beside ARP, which moves the whole chord

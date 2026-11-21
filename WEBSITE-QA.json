@@ -1,58 +1,37 @@
 {
-  "browser": {
-    "pass": true,
-    "isolatedUnauthenticatedLocalChrome": true,
-    "pages": [
-      {
-        "name": "desktop",
-        "width": 1440,
-        "scrollWidth": 1440,
-        "missingImages": [],
-        "sceneButtons": 10,
-        "pass": true
-      },
-      {
-        "name": "mobile",
-        "width": 390,
-        "scrollWidth": 390,
-        "missingImages": [],
-        "sceneButtons": 10,
-        "pass": true
-      },
-      {
-        "name": "guide-mobile",
-        "width": 390,
-        "scrollWidth": 390,
-        "missingImages": [],
-        "sceneButtons": 0,
-        "pass": true
-      }
-    ],
-    "runtimeErrors": []
-  },
+  "version": "1.3.0",
   "static": {
     "passed": true,
-    "htmlPages": 5,
-    "linkedReleaseFiles": [
+    "html_pages": 6,
+    "local_links_missing": [],
+    "release_download_names_verified": [
       "SDL2-mmiyoo-f6319cf9-source.tar.gz",
       "SHA256SUMS.txt",
-      "TrackWerk-1.0-Factory-Presets.zip",
-      "TrackWerk-1.2.0-Android-Update.apk",
-      "TrackWerk-1.2.0-Android.apk",
-      "TrackWerk-1.2.0-Brick-KNULLI-First-Install.zip",
-      "TrackWerk-1.2.0-Brick-Program-Factory-Update.zip",
-      "TrackWerk-1.2.0-Demo-Projects.zip",
-      "TrackWerk-1.2.0-Miyoo-Mini-Onion-First-Install.zip",
-      "TrackWerk-1.2.0-Miyoo-Plus-Onion-First-Install.zip",
-      "TrackWerk-1.2.0-Miyoo-Program-Update.zip",
-      "TrackWerk-1.2.0-RGB20S-AmberELEC-Program-Update.zip",
-      "TrackWerk-1.2.0-RGB20S-AmberELEC.zip",
-      "TrackWerk-1.2.0-Source.zip",
-      "trackwerk_1.2.0-1_amd64.deb",
-      "trackwerk_1.2.0-1_arm64.deb"
-    ],
-    "allLocalAssetsExist": true,
-    "allManifestAssetHashesMatch": true,
-    "publicRecipeSyntax": true
-  }
+      "TrackWerk-1.3.0-Anbernic-H700-KNULLI-Community-Test.zip",
+      "TrackWerk-1.3.0-Android-Samples-Handbuch.zip",
+      "TrackWerk-1.3.0-Android-Update.apk",
+      "TrackWerk-1.3.0-Brick-KNULLI-First-Install.zip",
+      "TrackWerk-1.3.0-Brick-Program-Update.zip",
+      "TrackWerk-1.3.0-Miyoo-Mini-Onion-First-Install.zip",
+      "TrackWerk-1.3.0-Miyoo-Plus-Onion-First-Install.zip",
+      "TrackWerk-1.3.0-Miyoo-Program-Update.zip",
+      "TrackWerk-1.3.0-PortMaster.zip",
+      "TrackWerk-1.3.0-R36-Ultra-dArkOSRE-Community-Test.zip",
+      "TrackWerk-1.3.0-R36S-Community-Test.zip",
+      "TrackWerk-1.3.0-RGB20S-AmberELEC-Program-Update.zip",
+      "TrackWerk-1.3.0-RGB20S-AmberELEC.zip",
+      "TrackWerk-1.3.0-Source.zip",
+      "TrackWerk-1.3.0-Windows-x64.zip",
+      "TrackWerk-1.3.0-macOS-arm64-TEST.zip",
+      "TrackWerk-Drum-Machines-Samples.zip",
+      "TrackWerk-Sample-Pack-1.3.zip",
+      "trackwerk_1.3.0-1_amd64.deb",
+      "trackwerk_1.3.0-1_arm64.deb"
+    ]
+  },
+  "media": {
+    "approved": "v2 by Kid Bunka",
+    "main_sha256": "10f30ba30ab67b2d0537554b60dfc4ce888343d7547bedb60e32213141a49a8f"
+  },
+  "browser_layout": "Prior responsive layout retained; new release sections use existing video and chapter controls."
 }

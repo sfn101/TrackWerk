@@ -39,6 +39,13 @@ auto push_studio_fm_voice(Engine& engine,const Instrument& ins,int)
 template <typename Engine>
 void push_studio_fm_voice(Engine&,const Instrument&,long) {}
 template <typename Engine>
+auto push_studio_lyric(Engine& engine,const Instrument& ins,int)
+    -> decltype(engine.setStudioLyricText(ins.sampleId,ins.lyric),void()) {
+    engine.setStudioLyricText(ins.sampleId,ins.lyric);
+}
+template <typename Engine>
+void push_studio_lyric(Engine&,const Instrument&,long) {}
+template <typename Engine>
 auto push_studio_voice_defaults(Engine& engine,const Instrument& ins,int)
     -> decltype(engine.setStudioVoiceDefaults(ins.sampleId,ins.volume,ins.pan,ins.detune),void()) {
     engine.setStudioVoiceDefaults(ins.sampleId,ins.volume,ins.pan,ins.detune);
@@ -70,6 +77,7 @@ void push_instrument_params(Engine& engine, const Instrument& ins, const Routing
     push_instrument_mod_eq_sends(engine, ins, tempo, sampleRate);
     push_studio_synth_params(engine,ins,0);
     push_studio_fm_voice(engine,ins,0);
+    push_studio_lyric(engine,ins,0);
     push_studio_voice_defaults(engine,ins,0);
     push_sample_granular(engine,ins,routing,0);
     // The SF ADSR override — a live key is scheduled with no push, so the engine's copy must be current.

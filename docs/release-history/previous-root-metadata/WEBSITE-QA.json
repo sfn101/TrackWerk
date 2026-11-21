@@ -1,0 +1,58 @@
+{
+  "browser": {
+    "pass": true,
+    "isolatedUnauthenticatedLocalChrome": true,
+    "pages": [
+      {
+        "name": "desktop",
+        "width": 1440,
+        "scrollWidth": 1440,
+        "missingImages": [],
+        "sceneButtons": 10,
+        "pass": true
+      },
+      {
+        "name": "mobile",
+        "width": 390,
+        "scrollWidth": 390,
+        "missingImages": [],
+        "sceneButtons": 10,
+        "pass": true
+      },
+      {
+        "name": "guide-mobile",
+        "width": 390,
+        "scrollWidth": 390,
+        "missingImages": [],
+        "sceneButtons": 0,
+        "pass": true
+      }
+    ],
+    "runtimeErrors": []
+  },
+  "static": {
+    "passed": true,
+    "htmlPages": 5,
+    "linkedReleaseFiles": [
+      "SDL2-mmiyoo-f6319cf9-source.tar.gz",
+      "SHA256SUMS.txt",
+      "TrackWerk-1.0-Factory-Presets.zip",
+      "TrackWerk-1.2.0-Android-Update.apk",
+      "TrackWerk-1.2.0-Android.apk",
+      "TrackWerk-1.2.0-Brick-KNULLI-First-Install.zip",
+      "TrackWerk-1.2.0-Brick-Program-Factory-Update.zip",
+      "TrackWerk-1.2.0-Demo-Projects.zip",
+      "TrackWerk-1.2.0-Miyoo-Mini-Onion-First-Install.zip",
+      "TrackWerk-1.2.0-Miyoo-Plus-Onion-First-Install.zip",
+      "TrackWerk-1.2.0-Miyoo-Program-Update.zip",
+      "TrackWerk-1.2.0-RGB20S-AmberELEC-Program-Update.zip",
+      "TrackWerk-1.2.0-RGB20S-AmberELEC.zip",
+      "TrackWerk-1.2.0-Source.zip",
+      "trackwerk_1.2.0-1_amd64.deb",
+      "trackwerk_1.2.0-1_arm64.deb"
+    ],
+    "allLocalAssetsExist": true,
+    "allManifestAssetHashesMatch": true,
+    "publicRecipeSyntax": true
+  }
+}

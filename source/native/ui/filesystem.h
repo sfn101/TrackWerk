@@ -126,6 +126,13 @@ class FileSystem {
     virtual bool write_file(const std::string& path, const std::string& content) = 0;
     virtual bool write_bytes(const std::string& path, const void* data, size_t len) = 0;
 
+    // As write_file, but the bytes need not have reached the medium when it returns (no fsync): for
+    // writes repeated every few seconds on the UI thread, such as the crash autosave's debounce.
+    // Defaults to the durable write, so a filesystem that cannot tell the two apart loses nothing.
+    virtual bool write_file_relaxed(const std::string& path, const std::string& content) {
+        return write_file(path, content);
+    }
+
     // Recursive for a folder.
     virtual bool delete_path(const std::string& path) = 0;
 

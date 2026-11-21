@@ -456,7 +456,8 @@ bool SongcoreHost::load_sample(int id, const std::string& path) {
 }
 
 bool SongcoreHost::update_studio_synth(int id,const std::string& uri,const studio::SynthParams& params,
-                                      const std::optional<std::array<uint8_t,128>>* fmVoice) {
+                                      const std::optional<std::array<uint8_t,128>>* fmVoice,
+                                      const std::string* lyric) {
     if(!engine_||id<0||id>=static_cast<int>(project_.instruments.size()))return false;
     Instrument& ins=project_.instruments[id];
     const int code=studio::uri_code(uri.c_str());
@@ -469,14 +470,18 @@ bool SongcoreHost::update_studio_synth(int id,const std::string& uri,const studi
     // The voice first: it rides on the slot's row, which keeps the old model until the code below
     // changes it, and a non-FM model never reads it.
     const auto previousVoice=ins.fmVoice;
+    const std::string previousLyric=ins.lyric;
     if(fmVoice)engine_->setStudioFmVoice(ins.sampleId,*fmVoice?(*fmVoice)->data():nullptr);
+    if(lyric)engine_->setStudioLyricText(ins.sampleId,*lyric);
     if(!engine_->setLiveStudioSynth(ins.sampleId,code,params)){
         if(fmVoice)engine_->setStudioFmVoice(ins.sampleId,previousVoice?previousVoice->data():nullptr);
+        if(lyric)engine_->setStudioLyricText(ins.sampleId,previousLyric);
         return false;
     }
     *ins.sampleFilePath=std::move(stored);
     ins.studioSynthParams=params;
     if(fmVoice)ins.fmVoice=*fmVoice;
+    if(lyric)ins.lyric=*lyric;
     ins.granularEnabled=false;
     push_sample_granular(*engine_,ins,routing_,0);
     return true;
@@ -492,6 +497,7 @@ bool SongcoreHost::preview_studio_synth(const Instrument& draft,const std::strin
            engine_->loadSampleFromWavFile(slot,uri.c_str())<=0)return false;
     }
     engine_->setStudioFmVoice(slot,draft.fmVoice?draft.fmVoice->data():nullptr);
+    engine_->setStudioLyricText(slot,draft.lyric);
     if(!engine_->setLiveStudioSynth(slot,code,draft.studioSynthParams))return false;
     Instrument preview=draft;
     preview.sampleId=slot;preview.instrumentType=InstrumentType::SAMPLER;
@@ -563,7 +569,7 @@ bool parse_instrument_preset_checked(const std::string& blob, InstrumentPreset& 
     }
     if(!j.at("instrument").is_object())return false;
     const auto& values=j.at("instrument");
-    for(const char* key:{"sampleFilePath","soundfontPath"})if(values.contains(key)&&!values.at(key).is_null()&&!values.at(key).is_string())return false;
+    for(const char* key:{"sampleFilePath","soundfontPath","lyric"})if(values.contains(key)&&!values.at(key).is_null()&&!values.at(key).is_string())return false;
     if(values.contains("studioSynthParams")){
         const auto& params=values.at("studioSynthParams");if(!params.is_array())return false;
         for(const auto& value:params)if(!value.is_number_integer()||value.get<int64_t>()< -1||value.get<int64_t>()>255)return false;

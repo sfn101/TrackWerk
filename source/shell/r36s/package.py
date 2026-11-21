@@ -14,7 +14,7 @@ import zipfile
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
-VERSION = "0.2.0-beta.3"
+VERSION = "1.3.0"
 NAME = f"TrackWerk-{VERSION}-R36S-Community-Test"
 LAUNCHER = "TrackWerk.sh"
 APP = "trackwerk"
@@ -122,7 +122,7 @@ def build(stage: Path, output: Path, cpu_validation: Path | None) -> Path:
             "controllerdb_policy": "Fallback only when SDL_GAMECONTROLLERCONFIG_FILE is unset; preserve explicit empty and frontend inline mappings",
             "OS_image_included": False, "system_libraries_replaced": False,
             "USB_iPhone_R36S_validation": "pending physical hardware testing",
-            "source": "Matching TrackWerk 0.2.0-beta.3 source bundle; shell/r36s/package.py",
+            "source": "Matching TrackWerk 1.3.0 source bundle; shell/r36s/package.py",
         }
         write_json(app / "community-test.json", metadata)
         write_json(app / "port.json", {

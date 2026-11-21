@@ -507,6 +507,7 @@ add_library(pt-ui STATIC
         ui/dispatch/buttons.cpp
         ui/dispatch/chords.cpp
         ui/dispatch/route.cpp
+        ui/dispatch/layers/audio_drivers.cpp
         ui/dispatch/layers/confirm.cpp
         ui/dispatch/layers/eq.cpp
         ui/dispatch/layers/fx_helper.cpp
@@ -539,6 +540,7 @@ add_library(pt-ui STATIC
         ui/project_actions.cpp
         ui/modules/chain_editor.cpp
         ui/modules/confirm_dialog.cpp
+        ui/modules/audio_drivers.cpp
         ui/modules/effects_editor.cpp
         ui/modules/eq_editor.cpp
         ui/modules/file_browser.cpp
@@ -783,6 +785,10 @@ if(PT_STUDIO_CHECK)
  add_executable(ptshow-view-check ../tests/studio/show_view.cpp)
  target_link_libraries(ptshow-view-check PRIVATE pt-ui)
  target_compile_options(ptshow-view-check PRIVATE -UNDEBUG)
+ # The 1.2.1 extra review: load/save questions, paste into itself, rename case, fast A after a move.
+ add_executable(ptfile-safety-check ../tests/studio/file_safety.cpp)
+ target_link_libraries(ptfile-safety-check PRIVATE pt-ui)
+ target_compile_options(ptfile-safety-check PRIVATE $<IF:$<BOOL:${MSVC}>,/UNDEBUG,-UNDEBUG>)
  add_executable(ptbutton-conflicts-check ../tests/studio/button_conflicts.cpp)
  target_link_libraries(ptbutton-conflicts-check PRIVATE pt-ui)
  target_compile_options(ptbutton-conflicts-check PRIVATE -UNDEBUG)
@@ -836,6 +842,42 @@ if(PT_STUDIO_CHECK)
  target_link_libraries(ptfm-sysex-check PRIVATE pt-mutable)
  target_include_directories(ptfm-sysex-check PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/studio" "${CMAKE_CURRENT_SOURCE_DIR}/vendor/mutable")
  target_compile_options(ptfm-sysex-check PRIVATE -UNDEBUG)
+ # Input monitoring ring (shell/linux/monitor-ring.h): clock drift, jitter, stalls, threads; no SDL needed.
+ add_executable(ptmonitor-ring-check ../tests/studio/monitor_ring.cpp)
+ target_include_directories(ptmonitor-ring-check PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../shell")
+ target_link_libraries(ptmonitor-ring-check PRIVATE Threads::Threads)
+ target_compile_options(ptmonitor-ring-check PRIVATE $<IF:$<BOOL:${MSVC}>,/UNDEBUG,-UNDEBUG>)
+ # The song as a Standard MIDI File (songcore/midi_export.h).
+ add_executable(ptmidi-export-check ../tests/studio/midi_export.cpp)
+ target_link_libraries(ptmidi-export-check PRIVATE songcore)
+ target_compile_options(ptmidi-export-check PRIVATE $<IF:$<BOOL:${MSVC}>,/UNDEBUG,-UNDEBUG>)
+ # PRB: a phrase row that plays with a chance (songcore/effects.h), the same draw on every play-through.
+ add_executable(ptstep-probability-check ../tests/studio/step_probability.cpp)
+ target_link_libraries(ptstep-probability-check PRIVATE songcore)
+ target_compile_options(ptstep-probability-check PRIVATE $<IF:$<BOOL:${MSVC}>,/UNDEBUG,-UNDEBUG>)
+ # The XY pad page of Studio > Synth (hold L + D-pad moves the dot).
+ add_executable(ptstudio-xy-check ../tests/studio/studio_xy.cpp)
+ target_link_libraries(ptstudio-xy-check PRIVATE pt-ui)
+ target_compile_options(ptstudio-xy-check PRIVATE $<IF:$<BOOL:${MSVC}>,/UNDEBUG,-UNDEBUG>)
+ add_executable(ptdub-siren-check ../tests/studio/dub_siren.cpp)
+ target_link_libraries(ptdub-siren-check PRIVATE pt-mutable)
+ target_include_directories(ptdub-siren-check PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/studio")
+ target_compile_options(ptdub-siren-check PRIVATE -UNDEBUG)
+ add_executable(ptfrog-voice-check ../tests/studio/frog_voice.cpp)
+ target_link_libraries(ptfrog-voice-check PRIVATE pt-mutable)
+ target_include_directories(ptfrog-voice-check PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/studio")
+ target_compile_options(ptfrog-voice-check PRIVATE -UNDEBUG)
+ add_executable(ptsing-frog-check ../tests/studio/sing_frog.cpp)
+ target_link_libraries(ptsing-frog-check PRIVATE pt-mutable)
+ target_include_directories(ptsing-frog-check PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/studio")
+ target_compile_options(ptsing-frog-check PRIVATE -UNDEBUG)
+ add_executable(ptbass-synths-check ../tests/studio/bass_synths.cpp)
+ target_link_libraries(ptbass-synths-check PRIVATE pt-mutable)
+ target_include_directories(ptbass-synths-check PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/studio")
+ target_compile_options(ptbass-synths-check PRIVATE -UNDEBUG)
+ add_executable(ptpitch-track-check ../tests/studio/pitch_track.cpp)
+  target_include_directories(ptpitch-track-check PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/studio")
+ target_compile_options(ptpitch-track-check PRIVATE -UNDEBUG)
  add_executable(ptdco-poly-check ../tests/studio/dco_poly.cpp)
  target_link_libraries(ptdco-poly-check PRIVATE pt-mutable)
  target_include_directories(ptdco-poly-check PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/studio")

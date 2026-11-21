@@ -2,9 +2,9 @@
 <gameList>
   <game>
     <path>./TrackWerk.sh</path>
-    <name>TrackWerk</name>
+    <name>TrackWerk 1.3</name>
     <desc>TrackWerk is a music tracker for retro gaming handhelds.</desc>
-    <image>./pockettracker/screenshot.png</image>
+    <image>./pockettracker/menu-cover-trackwerk-1.3.0.png</image>
     <releasedate>20260716T000000</releasedate>
     <developer>conan</developer>
     <publisher>conan</publisher>

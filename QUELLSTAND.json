@@ -1,8 +1,10 @@
 {
-  "commit": "b24ad7abe43f6784cb8ef34dee7661db0d02dade",
-  "tree": "a698c1831ade5253452117ea9630dd82c3ed9e81",
-  "version": "1.2.0",
-  "versionCode": 102000,
-  "files_sha256": "67355de91b948f0daabbf50bd4d7479c80d4fe299bd635ac2ccfb1f9401d9723",
-  "files": 8273
+  "version": "1.3.0",
+  "code_tree": "118becf0cee4939e83c437a5bda9d02a7ae8542f",
+  "program_sources": [
+    "028619182cf79d5f59c7718da8b71756d8512e3b",
+    "3595ecfcf19861c16af7444b70de5d045b74d2cd",
+    "a81f0bb7226adcf08316e8c16fe46f50adb5faae"
+  ],
+  "ribbo_1_4_included": false
 }

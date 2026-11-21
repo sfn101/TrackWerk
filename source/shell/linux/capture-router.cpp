@@ -42,4 +42,13 @@ void CaptureRouter::stop() {
 std::string CaptureRouter::state_json() {
     std::lock_guard<std::mutex> lock(impl_->lifecycle); return impl_->selected->state_json();
 }
+bool CaptureRouter::set_monitor(bool on) {
+    // Only the SDL recorder has a monitor ring. Turning it off is always safe, even while the phone
+    // backend is selected, so a stale "on" cannot survive a source switch.
+    if (on && impl_->selected == &impl_->iphone) return false;
+    return impl_->sdl.set_monitor(on);
+}
+void CaptureRouter::monitor_hook(void* self, float* stereo, int frames, int sampleRate) {
+    static_cast<CaptureRouter*>(self)->impl_->sdl.render_monitor(stereo, frames, sampleRate);
+}
 }

@@ -1,6 +1,9 @@
 #include "ui/folder_config.h"
 
 #include "common/byte_source.h"        // pt_path_is_uri — one rule for what a URI is
+#include <cctype>
+
+#include "songcore/host.h"        // parse_instrument_preset_checked
 #include "songcore/media_path.h"  // app_root_relative_tail — the same re-rooting as a sample path
 #include "vendor/nlohmann/json.hpp"
 
@@ -186,6 +189,44 @@ int move_old_preset_folders(FileSystem& fs) {
         }
         if (fs.list_files(old).empty()) fs.delete_path(old);
     }
+    return moved;
+}
+
+int import_preset_inbox(FileSystem& fs, int* rejected) {
+    int moved = 0, refused = 0;
+    const std::string inbox = fs.make_app_folder("Presets/Inbox");
+    if (inbox.empty()) { if (rejected) *rejected = 0; return 0; }
+    struct Kind { const char* extension; std::string (FileSystem::*dir)(); };
+    static const Kind kKinds[] = {
+        {"pti", &FileSystem::instruments_directory}, {"ptr", &FileSystem::reverbs_directory},
+        {"ptd", &FileSystem::delays_directory},      {"pts", &FileSystem::scales_directory},
+        {"ptg", &FileSystem::grooves_directory},
+    };
+    for (const FileInfo& f : fs.list_files(inbox)) {
+        if (f.isDirectory || f.name.empty() || f.name[0] == '.') continue;   // folders, dotfiles, ._Mac leftovers
+        std::string ext = f.extension;
+        for (char& c : ext) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        const Kind* kind = nullptr;
+        for (const Kind& k : kKinds) if (ext == k.extension) kind = &k;
+        if (!kind) continue;   // not a preset: left alone, not counted
+        std::string text;
+        const auto json = fs.read_file(f.path, text) ? nlohmann::json::parse(text, nullptr, false) : nlohmann::json();
+        bool ok = json.is_object();
+        if (ok && ext == "pti") {
+            songcore::InstrumentPreset preset;
+            ok = songcore::parse_instrument_preset_checked(text, preset);
+        }
+        if (!ok) { ++refused; continue; }
+        const std::string dir = (fs.*(kind->dir))();
+        if (dir.empty()) { ++refused; continue; }
+        std::string stem = f.name.substr(0, f.name.size() - ext.size() - 1);
+        std::string target = dir + "/" + f.name;
+        for (int n = 2; fs.file_exists(target) && n < 1000; ++n)
+            target = dir + "/" + stem + "_" + std::to_string(n) + "." + ext;
+        if (fs.file_exists(target)) { ++refused; continue; }
+        if (fs.move_file(f.path, target)) ++moved; else ++refused;
+    }
+    if (rejected) *rejected = refused;
     return moved;
 }
 

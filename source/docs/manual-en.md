@@ -160,8 +160,8 @@ A + LEFT/RIGHT on the VI screen, which shows the same style across the whole mai
 |---|---|
 | SCOPE | Classic oscilloscope waveform (ProTracker-style pixel dots) |
 | FLAT | Blank bar (saves battery / CPU) |
-| OCTA | Mini-scopes side by side, one per active track |
-| OCTA.F | All 8 track scopes at once (active or not) |
+| OCTA | Mini-scopes side by side, one per active track; on VI, stacked lanes with the wave repeated across each |
+| OCTA.F | All 8 track scopes at once (active or not); on VI, eight rings, one per track |
 | SPECT | 40-bin FFT spectrum |
 | SPCT.P | FFT spectrum with peak-hold dots |
 | COPPR | Copper bars swinging to each track |

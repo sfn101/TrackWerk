@@ -91,9 +91,13 @@ private:
     void draw_bar_amps(Canvas& c, int x, int y, const float* amps, const Theme& t, bool peak_mode);
 
     // One waveform as pixel dots, one fill per column; SCOPE and each OCTA lane share it.
-    // `record`, if given, receives each block's dot row (the phosphor history below).
+    // `record`, if given, receives each block's dot row (the phosphor history below). `repeats` > 1
+    // shows the wave that many times across, every other copy mirrored so they join without a seam:
+    // a wide VI lane keeps the strip lane's density instead of one stretched copy.
     void draw_wave_dots(Canvas& c, int scope_x, int scope_w, const float* wave, int center_y,
-                        int max_amplitude, Argb color, int16_t* record = nullptr) const;
+                        int max_amplitude, Argb color, int16_t* record = nullptr, int repeats = 1) const;
+    // OCTA.F on VI: the eight tracks as rings, each wave running round its ring at the strip's density.
+    void draw_octa_rings(Canvas& c, int x, int y, const float* tracks, const Theme& t) const;
 
     // SCOPE on a Scene look: the two previous traces glow on behind the current one, like phosphor
     // on a tube. Only frames that are drawn anyway carry it (the strip redraws while audio sounds);

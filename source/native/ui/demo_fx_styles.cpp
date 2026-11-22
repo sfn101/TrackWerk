@@ -117,7 +117,9 @@ void fire(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, co
             for (int col = 0; col < cols; ++col)
                 at(rows - 1, col) = (mix32(tick * 7919U + uint32_t(col)) & 255) > 90 ? uint8_t(std::min(255, heat)) : 0;
             // Each cell cools a little as it rises; more drive, taller flames.
-            const int cool = std::max(1, int(190.f * (1.35f - .8f * mu.drive)) / rows);
+            // Cooling per row scales with the rows, so VI's flames would stay as low as the strip's; a
+            // little less there lets them climb its height.
+            const int cool = std::max(1, int((rows > 30 ? 140.f : 190.f) * (1.35f - .8f * mu.drive)) / rows);
             for (int r = 0; r < rows - 1; ++r)
                 for (int col = 0; col < cols; ++col) {
                     const int below = at(r + 1, col), left = at(r + 1, std::max(0, col - 1));
@@ -162,7 +164,8 @@ void rain(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, co
 
 void twister(Canvas& c, int x, int y, int w, int h, const Theme& t, const Music& mu) {
     const int count = std::clamp(w / 280, 1, 3);
-    const float radius = std::max(6.f, std::min(float(h) * .42f, float(w) / float(count * 4))) * (1.f + .12f * mu.kick);
+    const float radius = std::max(6.f, std::min(float(h) * .42f, float(w) / float(count * (h > 100 ? 2.6f : 4.f)))) *
+                         (1.f + .12f * mu.kick);
     const Argb faces[4] = {ramp(t, 170), t.vizWave, ramp(t, 230), t.rowSelection};
     for (int i = 0; i < count; ++i) {
         const int cx = x + (2 * i + 1) * w / (2 * count);
@@ -310,7 +313,8 @@ void cube(Canvas& c, int x, int y, int w, int h, const Theme& t, const Music& mu
     static constexpr int kEdges[12][2] = {{0, 1}, {1, 3}, {3, 2}, {2, 0}, {4, 5}, {5, 7},
                                           {7, 6}, {6, 4}, {0, 4}, {1, 5}, {2, 6}, {3, 7}};
     const int n = copies_for(w, h);
-    const float scale = float(std::min(h, w / n)) * .17f * (1.f + .45f * mu.kick);
+    // One big shape on VI, a row of small ones in the strip (copies_for).
+    const float scale = float(std::min(h, w / n)) * (n == 1 ? .23f : .17f) * (1.f + .45f * mu.kick);
     for (int i = 0; i < n; ++i) {
         const int cx = x + (2 * i + 1) * w / (2 * n), cy = y + h / 2;
         for (int shape = 0; shape < 2; ++shape) {   // the outer cube, then an inner one turning the other way
@@ -330,7 +334,7 @@ void cube(Canvas& c, int x, int y, int w, int h, const Theme& t, const Music& mu
 // A wireframe globe with spikes all over it that shoot out with the song; a hit throws them long.
 void globe(Canvas& c, int x, int y, int w, int h, const Theme& t, const Music& mu) {
     const int n = copies_for(w, h);
-    const float scale = float(std::min(h, w / n)) * .27f;
+    const float scale = float(std::min(h, w / n)) * (n == 1 ? .34f : .27f);
     for (int i = 0; i < n; ++i) {
         const int cx = x + (2 * i + 1) * w / (2 * n), cy = y + h / 2;
         const float yaw = mu.clock * .0008f + i, tilt = .35f;
@@ -403,7 +407,7 @@ void terrain(Canvas& c, int x, int y, int w, int h, const Theme& t, const float*
 void torus(Canvas& c, int x, int y, int w, int h, const Theme& t, const Music& mu) {
     constexpr int kMajor = 18, kMinor = 10;
     const int n = copies_for(w, h);
-    const float scale = float(std::min(h, w / n)) * .26f * (1.f + .15f * mu.kick);
+    const float scale = float(std::min(h, w / n)) * (n == 1 ? .42f : .26f) * (1.f + .15f * mu.kick);
     for (int i = 0; i < n; ++i) {
         const int cx = x + (2 * i + 1) * w / (2 * n), cy = y + h / 2;
         const float ax = mu.clock * .0007f + i, ay = mu.clock * .0011f, az = mu.clock * .0004f;
@@ -429,14 +433,15 @@ void torus(Canvas& c, int x, int y, int w, int h, const Theme& t, const Music& m
 
 // A ball of dots; a ripple runs over it with the song and a hit blows the dots out.
 void dotball(Canvas& c, int x, int y, int w, int h, const Theme& t, const Music& mu) {
-    constexpr int kDots = 96;
+    constexpr int kMaxDots = 200;
     const int n = copies_for(w, h);
-    const float scale = float(std::min(h, w / n)) * .3f;
+    const int kDots = n == 1 ? kMaxDots : 96;   // a fuller ball on VI
+    const float scale = float(std::min(h, w / n)) * (n == 1 ? .4f : .3f);
     for (int i = 0; i < n; ++i) {
         const int cx = x + (2 * i + 1) * w / (2 * n), cy = y + h / 2;
         const float ax = mu.clock * .0006f + i, ay = mu.clock * .0010f;
-        P2 p[kDots];
-        int order[kDots];
+        P2 p[kMaxDots];
+        int order[kMaxDots];
         for (int d = 0; d < kDots; ++d) {
             // A Fibonacci sphere: the dots spread evenly over the surface.
             const float k = (float(d) + .5f) / kDots, lat = std::acos(1.f - 2.f * k), lon = float(d) * 2.39996f;

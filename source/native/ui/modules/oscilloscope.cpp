@@ -76,6 +76,8 @@ void OscilloscopeModule::draw_sized(Canvas& c, int x, int y, int w, int h, const
 }
 
 namespace {
+constexpr float kPiF = 3.14159265f;
+
 // Loudness of a waveform window, 0…1 (RMS, lifted so a quiet mix still moves the effect).
 float energy(const float* wave) {
     if (!wave) return 0.f;
@@ -173,7 +175,7 @@ void OscilloscopeModule::draw_graticule(Canvas& c, int x, int y, const Theme& t)
 
 void OscilloscopeModule::draw_wave_dots(Canvas& c, int scope_x, int scope_w, const float* wave,
                                         int center_y, int max_amplitude, Argb color,
-                                        int16_t* record) const {
+                                        int16_t* record, int repeats) const {
     // Time zoom: the centred WAVEFORM_SIZE/Z samples across the strip.
     constexpr int N          = SCOPE_PIXEL_BLOCK;
     const int     windowSize = WAVEFORM_SIZE / SCOPE_TIME_ZOOM;
@@ -184,8 +186,14 @@ void OscilloscopeModule::draw_wave_dots(Canvas& c, int scope_x, int scope_w, con
     for (int bx = 0; bx < scope_w; bx += N) {
         const int blockW = (bx + N <= scope_w) ? N : (scope_w - bx);
         const int col    = bx + blockW / 2;
-        const int srcIdx = windowBase + static_cast<int>((static_cast<long long>(col) * windowSize) /
-                                                         scope_w);
+        int srcIdx = windowBase + static_cast<int>((static_cast<long long>(col) * windowSize) / scope_w);
+        if (repeats > 1) {
+            const long long along = static_cast<long long>(col) * repeats;
+            const int copy = static_cast<int>(along / scope_w);
+            int i = static_cast<int>(((along % scope_w) * windowSize) / scope_w);
+            if (copy & 1) i = windowSize - 1 - i;   // mirrored: it starts where the last copy ended
+            srcIdx = windowBase + i;
+        }
         // A null buffer is silence: every block on the centre line.
         // A soft limit, not a hard clip: quiet parts as before, loud ones round off short of the edge.
         const float sample = wave ? .85f * std::tanh(wave[srcIdx] * WAVEFORM_GAIN) : 0.0f;
@@ -244,6 +252,12 @@ void OscilloscopeModule::draw_octa(Canvas& c, int x, int y, const float* tracks,
         if ((mask >> i) & 1) activeTracks[count++] = i;
     }
     if (count == 0) return;
+    if (rows && t.visualizerType == VisualizerType::OCTA_FULL) {
+        draw_octa_rings(c, x, y, tracks, t);
+        return;
+    }
+    // On VI each lane repeats the wave as often as a strip lane of the same count fits across it.
+    const int stripLane = (WIDTH - OCTA_TRACK_GAP * (count - 1)) / count;
 
     for (int idx = 0; idx < count; ++idx) {
         int lx, ly, lw, lh;
@@ -251,7 +265,40 @@ void OscilloscopeModule::draw_octa(Canvas& c, int x, int y, const float* tracks,
         const float* wave = tracks + static_cast<size_t>(activeTracks[idx]) * WAVEFORM_SIZE;
         c.fill_rect(lx, ly, lw, lh, t.vizBackground);
         c.fill_rect(lx, ly + lh / 2, lw, 1, t.vizCenterLine);
-        draw_wave_dots(c, lx, lw, wave, ly + lh / 2, lh / 2 - 4, t.vizWave);
+        draw_wave_dots(c, lx, lw, wave, ly + lh / 2, lh / 2 - 4, t.vizWave, nullptr,
+                       rows ? std::max(1, (lw + stripLane / 2) / stripLane) : 1);
+    }
+}
+
+void OscilloscopeModule::draw_octa_rings(Canvas& c, int x, int y, const float* tracks, const Theme& t) const {
+    const int cx = x + w_ / 2, cy = y + h_ / 2;
+    const float maxR = float(std::min(w_, h_)) * .5f - 6.f;
+    const float stretch = std::min(1.4f, float(w_) / float(h_));   // a wide area: ellipses, filling it
+    const float gap = maxR * .78f / float(TRACK_WAVEFORM_COUNT);
+    const int stripLane = (WIDTH - OCTA_TRACK_GAP * (TRACK_WAVEFORM_COUNT - 1)) / TRACK_WAVEFORM_COUNT;
+    constexpr int windowSize = WAVEFORM_SIZE / SCOPE_TIME_ZOOM, windowBase = (WAVEFORM_SIZE - windowSize) / 2;
+    for (int lane = 0; lane < TRACK_WAVEFORM_COUNT; ++lane) {
+        const float* wave = tracks + static_cast<size_t>(lane) * WAVEFORM_SIZE;
+        const float r = maxR * .22f + gap * float(lane);
+        // The wave as often round the ring as strip lanes fit along it, an even number so it closes.
+        const float around = 2.f * kPiF * r * (1.f + stretch) * .5f;
+        const int repeats = std::max(2, int(around / float(stripLane)) & ~1);
+        const int points = std::max(48, int(around / 2.f));
+        const Argb ink = mix_rgb(t.vizCenterLine, t.vizWave, 45 + lane * 55 / (TRACK_WAVEFORM_COUNT - 1));
+        int px = 0, py = 0;
+        for (int p = 0; p <= points; ++p) {
+            const float a = float(p % points) / float(points);
+            const float along = a * float(repeats);
+            const int copy = int(along);
+            float in = along - float(copy);
+            if (copy & 1) in = 1.f - in;
+            const int idx = windowBase + std::min(windowSize - 1, int(in * float(windowSize)));
+            const float sample = .85f * std::tanh(wave[idx] * WAVEFORM_GAIN);
+            const float rr = r + sample * gap * .48f;
+            const int nx = cx + int(std::cos(a * 2.f * kPiF) * rr * stretch), ny = cy + int(std::sin(a * 2.f * kPiF) * rr);
+            if (p) c.line(px, py, nx, ny, ink);
+            px = nx; py = ny;
+        }
     }
 }
 

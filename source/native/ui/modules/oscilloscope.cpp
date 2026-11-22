@@ -103,7 +103,7 @@ void OscilloscopeModule::draw_demo(Canvas& c, int x, int y, const OscilloscopeSt
                     bars[count++] = std::min(1.f, energy(s.trackWaveforms + static_cast<size_t>(track) * WAVEFORM_SIZE) *
                                                   mu.gain * (1.f + .5f * mu.kick));
             if (count == 0) { bars[0] = .1f; count = 1; }
-            demo_fx::copper(c, x, y, w_, h_, t, clock, bars, count);
+            demo_fx::copper(c, x, y, w_, h_, t, static_cast<uint64_t>(mu.clock * .55f), bars, count);   // calmer swing
             break;
         }
         case VisualizerType::STARFIELD:
@@ -187,7 +187,8 @@ void OscilloscopeModule::draw_wave_dots(Canvas& c, int scope_x, int scope_w, con
         const int srcIdx = windowBase + static_cast<int>((static_cast<long long>(col) * windowSize) /
                                                          scope_w);
         // A null buffer is silence: every block on the centre line.
-        const float sample = wave ? clampf(wave[srcIdx] * WAVEFORM_GAIN, -1.0f, 1.0f) : 0.0f;
+        // A soft limit, not a hard clip: quiet parts as before, loud ones round off short of the edge.
+        const float sample = wave ? .85f * std::tanh(wave[srcIdx] * WAVEFORM_GAIN) : 0.0f;
         int         dotY   = center_y + static_cast<int>(sample * static_cast<float>(max_amplitude));
         // Snap the block to an N-px grid aligned on the centre line.
         dotY = center_y + ((dotY - center_y) / N) * N;

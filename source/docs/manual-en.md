@@ -173,8 +173,8 @@ A + LEFT/RIGHT on the VI screen, which shows the same style across the whole mai
 | TWIST | A twisting four-sided bar |
 | RINGS | A shockwave on every hit, the core shaped by the waveform |
 | KALEI | A kaleidoscope: a flowing pattern in six mirrored slices, zooming in on each hit |
-| BLOBS | Metaballs drifting and merging |
-| ROTO | A rotating, zooming checker plane |
+| BLOBS | Soft drops of liquid drifting and merging where they touch |
+| MAZE | A maze seen through a slowly turning, breathing lens |
 | CUBE | Two nested wireframe cubes |
 | GLOBE | A wireframe globe with spikes that shoot out with the music |
 | LAND | A wireframe landscape flying by under a striped sun; the music raises the hills |

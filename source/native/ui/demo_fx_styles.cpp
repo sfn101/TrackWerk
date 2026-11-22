@@ -1,5 +1,5 @@
 // The fourteen visualizer styles after PLASMA (specs/more-visualizers.md): classic demoscene effects
-// written for TrackWerk's software canvas. Eight are flat (TUNNEL … ROTOZOOM), six are light 3D
+// written for TrackWerk's software canvas. Eight are flat (TUNNEL … MAZE), six are light 3D
 // wireframes and dots (CUBE … RIDGES). All draw in the theme's own colours through ramp() and the
 // theme's accents, inside the box they are given (the caller clips), with no allocation.
 //
@@ -74,7 +74,7 @@ void line(Canvas& c, P2 a, P2 b, Argb ink) { c.line(a.x, a.y, b.x, b.y, ink); }
 void tunnel(Canvas& c, int x, int y, int w, int h, const Theme& t, const Music& mu) {
     const int cell = cell_for(w, h);
     const float reach = std::max(1.f, std::min(w, h) * .65f);
-    const float spin = mu.clock * .00012f, travel = mu.clock * .04f;
+    const float spin = mu.clock * .00008f, travel = mu.clock * .022f;
     const float swayX = std::sin(mu.clock * .00045f) * w * .14f, swayY = std::cos(mu.clock * .00031f) * h * .14f;
     const float squeeze = 1.f + .4f * mu.kick;
     for (int py = 0; py < h; py += cell)
@@ -95,7 +95,7 @@ void tunnel(Canvas& c, int x, int y, int w, int h, const Theme& t, const Music& 
 }
 
 // Classic fire, stepped at a calm 30 steps a second whatever the frame rate; the song lifts the
-// flames, and a hit throws a burst of sparks up through them.
+// flames and a hit flares them.
 void fire(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, const Music& mu, EffectMemory& m) {
     const int cell = 4;
     const int cols = std::min(w / cell + 1, EffectMemory::kFireCols);
@@ -113,15 +113,9 @@ void fire(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, co
         for (int steps = 0; m.fireAcc >= 33.f && steps < 3; ++steps) {
             m.fireAcc -= 33.f;
             const uint32_t tick = ++m.fireTick;
-            const int heat = 150 + int(mu.drive * 80.f + mu.kick * 25.f);
+            const int heat = 150 + int(mu.drive * 70.f + mu.kick * 35.f);
             for (int col = 0; col < cols; ++col)
                 at(rows - 1, col) = (mix32(tick * 7919U + uint32_t(col)) & 255) > 90 ? uint8_t(std::min(255, heat)) : 0;
-            // Sparks: on a hit, hot cells thrown a third of the way up.
-            if (mu.kick > .3f)
-                for (int k = 0; k < cols / 6; ++k) {
-                    const uint32_t r = mix32(tick * 31U + uint32_t(k));
-                    at(rows - 1 - int(r % uint32_t(std::max(1, rows / 3))), int((r >> 8) % uint32_t(cols))) = 255;
-                }
             // Each cell cools a little as it rises; more drive, taller flames.
             const int cool = std::max(1, int(190.f * (1.35f - .8f * mu.drive)) / rows);
             for (int r = 0; r < rows - 1; ++r)
@@ -168,13 +162,13 @@ void rain(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, co
 
 void twister(Canvas& c, int x, int y, int w, int h, const Theme& t, const Music& mu) {
     const int count = std::clamp(w / 280, 1, 3);
-    const float radius = std::max(6.f, std::min(float(h) * .42f, float(w) / float(count * 4))) * (1.f + .3f * mu.kick);
+    const float radius = std::max(6.f, std::min(float(h) * .42f, float(w) / float(count * 4))) * (1.f + .12f * mu.kick);
     const Argb faces[4] = {ramp(t, 170), t.vizWave, ramp(t, 230), t.rowSelection};
     for (int i = 0; i < count; ++i) {
         const int cx = x + (2 * i + 1) * w / (2 * count);
         for (int py = 0; py < h; py += 2) {
-            const float a = std::sin(float(py) * .018f + mu.clock * .0012f + float(i) * 1.7f) * (.8f + 2.2f * mu.drive) +
-                            mu.clock * .0009f;
+            const float a = std::sin(float(py) * .018f + mu.clock * .0012f + float(i) * 1.7f) * (.7f + 1.f * mu.drive) +
+                            mu.clock * .0007f;
             int xs[5];
             for (int k = 0; k < 5; ++k) xs[k] = cx + int(std::sin(a + float(k) * kPi * .5f) * radius);
             for (int k = 0; k < 4; ++k) {
@@ -257,15 +251,17 @@ void kaleido(Canvas& c, int x, int y, int w, int h, const Theme& t, const Music&
         }
 }
 
+// Metaballs: soft drops of liquid drifting slowly, merging where they touch, a thin bright skin at
+// the edge; the song swells them a little.
 void blobs(Canvas& c, int x, int y, int w, int h, const Theme& t, const Music& mu) {
     const int cell = cell_for(w, h);
-    constexpr int kBlobs = 5;
+    constexpr int kBlobs = 6;
     float bx[kBlobs], by[kBlobs], rr[kBlobs];
-    const float size = float(std::min(w, h)) * (.16f + .1f * mu.drive + .12f * mu.kick);
+    const float size = float(std::min(w, h)) * (.075f + .02f * mu.drive + .015f * mu.kick);
     for (int k = 0; k < kBlobs; ++k) {
-        bx[k] = w * (.5f + .38f * std::sin(mu.clock * (.0004f + k * .00013f) + k * 1.3f));
-        by[k] = h * (.5f + .36f * std::cos(mu.clock * (.0005f + k * .00011f) + k * 2.1f));
-        rr[k] = size * size * (.6f + .1f * k);
+        bx[k] = w * (.5f + .4f * std::sin(mu.clock * (.00018f + k * .00005f) + k * 1.3f));
+        by[k] = h * (.5f + .38f * std::cos(mu.clock * (.00022f + k * .00004f) + k * 2.1f));
+        rr[k] = size * size * (.7f + .12f * k);
     }
     for (int py = 0; py < h; py += cell)
         for (int px = 0; px < w; px += cell) {
@@ -274,26 +270,35 @@ void blobs(Canvas& c, int x, int y, int w, int h, const Theme& t, const Music& m
                 const float dx = px - bx[k], dy = py - by[k];
                 f += rr[k] / (dx * dx + dy * dy + 1.f);
             }
-            int shade;
-            if (f < .7f) shade = int(f * 110.f);
-            else if (f < 1.f) shade = 240;                 // the bright rim
-            else shade = std::min(255, 140 + int(f * 25.f) + int(mu.kick * 50.f));
-            c.fill_rect(x + px, y + py, std::min(cell, w - px), std::min(cell, h - py),
-                        f >= .7f && f < 1.f ? mix_rgb(t.vizWave, t.textValue, 40 + int(mu.kick * 60.f)) : ramp(t, shade));
+            Argb ink;
+            if (f < .6f) ink = ramp(t, int(f * 70.f));                        // the glow around a drop
+            else if (f < .74f) ink = mix_rgb(ramp(t, 140), t.vizWave, 55 + int(mu.kick * 30.f));   // its thin skin
+            else ink = ramp(t, std::min(150, 85 + int((f - .74f) * 30.f)));    // inside, darker toward the edge
+            c.fill_rect(x + px, y + py, std::min(cell, w - px), std::min(cell, h - py), ink);
         }
 }
 
-void rotozoom(Canvas& c, int x, int y, int w, int h, const Theme& t, const Music& mu) {
+// A maze (the classic one-line diagonal maze) seen through a slowly turning, breathing lens; a hit
+// leans the lens in and lights the walls.
+void maze(Canvas& c, int x, int y, int w, int h, const Theme& t, const Music& mu) {
     const int cell = cell_for(w, h);
-    const float a = mu.clock * .0004f, zoom = (1.6f + std::sin(mu.clock * .0005f) * .7f) * (1.f - .45f * mu.kick);
-    const float ca = std::cos(a) * zoom, sa = std::sin(a) * zoom, drift = mu.clock * .04f;
+    constexpr int kTile = 40, kWall = 5;
+    const float a = mu.clock * .00012f;
+    const float zoom = (1.1f + .45f * std::sin(mu.clock * .00017f)) * (1.f - .18f * mu.kick);
+    const float ca = std::cos(a) * zoom, sa = std::sin(a) * zoom;
+    const float driftX = mu.clock * .012f, driftY = mu.clock * .007f;
+    const Argb wall = mix_rgb(t.vizWave, t.textValue, int(mu.kick * 50.f)), floorInk = ramp(t, 40);
     for (int py = 0; py < h; py += cell)
         for (int px = 0; px < w; px += cell) {
-            const float dx = px - w * .5f, dy = py - h * .5f;
-            const int u = int(dx * ca - dy * sa + drift + 4096.f), v = int(dx * sa + dy * ca + 4096.f);
-            const int square = ((u >> 4) ^ (v >> 4)) & 1;
-            const int shade = (square ? 170 + int(mu.drive * 50.f) : 60) + ((u & 15) + (v & 15)) * 2 + int(mu.kick * 40.f);
-            c.fill_rect(x + px, y + py, std::min(cell, w - px), std::min(cell, h - py), ramp(t, std::min(255, shade)));
+            const float dx = px + cell * .5f - w * .5f, dy = py + cell * .5f - h * .5f;
+            const int u = int(dx * ca - dy * sa + driftX + 65536.f), v = int(dx * sa + dy * ca + driftY + 65536.f);
+            const int fu = u % kTile, fv = v % kTile;
+            // Each tile holds one diagonal, this way or that; together they make the maze.
+            const bool slash = mix32(uint32_t(u / kTile) * 73856093U ^ uint32_t(v / kTile) * 19349663U) & 1;
+            const int off = slash ? std::abs(fu - fv) : std::abs(fu + fv - kTile);
+            Argb ink = floorInk;
+            if (off < kWall) ink = wall;
+            c.fill_rect(x + px, y + py, std::min(cell, w - px), std::min(cell, h - py), ink);
         }
 }
 
@@ -463,7 +468,7 @@ void ridges(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, 
         for (int i = 0; i < kPoints; ++i) {
             float sum = 0.f;
             for (int k = 0; k < 4; ++k) sum += wave_at(wave, (float(i) * 4.f + float(k)) / float(kPoints * 4));
-            m.ridges[m.ridgeHead][i] = int8_t(std::clamp(int(sum * 40.f * mu.gain), -127, 127));
+            m.ridges[m.ridgeHead][i] = int8_t(std::clamp(int(sum * 30.f * std::min(mu.gain, 1.8f)), -127, 127));
         }
     }
     const int cx = x + w / 2;
@@ -471,8 +476,8 @@ void ridges(Canvas& c, int x, int y, int w, int h, const Theme& t, uint64_t ms, 
         const auto& row = m.ridges[(m.ridgeHead - k + kRows) % kRows];
         const float shrink = 1.f - float(k) * .022f;
         const int base = y + h - 4 - k * (h - 12) / kRows;
-        const float amp = float(h) * .22f;
-        const Argb ink = mix_rgb(ramp(t, 70), k == 0 ? mix_rgb(t.vizWave, t.textValue, int(mu.kick * 100.f)) : t.vizWave,
+        const float amp = float(h) * .17f;
+        const Argb ink = mix_rgb(ramp(t, 70), k == 0 ? mix_rgb(t.vizWave, t.textValue, int(mu.kick * 35.f)) : t.vizWave,
                                  100 - k * 100 / kRows);
         int px = 0, py = 0;
         for (int i = 0; i < kPoints; ++i) {
@@ -508,8 +513,8 @@ Music listen(EffectMemory& m, uint64_t ms, float e) {
         const float norm = std::min(1.f, m.level / std::max(.08f, m.peak));
         m.slowNorm += (norm - m.slowNorm) * std::min(1.f, dt / 500.f);
         m.kick = std::max(m.kick * std::exp(-dt / 220.f), std::clamp((norm - m.slowNorm) * 3.5f, 0.f, 1.f));
-        // Forward only: 0.5x in silence, faster as the song drives, a rush on a hit (at most 4x).
-        m.musicClock += dt * (.5f + 1.8f * drive_of() + 1.7f * m.kick);
+        // Forward only: 0.5x in silence, faster as the song drives, a rush on a hit (at most 2.9x).
+        m.musicClock += dt * (.5f + 1.3f * drive_of() + 1.1f * m.kick);
     }
     return {m.musicClock, drive_of(), m.kick, std::clamp(.6f / std::max(.1f, m.peak), 1.f, 4.f)};
 }
@@ -527,7 +532,7 @@ void style(Canvas& c, int x, int y, int w, int h, const Theme& t, VisualizerType
         case VisualizerType::RINGS:     rings(c, x, y, w, h, t, wave, mu, memory); break;
         case VisualizerType::KALEIDO:   kaleido(c, x, y, w, h, t, mu); break;
         case VisualizerType::BLOBS:     blobs(c, x, y, w, h, t, mu); break;
-        case VisualizerType::ROTOZOOM:  rotozoom(c, x, y, w, h, t, mu); break;
+        case VisualizerType::MAZE:      maze(c, x, y, w, h, t, mu); break;
         case VisualizerType::CUBE:      cube(c, x, y, w, h, t, mu); break;
         case VisualizerType::GLOBE:     globe(c, x, y, w, h, t, mu); break;
         case VisualizerType::TERRAIN:   terrain(c, x, y, w, h, t, wave, mu); break;

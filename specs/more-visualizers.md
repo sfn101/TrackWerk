@@ -20,7 +20,7 @@ Appended to `VisualizerType` after PLASMA (settings and themes store the number,
 | RINGS | RINGS | A shockwave on every hit, faint rings between, the core shaped by the waveform |
 | KALEI | KALEIDO | A kaleidoscope: a flowing pattern in six mirrored slices, zooming in on each hit |
 | BLOBS | BLOBS | Metaballs drifting and merging |
-| ROTO | ROTOZOOM | A rotating, zooming checker plane |
+| MAZE | MAZE | A maze seen through a slowly turning, breathing lens (replaced the checker rotozoom) |
 | CUBE | CUBE | Two nested wireframe cubes (light 3D) |
 | GLOBE | GLOBE | A wireframe globe with spikes that shoot out with the music |
 | LAND | TERRAIN | A wireframe landscape flying by; the music raises the hills |
@@ -35,7 +35,7 @@ Appended to `VisualizerType` after PLASMA (settings and themes store the number,
 - **Light:** software canvas, cells of 4-6 px for per-pixel effects, a few hundred lines for 3D, no
   allocation while drawing, fixed-size state for FIRE and RIDGES. Each frame well under the cost of
   PLASMA at the same size.
-- **Smooth, dramatic, and with the song (changed 2026-11-21 after two hand tests):** motion never jumps. Each visualizer listens through one shared step (`demo_fx::listen`): the loudness smoothed and measured against the song's own recent peak (so a quiet song drives as hard as a loud one, and a loud one cannot overreact); a kick that punches on each hit and fades in about a quarter second; and a music clock that only moves forward, 0.5× in silence, faster as the song drives, with a rush on each hit (at most 4×). Every style uses all of it, upstream's COPPER, STARFIELD and PLASMA too (their look unchanged), and a hit adds a faint flash. LISSAJOUS, too faint to read as dramatic, was replaced by KALEIDO; RINGS fires a shockwave per hit; GLOBE grows spikes. Upstream's own styles are never removed.
+- **Smooth, dramatic, and with the song (changed 2026-11-21 after two hand tests):** motion never jumps. Each visualizer listens through one shared step (`demo_fx::listen`): the loudness smoothed and measured against the song's own recent peak (so a quiet song drives as hard as a loud one, and a loud one cannot overreact); a kick that punches on each hit and fades in about a quarter second; and a music clock that only moves forward, 0.5× in silence, faster as the song drives, with a rush on each hit (at most 4×). Every style uses all of it, upstream's COPPER, STARFIELD and PLASMA too (their look unchanged), and a hit adds a faint flash. LISSAJOUS, too faint to read as dramatic, was replaced by KALEIDO; RINGS fires a shockwave per hit; GLOBE grows spikes. Upstream's own styles are never removed. Third hand test: everything a little calmer (at most 2.9× on a hit), BLOBS small soft drops with a thin skin, TWIST and RIDGE toned down, FIRE without stray hot spots, COPPER's swing slower, ROTOZOOM replaced by MAZE (the one-line diagonal maze through a slowly turning lens), and SCOPE / OCTA soft-limited so a loud song rounds off short of the edge instead of clipping.
 - **Still when stopped:** like COPPER, STARFIELD and PLASMA, they hold their last frame while no song
   plays (or with Motion off).
 - Any size: the 620×70 strip, the 834-wide strip in 16:9, and VI.

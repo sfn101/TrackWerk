@@ -36,7 +36,7 @@ inline const char* visualizer_serial_name(VisualizerType v) {
         case VisualizerType::RINGS:         return "RINGS";
         case VisualizerType::KALEIDO:       return "KALEIDO";
         case VisualizerType::BLOBS:         return "BLOBS";
-        case VisualizerType::ROTOZOOM:      return "ROTOZOOM";
+        case VisualizerType::MAZE:          return "MAZE";
         case VisualizerType::CUBE:          return "CUBE";
         case VisualizerType::GLOBE:         return "GLOBE";
         case VisualizerType::TERRAIN:       return "TERRAIN";
@@ -64,7 +64,7 @@ inline VisualizerType visualizer_from_serial_name(const std::string& s) {
     if (s == "RINGS")          return VisualizerType::RINGS;
     if (s == "KALEIDO")        return VisualizerType::KALEIDO;
     if (s == "BLOBS")          return VisualizerType::BLOBS;
-    if (s == "ROTOZOOM")       return VisualizerType::ROTOZOOM;
+    if (s == "MAZE")           return VisualizerType::MAZE;
     if (s == "CUBE")           return VisualizerType::CUBE;
     if (s == "GLOBE")          return VisualizerType::GLOBE;
     if (s == "TERRAIN")        return VisualizerType::TERRAIN;

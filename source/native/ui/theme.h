@@ -15,7 +15,7 @@ using Argb = uint32_t;  // 0xAARRGGBB
 // visualizers (ui/demo_fx.h).
 enum class VisualizerType { SCOPE, FLAT, OCTA, OCTA_FULL, SPECTRUM, SPECTRUM_PEAKS, COPPER, STARFIELD, PLASMA,
                             // specs/more-visualizers.md: the demo styles after PLASMA (ui/demo_fx_styles.cpp)
-                            TUNNEL, FIRE, RAIN, TWISTER, RINGS, KALEIDO, BLOBS, ROTOZOOM, CUBE, GLOBE, TERRAIN, TORUS, DOTBALL, RIDGES };
+                            TUNNEL, FIRE, RAIN, TWISTER, RINGS, KALEIDO, BLOBS, MAZE, CUBE, GLOBE, TERRAIN, TORUS, DOTBALL, RIDGES };
 
 enum class StepGridStyle { OFF, BEATS, GRID, DOTS };
 

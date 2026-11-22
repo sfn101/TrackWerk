@@ -222,11 +222,11 @@ int main(int argc, char** argv) {
                            f % 2 ? loud.data() : nullptr, f % 2 ? 1.f : 0.f, mem);
             const float step = mem.musicClock - lastClock;
             if (f > 1 && step <= 0.f) forward = false;
-            if (f > 1 && (step < 16.f * .6f - .01f || step > 16.f * 2.f + .01f)) bounded = false;
+            if (f > 1 && (step < 16.f * .5f - .01f || step > 16.f * 4.f + .01f)) bounded = false;
             if (mem.kick < 0.f || mem.kick > 1.f) kickOk = false;
             lastClock = mem.musicClock;
         }
-        check(forward && bounded, "the music clock only moves forward, 0.6x to 2x, with the loudness flipping every frame");
+        check(forward && bounded, "the music clock only moves forward, 0.5x to 4x, with the loudness flipping every frame");
         check(kickOk, "the kick stays between 0 and 1");
         demo_fx::style(c, 10, 82, 499, 392, theme_classic(), VisualizerType::TUNNEL, 7000 + 300 * 16, loud.data(), 1.f, mem);
         check(mem.musicClock == lastClock, "stopped (the same clock): nothing moves");

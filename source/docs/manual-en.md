@@ -171,19 +171,21 @@ A + LEFT/RIGHT on the VI screen, which shows the same style across the whole mai
 | FIRE | Demoscene fire; louder music, taller flames |
 | RAIN | Columns of falling glyphs |
 | TWIST | A twisting four-sided bar |
-| RINGS | Rings flowing out of the centre, the inner one shaped by the waveform |
-| LISSA | A Lissajous figure bent by the waveform |
+| RINGS | A shockwave on every hit, the core shaped by the waveform |
+| KALEI | A kaleidoscope: a flowing pattern in six mirrored slices, zooming in on each hit |
 | BLOBS | Metaballs drifting and merging |
 | ROTO | A rotating, zooming checker plane |
 | CUBE | Two nested wireframe cubes |
-| GLOBE | A wireframe globe with an orbit |
+| GLOBE | A wireframe globe with spikes that shoot out with the music |
 | LAND | A wireframe landscape flying by under a striped sun; the music raises the hills |
 | TORUS | A wireframe torus |
 | BALLS | Vector balls on a turning sphere |
 | RIDGE | The waveform as stacked lines receding into the distance |
 
 COPPR to RIDGE are demo effects in your theme's colours. They move while a song plays and hold still
-when it stops (or with Appearance → Motion off). All of them are light, but on a slow handheld SCOPE
+when it stops (or with Appearance → Motion off). They follow the song smoothly: they move faster as it
+gets louder and surge on each hit, measured against the song's own loudness, so a quiet track moves
+them as much as a loud one. All of them are light, but on a slow handheld SCOPE
 or FLAT leaves the most room for the audio.
 
 **Main editor** — the active screen (PHRASE, CHAIN, SONG, etc.).

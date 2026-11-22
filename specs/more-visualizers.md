@@ -17,12 +17,12 @@ Appended to `VisualizerType` after PLASMA (settings and themes store the number,
 | FIRE | FIRE | Demoscene fire rising from the bottom; louder music, taller flames |
 | RAIN | RAIN | Columns of falling glyphs |
 | TWIST | TWISTER | A twisting four-sided bar |
-| RINGS | RINGS | Rings flowing out of the centre, the inner one shaped by the waveform |
-| LISSA | LISSAJOUS | A Lissajous figure bent by the waveform |
+| RINGS | RINGS | A shockwave on every hit, faint rings between, the core shaped by the waveform |
+| KALEI | KALEIDO | A kaleidoscope: a flowing pattern in six mirrored slices, zooming in on each hit |
 | BLOBS | BLOBS | Metaballs drifting and merging |
 | ROTO | ROTOZOOM | A rotating, zooming checker plane |
 | CUBE | CUBE | Two nested wireframe cubes (light 3D) |
-| GLOBE | GLOBE | A wireframe globe with an orbit, like the splash's |
+| GLOBE | GLOBE | A wireframe globe with spikes that shoot out with the music |
 | LAND | TERRAIN | A wireframe landscape flying by; the music raises the hills |
 | TORUS | TORUS | A wireframe torus |
 | BALLS | DOTBALL | Vector balls on a rotating sphere, sized and shaded by depth |
@@ -35,7 +35,7 @@ Appended to `VisualizerType` after PLASMA (settings and themes store the number,
 - **Light:** software canvas, cells of 4-6 px for per-pixel effects, a few hundred lines for 3D, no
   allocation while drawing, fixed-size state for FIRE and RIDGES. Each frame well under the cost of
   PLASMA at the same size.
-- **Smooth, and with the song (changed 2026-11-21 after the hand test):** motion never jumps. Each style moves on a music clock that runs faster when the song is loud (0.6× to 2×) but only forward; the loudness is smoothed; and a kick, from the loudness rising above its recent average, punches on a hit and fades in about a quarter second. The 3D shapes turn on that clock and swell on a hit (the torus tube, the globe's equator, the dot ball's ripple), FIRE steps at a calm 30 a second, and RAIN uses small glyphs.
+- **Smooth, dramatic, and with the song (changed 2026-11-21 after two hand tests):** motion never jumps. Each visualizer listens through one shared step (`demo_fx::listen`): the loudness smoothed and measured against the song's own recent peak (so a quiet song drives as hard as a loud one, and a loud one cannot overreact); a kick that punches on each hit and fades in about a quarter second; and a music clock that only moves forward, 0.5× in silence, faster as the song drives, with a rush on each hit (at most 4×). Every style uses all of it, upstream's COPPER, STARFIELD and PLASMA too (their look unchanged), and a hit adds a faint flash. LISSAJOUS, too faint to read as dramatic, was replaced by KALEIDO; RINGS fires a shockwave per hit; GLOBE grows spikes. Upstream's own styles are never removed.
 - **Still when stopped:** like COPPER, STARFIELD and PLASMA, they hold their last frame while no song
   plays (or with Motion off).
 - Any size: the 620×70 strip, the 834-wide strip in 16:9, and VI.

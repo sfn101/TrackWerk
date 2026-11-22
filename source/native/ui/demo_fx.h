@@ -42,10 +42,23 @@ struct EffectMemory {
     // How every style follows the song: a clock that runs faster when it is loud but never jumps,
     // the loudness smoothed, and a kick that punches on a hit and fades (demo_fx_styles.cpp listen()).
     uint64_t pulseMs = 0;
-    float    musicClock = 0.f, level = 0.f, slowLevel = 0.f, kick = 0.f;
+    float    musicClock = 0.f, level = 0.f, peak = 0.f, slowNorm = 0.f, kick = 0.f;
     float    fireAcc = 0.f;
     uint32_t fireTick = 0;
+    // RINGS: when each shockwave was fired (music-clock ms; < 0 = none), and whether the kick has
+    // fallen back since the last one.
+    float    ringBorn[8] = {-1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f};
+    int      ringNext = 0;
+    bool     kickArmed = true;
 };
+// How a visualizer follows the song (listen()). `clock`: ms that run faster when the song drives
+// (0.5x quiet, up to 4x on a hit) and only forward. `drive`: the loudness, smoothed and measured
+// against this song's own recent peak, so a quiet song drives as hard as a loud one and a loud one
+// cannot overreact (0-1). `kick`: 1 on a hit, fading in about a quarter second. `gain`: what lifts a
+// quiet waveform to a useful size (1-4).
+struct Music { float clock, drive, kick, gain; };
+// Once per new `ms` (the animation clock; still while stopped), from `energy`, the frame's loudness.
+Music listen(EffectMemory&, uint64_t ms, float energy);
 // TUNNEL and later: drawn by style().
 bool is_style(VisualizerType);
 // One of those styles in the box; `wave` the 620-sample waveform (null = silence), `energy` 0…1.

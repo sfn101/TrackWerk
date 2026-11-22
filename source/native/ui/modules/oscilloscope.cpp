@@ -90,30 +90,36 @@ void OscilloscopeModule::draw_demo(Canvas& c, int x, int y, const OscilloscopeSt
     const Theme& t = s.theme;
     Canvas::ClipScope clip(c, x, y, w_, h_);
     c.fill_rect(x, y, w_, h_, t.vizBackground);
-    const uint64_t ms = demoMs_;
+    // Every demo style follows the song through the same smoothing (demo_fx::listen): upstream's
+    // COPPER, STARFIELD and PLASMA run on its music clock and drive, with their own look.
+    const demo_fx::Music mu = demo_fx::listen(effects_, demoMs_, energy(s.waveform));
+    const uint64_t ms = demoMs_, clock = static_cast<uint64_t>(mu.clock);
     switch (t.visualizerType) {
         case VisualizerType::COPPER: {
             float bars[8] = {};
             int count = 0;
             for (int track = 0; track < 8; ++track)
                 if (s.trackWaveforms && ((s.activeTrackMask >> track) & 1))
-                    bars[count++] = energy(s.trackWaveforms + static_cast<size_t>(track) * WAVEFORM_SIZE);
+                    bars[count++] = std::min(1.f, energy(s.trackWaveforms + static_cast<size_t>(track) * WAVEFORM_SIZE) *
+                                                  mu.gain * (1.f + .5f * mu.kick));
             if (count == 0) { bars[0] = .1f; count = 1; }
-            demo_fx::copper(c, x, y, w_, h_, t, ms, bars, count);
+            demo_fx::copper(c, x, y, w_, h_, t, clock, bars, count);
             break;
         }
         case VisualizerType::STARFIELD:
             // The strip's density: 170 stars per 620×70, so a bigger area is not left empty.
-            demo_fx::starfield(c, x, y, w_, h_, t, ms, energy(s.waveform),
+            demo_fx::starfield(c, x, y, w_, h_, t, clock, .35f,   // fixed: the clock carries the song's speed
                                static_cast<int>(170LL * w_ * h_ / (WIDTH * HEIGHT)));
             break;
         case VisualizerType::PLASMA:
-            demo_fx::plasma(c, x, y, w_, h_, t, ms, 6, energy(s.waveform));
+            demo_fx::plasma(c, x, y, w_, h_, t, clock, 6, std::min(1.f, mu.drive + .5f * mu.kick));
             break;
         default:
             demo_fx::style(c, x, y, w_, h_, t, t.visualizerType, ms, s.waveform, energy(s.waveform), effects_);
             break;
     }
+    // A hit flashes the whole picture faintly, whichever style.
+    if (mu.kick > .05f) c.fill_rect(x, y, w_, h_, with_alpha(t.textValue, .1f * mu.kick * mu.kick));
     // Faint scanlines, and a dark band along the top where the status line is written.
     for (int py = y + 1; py < y + h_; py += 2) c.fill_rect(x, py, w_, 1, 0x30000000u);
     if (!strip()) return;

@@ -139,3 +139,5 @@ From the RG505 measurements (2026-11-22): at full CPU speed an 8-voice song uses
 10. **Per-instrument CPU meter and cost settings (Advanced Synth Studio, after item 1):** show how heavy each instrument is, and gather the settings that decide cost (Rings polyphony 1/2/4, voice and grain counts) in one place, marked as affecting CPU.
 11. **Stress-test song before 16 tracks:** a heavy song (many tracks of the heaviest instruments), measured at each power level on the RG505, for the real worst case before the 16-track item.
 12. **Lighter reverb option, only if item 1 shows the reverb is a hot spot:** a cheaper version of the big reverbs for live playback with the same settings; export keeps the full one.
+
+Dropped: changing sample rates (global, or Braids at 48 kHz: too much work, the engines stay as they are); reverse engineering Caustic (no gain, the techniques are known); PADsynth (optional, pads already exist); shared per-instrument effects (covered by "Per-track insert effects"); switching to Caustic's buffering for everything (low latency stays the default, SAFE covers the rest).

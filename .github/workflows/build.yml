@@ -68,6 +68,7 @@ jobs:
         run: |
           python3 tests/brick-launcher/check_program_updater.py
           python3 tests/brick-launcher/check_preset_preparer.py
+          python3 tests/brick-launcher/check_preset_library.py
           python3 tests/r36s-launcher/check_launcher.py
 
   windows:

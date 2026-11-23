@@ -19,6 +19,7 @@ if mode in ('wait','no-frame','hang'):
  if mode!='hang':signal.signal(signal.SIGTERM,stop)
  while True:time.sleep(.02)
 if mode=='long-ready':time.sleep(2.3)
+if mode=='normal' and Path('factory/Presets').exists():time.sleep(.7)
 sys.exit(int(os.environ.get('PTE_TEST_RC','0')))
 '''
 class Launcher(unittest.TestCase):
@@ -28,6 +29,7 @@ class Launcher(unittest.TestCase):
   self.script=self.ports/'TrackWerk.sh';shutil.copyfile(LAUNCHER,self.script)
   self.binary=self.app/'trackwerk.aarch64';self.binary.write_text(NATIVE);self.binary.chmod(0o644)
   self.tools=self.app/'tools';self.tools.mkdir();(self.tools/'cacert.pem').write_text('fixture')
+  shutil.copyfile(LAUNCHER.parents[2]/'tools/release/prepare_presets.py',self.tools/'prepare_presets.py')
   for name in ['qjs','yt-dlp','pte-iphone-usb','pte-iphone-pair','pte-usbmuxd']:(self.tools/name).write_text('#!/bin/sh\nexit 0\n')
   self.data=self.app/'data';self.data.mkdir();(self.data/'own.ptp').write_text('KEEP')
   self.snapshot=self.root/'snapshot.json';self.log=self.app/'log.txt';self.home=self.root/'home';self.home.mkdir()
@@ -47,8 +49,12 @@ class Launcher(unittest.TestCase):
  def seed(self,entries,pack='a'*64):
   factory=self.app/'factory/Presets'
   for rel,content in entries.items():
+   if '/' not in rel:rel='Instruments/'+rel
    target=factory/rel;target.parent.mkdir(parents=True,exist_ok=True);target.write_text(content)
-  (self.app/'factory/presets-pack.id').write_text(pack+'\n')
+  h=hashlib.sha256()
+  for p in sorted(factory.rglob('*'),key=lambda p:p.relative_to(factory).as_posix()):
+   if p.is_file() and not any(c.startswith('.') for c in p.relative_to(factory).parts):h.update(p.relative_to(factory).as_posix().encode()+b'\0');h.update(hashlib.sha256(p.read_bytes()).digest())
+  self.pack=h.hexdigest();(self.app/'factory/presets-pack.id').write_text(self.pack+'\n')
   return factory
  def launch_wait(self,mode='wait'):
   self.env['PTE_TEST_MODE']=mode
@@ -110,9 +116,9 @@ class Launcher(unittest.TestCase):
  def test_seed_nested_names_and_ignore_mac_metadata(self):
   self.seed({'Instruments/Drum Lab/Kick 01.pti':'KICK','._ignore.pti':'METADATA','.hidden/ignore.pti':'METADATA','Instruments/.hidden.pti':'METADATA'})
   self.assertEqual(self.run_app().returncode,0,self.log.read_text())
-  self.assertEqual((self.data/'Presets/Instruments/Drum Lab/Kick 01.pti').read_text(),'KICK')
+  self.assertEqual(next((self.data/'Presets/Instruments').glob('Factory-*/Drum Lab/Kick 01.pti')).read_text(),'KICK')
   self.assertFalse((self.data/'Presets/._ignore.pti').exists());self.assertFalse((self.data/'Presets/.hidden').exists());self.assertFalse((self.data/'Presets/Instruments/.hidden.pti').exists())
-  self.assertEqual((self.data/'.factory-presets-pack.id').read_text(),'a'*64+'\n')
+  self.assertEqual((self.data/'.factory-presets-pack.id').read_text(),self.pack+'\n')
  def test_same_pack_skips_find_and_copy(self):
   self.seed({'A.pti':'A'});self.assertEqual(self.run_app().returncode,0)
   fake=self.root/'fake-tools';fake.mkdir()
@@ -122,18 +128,78 @@ class Launcher(unittest.TestCase):
   self.assertEqual(self.run_app().returncode,0,self.log.read_text());self.assertIn('matching pack identifier',self.log.read_text())
  def test_changed_pack_adds_presets_preserves_edits(self):
   self.seed({'A.pti':'A'});self.assertEqual(self.run_app().returncode,0)
-  (self.data/'Presets/A.pti').write_text('MY EDIT')
+  next((self.data/'Presets/Instruments').glob('Factory-*/A.pti')).write_text('MY EDIT')
   self.seed({'A.pti':'NEW FACTORY A','B.pti':'B'},'b'*64);self.assertEqual(self.run_app().returncode,0)
-  self.assertEqual((self.data/'Presets/A.pti').read_text(),'MY EDIT');self.assertEqual((self.data/'Presets/B.pti').read_text(),'B');self.assertEqual((self.data/'.factory-presets-pack.id').read_text(),'b'*64+'\n')
+  self.assertTrue(any(p.read_text()=='MY EDIT' for p in (self.data/'Presets/Instruments').glob('Factory-*/A.pti')));self.assertEqual(next((self.data/'Presets/Instruments').glob('Factory-*/B.pti')).read_text(),'B');self.assertEqual((self.data/'.factory-presets-pack.id').read_text(),self.pack+'\n')
  def test_existing_symlink_preset_is_not_replaced(self):
-  self.seed({'A.pti':'A'});(self.data/'Presets').mkdir();outside=self.root/'own.pti';outside.write_text('OWN');(self.data/'Presets/A.pti').symlink_to(outside)
-  self.assertEqual(self.run_app().returncode,0);self.assertTrue((self.data/'Presets/A.pti').is_symlink());self.assertEqual(outside.read_text(),'OWN')
+  self.seed({'A.pti':'A'});(self.data/'Presets/Instruments').mkdir(parents=True);outside=self.root/'own.pti';outside.write_text('OWN');(self.data/'Presets/Instruments/A.pti').symlink_to(outside)
+  self.assertEqual(self.run_app().returncode,0);self.assertTrue((self.data/'Presets/Instruments/A.pti').is_symlink());self.assertEqual(outside.read_text(),'OWN')
  def test_seed_refuses_symlink_parent(self):
   self.seed({'Category/A.pti':'A'});(self.data/'Presets').mkdir();outside=self.root/'outside';outside.mkdir();(self.data/'Presets/Category').symlink_to(outside,target_is_directory=True)
-  self.assertEqual(self.run_app().returncode,2);self.assertFalse((outside/'A.pti').exists());self.assertFalse((self.data/'.factory-presets-pack.id').exists())
- def test_failed_copy_does_not_commit_marker_or_partial_target(self):
-  self.seed({'A.pti':'A'});fake=self.root/'fake-tools';fake.mkdir();cmd=fake/'cp';cmd.write_text('#!/bin/sh\nprintf partial > "$3"\nexit 7\n');cmd.chmod(0o755);self.env['PATH']=str(fake)+os.pathsep+self.env['PATH']
-  self.assertEqual(self.run_app().returncode,2);self.assertFalse((self.data/'.factory-presets-pack.id').exists());self.assertFalse((self.data/'Presets/A.pti').exists());self.assertFalse(list(self.data.rglob('.pte-*')))
+  self.assertEqual(self.run_app().returncode,0);self.assertFalse((outside/'A.pti').exists());self.assertFalse((self.data/'.factory-presets-pack.id').exists());self.assertIn('Preparation stopped',self.log.read_text())
+ def test_bad_factory_does_not_block_app_or_commit_marker(self):
+  self.seed({'A.pti':'A'});(self.app/'factory/Presets/Instruments/A.pti').write_text('CORRUPT')
+  self.assertEqual(self.run_app().returncode,0)
+  self.assertFalse((self.data/'.factory-presets-pack.id').exists());self.assertFalse((self.data/'Presets/A.pti').exists());self.assertFalse(list(self.data.rglob('.pte-*')))
+  self.assertIn('Factory pack verification failed',self.log.read_text());self.assertIn('first frame submitted',self.log.read_text())
+ def test_preset_worker_only_starts_after_native_first_frame(self):
+  self.seed({'A.pti':'A'});self.assertEqual(self.run_app().returncode,0)
+  log=self.log.read_text();self.assertLess(log.index('Native first frame submitted'),log.index('Preparing factory library in background'))
+  self.assertLess(log.index('Native first frame submitted'),log.index('Factory pack verified'))
+ def test_no_preset_worker_if_native_has_no_frame(self):
+  self.seed({'A.pti':'A'});self.env.update(PTE_TEST_MODE='no-frame',PTE_STARTUP_TIMEOUT_SECONDS='1')
+  self.assertEqual(self.run_app(timeout=6).returncode,124)
+  self.assertFalse((self.data/'Presets/A.pti').exists());self.assertNotIn('Preparing factory library in background',self.log.read_text())
+ def test_hung_preset_worker_never_delays_first_frame_and_is_cancelled(self):
+  self.seed({'A.pti':'A'})
+  (self.tools/'prepare_presets.py').write_text("import os,signal,time\nfrom pathlib import Path\nsignal.signal(signal.SIGTERM,signal.SIG_IGN)\nPath(os.environ['PTE_TEST_WORKER_READY']).write_text(str(os.getpid()))\nwhile True:time.sleep(.03)\n")
+  ready=self.root/'worker-ready';self.env['PTE_TEST_WORKER_READY']=str(ready)
+  self.env['SHELLOPTS']='errexit';self.launch_wait();deadline=time.monotonic()+4
+  while not ready.exists() and time.monotonic()<deadline:time.sleep(.02)
+  self.assertTrue(ready.exists(),self.log.read_text());self.assertIn('Native first frame submitted',self.log.read_text());self.assertIsNone(self.proc.poll())
+  pid=int(ready.read_text());os.kill(pid,0);started=time.monotonic();self.proc.send_signal(signal.SIGTERM)
+  time.sleep(.2);self.proc.send_signal(signal.SIGTERM)
+  self.assertEqual(self.proc.wait(timeout=6),143);self.assertLess(time.monotonic()-started,4);self.assertRegex(self.log.read_text(),r'Shell flags: \S*e')
+  with self.assertRaises(ProcessLookupError):os.kill(pid,0)
+  self.assertFalse((self.data/'.factory-presets-pack.id').exists())
+ def test_matching_marker_respects_deleted_and_renamed_user_presets(self):
+  self.seed({'A.pti':'A','B.pti':'B'});self.assertEqual(self.run_app().returncode,0)
+  folder=next((self.data/'Presets/Instruments').glob('Factory-*'))
+  (folder/'A.pti').rename(folder/'My A.pti');(folder/'B.pti').unlink()
+  self.assertEqual(self.run_app().returncode,0)
+  self.assertEqual((folder/'My A.pti').read_text(),'A');self.assertFalse((folder/'A.pti').exists());self.assertFalse((folder/'B.pti').exists())
+  self.assertIn('matching pack identifier',self.log.read_text())
+ def test_missing_system_python_does_not_prevent_native_start(self):
+  self.seed({'A.pti':'A'});fake=self.root/'no-python';fake.mkdir()
+  for command in ['sync','wc','mv','mkdir','chmod','sleep','rm']:
+   (fake/command).symlink_to(shutil.which(command))
+  self.env['PATH']=str(fake)
+  self.assertEqual(self.run_app().returncode,0);self.assertIn('system python3 is missing',self.log.read_text());self.assertIn('Native first frame submitted',self.log.read_text())
+ def test_preset_worker_isolated_from_python_shadow_modules(self):
+  self.seed({'A.pti':'A'});bad=self.root/'untrusted-python';bad.mkdir()
+  sentinel=self.root/'shadow-imported'
+  payload='from pathlib import Path\nPath('+repr(str(sentinel))+').write_text("BAD")\nraise RuntimeError("shadowed")\n'
+  (bad/'hashlib.py').write_text(payload);(self.tools/'hashlib.py').write_text(payload)
+  self.env['PYTHONPATH']=str(bad)
+  self.assertEqual(self.run_app().returncode,0);self.assertFalse(sentinel.exists());self.assertTrue((self.data/'.factory-presets-pack.id').exists())
+ def test_worker_error_does_not_replace_native_exit_status(self):
+  self.seed({'A.pti':'A'});(self.app/'factory/Presets/Instruments/A.pti').write_text('BAD');self.env['PTE_TEST_RC']='17'
+  self.assertEqual(self.run_app().returncode,17);self.assertIn('Factory pack verification failed',self.log.read_text());self.assertIn('Status 17',self.log.read_text())
+ def test_errexit_worker_pause_preserves_native_success(self):
+  self.seed({'A.pti':'A'});(self.tools/'prepare_presets.py').write_text('raise SystemExit(75)\n');self.env['SHELLOPTS']='errexit'
+  r=self.run_app();self.assertEqual(r.returncode,0,self.log.read_text());self.assertIn('Background preset preparation exited with status 75',self.log.read_text());self.assertIn('Status 0',self.log.read_text());self.assertRegex(self.log.read_text(),r'Shell flags: \S*e')
+ def test_errexit_native_failure_preserves_status_and_cleanup(self):
+  self.env.update(SHELLOPTS='errexit',PTE_TEST_RC='17')
+  r=self.run_app();self.assertEqual(r.returncode,17,self.log.read_text());self.assertIn('Status 17',self.log.read_text());self.assertRegex(self.log.read_text(),r'Shell flags: \S*e')
+ def test_worker_keeps_running_without_session_copy_budget(self):
+  self.seed({'A.pti':'A'});args=self.root/'worker-args';self.env['PTE_TEST_WORKER_ARGS']=str(args)
+  (self.tools/'prepare_presets.py').write_text("import os,sys,json\nfrom pathlib import Path\nPath(os.environ['PTE_TEST_WORKER_ARGS']).write_text(json.dumps(sys.argv[1:]))\n")
+  self.assertEqual(self.run_app().returncode,0)
+  values=json.loads(args.read_text());self.assertIn('--background',values);self.assertIn('--library',values);self.assertNotIn('--time-budget',values)
+ def test_errexit_startup_timeout_and_native_kill(self):
+  for mode in ['no-frame','hang']:
+   self.env.update(SHELLOPTS='errexit',PTE_TEST_MODE=mode,PTE_STARTUP_TIMEOUT_SECONDS='1')
+   self.assertEqual(self.run_app(timeout=14).returncode,124,self.log.read_text());self.assertRegex(self.log.read_text(),r'Shell flags: \S*e')
  def test_real_first_frame_disarms_watchdog(self):
   self.env.update(PTE_TEST_MODE='long-ready',PTE_STARTUP_TIMEOUT_SECONDS='1');self.assertEqual(self.run_app().returncode,0,self.log.read_text());self.assertIn('first frame submitted',self.log.read_text())
  def test_invalid_marker_does_not_disable_watchdog(self):

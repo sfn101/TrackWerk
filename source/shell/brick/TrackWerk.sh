@@ -24,22 +24,26 @@ pte_phase() { printf '[startup +%ss] %s\n' "$SECONDS" "$*"; }
 export POCKETTRACKER_SYNC_STARTUP=1
 export POCKETTRACKER_VIDEO="${POCKETTRACKER_VIDEO:-surface}"
 pte_phase "Video mode: $POCKETTRACKER_VIDEO; durable startup logging enabled"
+pte_phase "Shell flags: $-"
 
 PTE_CHILD_PID=""
 PTE_CHILD_STATUS=""
+PTE_PRESET_PID=""
 PTE_TEMPS=()
 PTE_READY_FILE=""
-pte_child_running() {
-    [ -n "$PTE_CHILD_PID" ] || return 1
+pte_job_running() {
+    local pte_pid="$1"
+    [ -n "$pte_pid" ] || return 1
     # Only the shell's own, still-running native job qualifies. A completed and
     # reaped PID must never cause a signal to a subsequently unrelated process.
     case $'\n'"$(jobs -pr)"$'\n' in
-        *$'\n'"$PTE_CHILD_PID"$'\n'*) return 0;;
+        *$'\n'"$pte_pid"$'\n'*) return 0;;
     esac
     return 1
 }
+pte_child_running() { pte_job_running "$PTE_CHILD_PID"; }
 pte_stop_child() {
-    [ -n "$PTE_CHILD_PID" ] || return
+    [ -n "$PTE_CHILD_PID" ] || return 0
     local pte_deadline=$((SECONDS + 8))
     if pte_child_running; then
         pte_phase "Stopping native process $PTE_CHILD_PID"
@@ -53,19 +57,69 @@ pte_stop_child() {
             sleep 0.1
         done
     fi
-    wait "$PTE_CHILD_PID"
-    PTE_CHILD_STATUS=$?
+    if wait "$PTE_CHILD_PID"; then PTE_CHILD_STATUS=0; else PTE_CHILD_STATUS=$?; fi
     pte_phase "Native process stopped with status $PTE_CHILD_STATUS"
     PTE_CHILD_PID=""
 }
+# The preparer is a single Python process, never a shell with detached helpers.
+# Closing TrackWerk stops only this launcher's own job. Never wait indefinitely
+# for optional library I/O: a blocked card must not keep the frontend waiting.
+pte_stop_presets() {
+    [ -n "$PTE_PRESET_PID" ] || return 0
+    local pte_deadline=$((SECONDS + 2))
+    if pte_job_running "$PTE_PRESET_PID"; then
+        pte_phase "Stopping background preset preparation; missing files resume next launch"
+        kill -TERM "$PTE_PRESET_PID" 2>/dev/null || true
+        while pte_job_running "$PTE_PRESET_PID" && [ "$SECONDS" -lt "$pte_deadline" ]; do sleep 0.1; done
+        if pte_job_running "$PTE_PRESET_PID"; then
+            kill -KILL "$PTE_PRESET_PID" 2>/dev/null || true
+            pte_deadline=$((SECONDS + 1))
+            while pte_job_running "$PTE_PRESET_PID" && [ "$SECONDS" -lt "$pte_deadline" ]; do sleep 0.1; done
+        fi
+    fi
+    if pte_job_running "$PTE_PRESET_PID"; then
+        pte_phase "Preset I/O remains blocked after cancellation; returning to frontend"
+        disown "$PTE_PRESET_PID" 2>/dev/null || true
+    else
+        local pte_status
+        if wait "$PTE_PRESET_PID"; then pte_status=0; else pte_status=$?; fi
+        pte_phase "Background preset preparation exited with status $pte_status"
+    fi
+    PTE_PRESET_PID=""
+}
+
+pte_start_presets() {
+    [ -d "$GAMEDIR/factory/Presets" ] || return 0
+    local pte_pack="" pte_seeded=""
+    if [ -f "$GAMEDIR/factory/presets-pack.id" ]; then IFS= read -r -n 65 pte_pack < "$GAMEDIR/factory/presets-pack.id" || true; fi
+    if [ -f "$POCKETTRACKER_HOME/.factory-presets-pack.id" ]; then IFS= read -r -n 65 pte_seeded < "$POCKETTRACKER_HOME/.factory-presets-pack.id" || true; fi
+    if [[ "$pte_pack" =~ ^[a-fA-F0-9]{64}$ ]] && [ "$pte_pack" = "$pte_seeded" ] && [ -d "$POCKETTRACKER_HOME/Presets" ]; then
+        pte_phase "Factory presets already prepared (matching pack identifier)"
+        return 0
+    fi
+    if [ ! -f "$GAMEDIR/tools/prepare_presets.py" ] || ! command -v python3 >/dev/null 2>&1; then
+        pte_phase "WARNING: factory library preparer or system python3 is missing; app remains usable"
+        return 0
+    fi
+    # KNULLI provides Python 3. Verification/copying has no place in the path to
+    # the first frame. A matching completed marker also preserves intentional
+    # pruning and rearrangement of the user's existing preset library.
+    pte_phase "Preparing factory library in background after first frame"
+    python3 -I -u "$GAMEDIR/tools/prepare_presets.py" --factory "$GAMEDIR/factory/Presets" --data "$POCKETTRACKER_HOME" --background --library &
+    PTE_PRESET_PID=$!
+}
+
 pte_cleanup() {
     local pte_rc=$?
-    trap - EXIT HUP INT TERM USR1
+    set +e
+    trap - EXIT USR1
+    trap '' HUP INT TERM
     pte_stop_child
+    pte_stop_presets
     local pte_temp
     for pte_temp in "${PTE_TEMPS[@]}"; do rm -f -- "$pte_temp"; done
     if [ -n "$PTE_READY_FILE" ]; then rm -f -- "$PTE_READY_FILE"; fi
-    printf '=== App beendet, Status %s ===\n' "$pte_rc"
+    printf '=== App beendet, Status %s ===\n' "$pte_rc" || true
     exit "$pte_rc"
 }
 pte_signal() {
@@ -107,63 +161,9 @@ export TRACKWERK_HOME="$POCKETTRACKER_HOME"
 mkdir -p -- "$POCKETTRACKER_HOME" || pte_fail "Datenordner kann nicht angelegt werden."
 pte_phase "Data directory ready"
 
-# The pack identifier is generated from factory paths+contents at packaging.
-# The SD installer may preseed the same pack, avoiding 2304 checks on every boot.
-PTE_PACK_ID=""; PTE_SEEDED_ID=""
-if [ -f "$GAMEDIR/factory/presets-pack.id" ]; then
-    IFS= read -r -n 65 PTE_PACK_ID < "$GAMEDIR/factory/presets-pack.id" || true
-fi
-if [ -f "$POCKETTRACKER_HOME/.factory-presets-pack.id" ]; then
-    IFS= read -r -n 65 PTE_SEEDED_ID < "$POCKETTRACKER_HOME/.factory-presets-pack.id" || true
-fi
-if [[ "$PTE_PACK_ID" =~ ^[a-fA-F0-9]{64}$ ]] && [ "$PTE_PACK_ID" = "$PTE_SEEDED_ID" ] && [ -d "$POCKETTRACKER_HOME/Presets" ]; then
-    pte_phase "Factory presets already prepared (matching pack identifier)"
-elif [ -d "$GAMEDIR/factory/Presets" ]; then
-    pte_phase "Preparing missing factory presets"
-    PTE_DEST="$POCKETTRACKER_HOME/Presets"
-    [ ! -L "$PTE_DEST" ] || pte_fail "Preset-Ordner ist eine Verknuepfung; automatische Einrichtung abgebrochen."
-    mkdir -p -- "$PTE_DEST" || pte_fail "Preset-Ordner kann nicht angelegt werden."
-    PTE_LIST="$(mktemp "$POCKETTRACKER_HOME/.pte-preset-list.XXXXXX")" || pte_fail "Preset-Dateiliste kann nicht angelegt werden."
-    PTE_TEMPS+=("$PTE_LIST")
-    find "$GAMEDIR/factory/Presets" -type d -name '.*' -prune -o -type f ! -name '.*' -print0 > "$PTE_LIST" || pte_fail "Factory-Presets koennen nicht gelesen werden."
-    PTE_SEED_COUNT=0
-    while IFS= read -r -d '' PTE_SOURCE; do
-        PTE_RELATIVE="${PTE_SOURCE#"$GAMEDIR/factory/Presets/"}"
-        PTE_TARGET="$PTE_DEST/$PTE_RELATIVE"
-        # Edited presets and existing symbolic links are never replaced.
-        if [ -e "$PTE_TARGET" ] || [ -L "$PTE_TARGET" ]; then continue; fi
-        PTE_PARENT="$PTE_DEST"
-        PTE_REST="$PTE_RELATIVE"
-        while [[ "$PTE_REST" == */* ]]; do
-            PTE_COMPONENT="${PTE_REST%%/*}"; PTE_REST="${PTE_REST#*/}"
-            PTE_PARENT="$PTE_PARENT/$PTE_COMPONENT"
-            [ ! -L "$PTE_PARENT" ] || pte_fail "Preset-Unterordner ist eine Verknuepfung."
-            mkdir -p -- "$PTE_PARENT" || pte_fail "Preset-Unterordner kann nicht angelegt werden."
-        done
-        PTE_TEMP="$(mktemp "$PTE_PARENT/.pte-preset-copy.XXXXXX")" || pte_fail "Neue Preset-Datei kann nicht vorbereitet werden."
-        PTE_TEMPS+=("$PTE_TEMP")
-        if ! cp -- "$PTE_SOURCE" "$PTE_TEMP" || ! cmp -s -- "$PTE_SOURCE" "$PTE_TEMP"; then
-            pte_fail "Presetpack kann nicht eingerichtet werden. Speicherplatz und SD-Karte pruefen."
-        fi
-        # -n preserves any user file created while the verified copy was made.
-        mv -n -- "$PTE_TEMP" "$PTE_TARGET" || pte_fail "Neue Preset-Datei kann nicht gespeichert werden."
-        if [ -e "$PTE_TEMP" ]; then rm -f -- "$PTE_TEMP"; fi
-        PTE_TEMPS=("$PTE_LIST")
-        PTE_SEED_COUNT=$((PTE_SEED_COUNT + 1))
-        if [ $((PTE_SEED_COUNT % 256)) -eq 0 ]; then pte_phase "Factory presets prepared: $PTE_SEED_COUNT"; fi
-    done < "$PTE_LIST"
-    rm -f -- "$PTE_LIST"
-    PTE_TEMPS=()
-    if [[ "$PTE_PACK_ID" =~ ^[a-fA-F0-9]{64}$ ]]; then
-        PTE_MARKER_TEMP="$(mktemp "$POCKETTRACKER_HOME/.pte-preset-marker.XXXXXX")" || pte_fail "Preset-Markierung kann nicht angelegt werden."
-        PTE_TEMPS+=("$PTE_MARKER_TEMP")
-        printf '%s\n' "$PTE_PACK_ID" > "$PTE_MARKER_TEMP" || pte_fail "Preset-Markierung kann nicht geschrieben werden."
-        mv -f -- "$PTE_MARKER_TEMP" "$POCKETTRACKER_HOME/.factory-presets-pack.id" || pte_fail "Preset-Markierung kann nicht gespeichert werden."
-    fi
-    pte_phase "Factory preset preparation complete; new files: $PTE_SEED_COUNT"
-else
-    pte_phase "No factory preset directory present"
-fi
+# Factory presets are optional library files. The native synths can start
+# immediately; the verified library worker is launched only after a first frame.
+pte_phase "Factory preset preparation deferred until the app is visible"
 
 export POCKETTRACKER_AUDIO_FRAMES="${POCKETTRACKER_AUDIO_FRAMES:-512}"
 export POCKETTRACKER_FULLSCREEN="${POCKETTRACKER_FULLSCREEN:-1}"
@@ -193,6 +193,7 @@ PTE_CHILD_PID=$!
 # SECONDS has one-second resolution; round outward so a just-started native
 # process always receives the full configured interval before the first frame.
 PTE_STARTUP_DEADLINE=$((SECONDS + PTE_STARTUP_TIMEOUT + 1))
+PTE_FIRST_FRAME=0
 # The parent watches its own job until the first presented frame, then uses a
 # normal wait. There is no detached watchdog that could signal a reused PID.
 while pte_child_running; do
@@ -201,6 +202,7 @@ while pte_child_running; do
         IFS= read -r -n 32 PTE_READY_STATE < "$PTE_READY_FILE" || true
         if [ "$PTE_READY_STATE" = "frame submitted" ]; then
             pte_phase "Native first frame submitted; startup watchdog complete"
+            PTE_FIRST_FRAME=1
             break
         fi
     fi
@@ -211,7 +213,7 @@ while pte_child_running; do
     fi
     sleep 0.1
 done
-wait "$PTE_CHILD_PID"
-PTE_EXIT_STATUS=$?
+if [ "$PTE_FIRST_FRAME" = 1 ] && pte_child_running; then pte_start_presets; fi
+if wait "$PTE_CHILD_PID"; then PTE_EXIT_STATUS=0; else PTE_EXIT_STATUS=$?; fi
 PTE_CHILD_PID=""
 exit "$PTE_EXIT_STATUS"

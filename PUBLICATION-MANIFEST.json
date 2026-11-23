@@ -109,8 +109,48 @@
     "trackwerk_1.3.0-1_arm64.deb": {
       "bytes": 151123566,
       "sha256": "04979f4a6fa262e22c1c739e0d8f2c3490ab5deb9ee119d4ab3473474f07b291"
+    },
+    "TrackWerk-1.3.0-Brick-Startup-Fix.zip": {
+      "bytes": 23536,
+      "sha256": "3c3c638820a85ebddcb4ea932d3448c4beb440c748e739c03b3cbb0afc31f906"
+    },
+    "TrackWerk-1.3.0-Brick-KNULLI-Startup-Fix-First-Install.zip": {
+      "bytes": 194563553,
+      "sha256": "3a2c4f8cbd86b72269cfa752212a1d96087cb8822af7389dca75422c987ac20f"
+    },
+    "TrackWerk-1.3.0-Brick-Startup-Fix.patch": {
+      "bytes": 62807,
+      "sha256": "456a601683262249de18febc6fac99e8229ed22e28e37936af68ea177e231131"
+    },
+    "TrackWerk-1.3.0-Brick-Startup-Fix-Verification.json": {
+      "bytes": 1172,
+      "sha256": "132c55907fb442f43ed57c3e6f920be2bb5334ae1801420d2dabed6158758fcf"
+    },
+    "SHA256SUMS-Brick-Startup-Fix.txt": {
+      "bytes": 453,
+      "sha256": "1f3dea316ace1707d7457ffd5d7880b1f6ea697df30e59e28a09fba0841410e6"
+    },
+    "TrackWerk-1.3.0-Brick-KNULLI-Startup-Fix-First-Install-r2.zip": {
+      "bytes": 194563909,
+      "sha256": "d8e683d7feaf21849924a65ce1077670b873c7620c0e548a6c045d5b6caeab6b"
+    },
+    "SHA256SUMS-Brick-Startup-Fix-r2.txt": {
+      "bytes": 456,
+      "sha256": "b96ae501612814f2d606c0ca869ea3bd46b469d05d1526cac19bdfcb9c1ddee8"
     }
   },
   "source_archive": "TrackWerk-1.3.0-Source.zip is generated from the final tagged commit; its hash is in SHA256SUMS.txt",
-  "acceptance_run": 44746420639
+  "acceptance_run": 44746420639,
+  "brick_startup_fix": {
+    "date": "2026-11-22",
+    "source_commit": "da19fe5c16fc8a79f0f2a74d6d686cf0bc89ab14",
+    "repair": "https://github.com/kidbee85-beep/TrackWerk/releases/download/v1.3.0/TrackWerk-1.3.0-Brick-Startup-Fix.zip",
+    "first_install": "https://github.com/kidbee85-beep/TrackWerk/releases/download/v1.3.0/TrackWerk-1.3.0-Brick-KNULLI-Startup-Fix-First-Install-r2.zip",
+    "verification": "https://github.com/kidbee85-beep/TrackWerk/releases/download/v1.3.0/TrackWerk-1.3.0-Brick-Startup-Fix-Verification.json",
+    "native_program_unchanged": true,
+    "physical_brick_startup_and_complete_factory_library_verified": true,
+    "checksums": "https://github.com/kidbee85-beep/TrackWerk/releases/download/v1.3.0/SHA256SUMS-Brick-Startup-Fix-r2.txt",
+    "metadata_revision": 2,
+    "native_source_commit": "028619182cf79d5f59c7718da8b71756d8512e3b"
+  }
 }

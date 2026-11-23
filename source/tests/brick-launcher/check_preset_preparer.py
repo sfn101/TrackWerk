@@ -71,6 +71,29 @@ class Preparation(unittest.TestCase):
                 if existing_marker:self.assertEqual(marker.read_bytes(),b'previous-pack-marker\n')
                 else:self.assertFalse(marker.exists())
                 self.assertFalse(list(data.rglob('.pte-*')))
+    def test_time_budget_leaves_partial_setup_unmarked_and_resumable(self):
+        clock=[0.0];commit=module.commit_new_file
+        def advance_after_copy(temp,target):
+            commit(temp,target)
+            clock[0]=2.0
+        with mock.patch.object(module.time,'monotonic',side_effect=lambda:clock[0]), mock.patch.object(module,'commit_new_file',side_effect=advance_after_copy):
+            with self.assertRaises(module.PreparationPaused):module.prepare(self.factory,self.data,time_budget=1.0)
+        self.assertFalse((self.data/'.factory-presets-pack.id').exists())
+        self.assertEqual(len(list((self.data/'Presets').rglob('*.pti'))),1)
+        self.assertFalse(list(self.data.rglob('.pte-*')))
+        self.assertEqual(self.run_cli().returncode,0)
+        self.assertEqual(len(list((self.data/'Presets').rglob('*.pti'))),2)
+        self.assertEqual((self.data/'.factory-presets-pack.id').read_text().strip(),self.pack)
+    def test_directory_flush_failure_never_publishes_marker(self):
+        with mock.patch.object(module,'flush_directory',side_effect=OSError(errno.EIO,'controlled flush failure')):
+            with self.assertRaises(OSError):module.prepare(self.factory,self.data)
+        self.assertFalse((self.data/'.factory-presets-pack.id').exists())
+        self.assertFalse(list(self.data.rglob('.pte-*')))
+        self.assertEqual(self.run_cli().returncode,0)
+    def test_hidden_factory_subfolders_are_ignored_consistently(self):
+        hidden=self.factory/'.metadata';hidden.mkdir();(hidden/'not-a-preset.pti').write_text('IGNORE')
+        self.assertEqual(self.run_cli().returncode,0)
+        self.assertFalse((self.data/'Presets/.metadata').exists())
     def test_repeated_preparation_keeps_all_files(self):
         self.assertEqual(self.run_cli().returncode,0);self.assertEqual(self.run_cli().returncode,0)
         self.assertEqual(len(list((self.data/'Presets').rglob('*.pti'))),2)

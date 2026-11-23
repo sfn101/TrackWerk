@@ -1,6 +1,6 @@
 {
   "passed": true,
-  "tests": 23,
+  "tests": 34,
   "failures": 0,
   "errors": 0,
   "method": "Actual standalone Bash launcher and owned native process fixtures; no device/USB/network access"

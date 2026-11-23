@@ -52,28 +52,29 @@ Keep any existing trackwerk/data folder. Your projects, samples,
 recordings and edited presets belong there. PortMaster installation or updating
 is not required to start this standalone tracker.
 
-4. OPTIONAL: PREPARE THE 2,304 PRESETS ON YOUR COMPUTER
-This optional step avoids doing thousands of small file operations before the
-first app window opens. It requires Python 3 only; no Android SDK or build tools.
-Run it after copying has finished, while the card is still in the computer.
+4. FIRST START AND FACTORY LIBRARY
+TrackWerk starts the app before preparing the additional factory library.
+After the first displayed frame, KNULLI's own Python runs the verified library
+installer in the background. Nothing needs to be installed on your computer.
 
-macOS example:
-python3 "/media/YOUR_CARD/roms/ports/trackwerk/tools/prepare_presets.py"
+The library contains 2,432 presets. Complete categories appear in a Factory-...
+subfolder under Instruments, Delays, Reverbs, Mastering, SampleGranular and
+StudioFX. Reopen the browser to refresh a listing opened during setup.
 
-Windows example (replace E: with the actual SHARE drive):
-py "E:\roms\ports\trackwerk\tools\prepare_presets.py"
+Existing projects, samples and edited presets are kept. An interrupted setup
+resumes from private staging on the next app start. A completed library marker
+also preserves intentional deletion, renaming and rearrangement of presets.
 
-Linux: run python3 followed by the script's path on your mounted card.
-The script locates the adjacent factory/data folders automatically. It verifies
-the pack, adds missing files and keeps existing/edited presets. Its marker is
-committed only after preparation finishes. There is no need to run it every time.
+Setup runs only after the app is visible, at lower CPU priority. It keeps
+working while the app is open until the library is complete. Closing the app
+stops the worker safely; the next launch resumes any remaining work. The native
+first-frame watchdog is independent. Logs are in roms/ports/trackwerk/log.txt.
 
-Without this optional step, the normal launcher prepares missing presets on
-its first launch. During that preparation the screen can remain black. This
-happens BEFORE the native first-frame 25-second watchdog starts; we do not have a
-measured universal SD-card setup time. The setup log is:
-roms/ports/trackwerk/log.txt
-Later launches skip preparation when the same factory pack is already ready.
+Optional computer preparation, with Python 3 already installed:
+python3 "/media/YOUR_CARD/roms/ports/trackwerk/tools/prepare_presets.py" --library
+Windows (replace E: with the actual SHARE drive):
+py -3 "E:\roms\ports\trackwerk\tools\prepare_presets.py" --library
+Wait for Ready, safely eject, then start TrackWerk. No manual marker is needed.
 
 5. START
 Wait for all computer copies to finish, safely eject the card, insert it into

@@ -107,7 +107,13 @@ Steps, in order. Don't skip one without the user's explicit OK:
    - If the feature normally builds on another of ours (wide mode on the VI visualizer or sharp scaling, for example), it must work without it. If it can't yet, stop and tell the user.
 4. **Check it.** Run `git diff origin/main --stat`: every file must belong to the feature. Never include `CLAUDE.md`, `AUDIT.md`, `specs/`, `.claude/` or roadmap commits. Then build that branch, test it by hand on Windows, and run CI on it (`gh workflow run build.yml -R sfn101/TrackWerk --ref upstream/<name>`).
    - **Hand test by the user, when one is needed.** If the feature has anything a person must try in the running app (screens, buttons, sound, files), stop after the build. Tell the user it's ready, give the exact exe to run, and list numbered steps: what to press and what they should see or hear. Then wait for their report before pushing or opening anything. Skip this pause only when nothing can be checked by hand (a pure build or test fix), and say so.
-5. **Pace and order.** Send PRs the way the maintainer asks (one at a time, or all at once to pick from); until they've answered, one at a time. Follow the order in the message to upstream (`drafts/upstream-message.md`, local): the built features first, then wide mode once it fits upstream's newest screens and stands alone.
+5. **Pace and order: the maintainer's method** (his answer on kidbee85-beep/TrackWerk#7, 2026-11-22):
+   - **One PR at a time.** Open the next only after the open one is merged or closed.
+   - **Based on the current upstream `main`**, not the last release tag. If `main` moves before the PR is opened, merge `origin/main` into the branch and retest.
+   - **One focused, independent piece per PR**, with **test notes** in the description: how it was tested (Windows by hand, CI, the host check it adds) and steps a reviewer can repeat.
+   - **Order:** (1) project compatibility checks (`upstream/refuse-newer-files`), (2) durable Windows saves, (3) the small network/audio fixes, each fix its own PR if they're independent. The other ideas are assessed one by one as we go.
+   - **Larger UI or song-format changes** (wide mode, VI full screen, sharp scaling, 16 tracks, chord list, microtones, advanced synth view…) need a short design discussion with him first, in an issue, on compatibility, controls and performance on the small handhelds. No code PR for those before he agrees on the design.
+   - Crash fixes are prioritised separately from the feature list and may go directly.
 6. **Open it only when the user says so.** Push the branch to `fork` and open the PR to `kidbee85-beep/TrackWerk` `main`. The description says what it does for the user, what changed and how it was tested, written from the change itself, not from fork-only notes.
    - **No "Generated with Claude Code" line** in PR descriptions, upstream or on the fork. The description ends with the user's name. This is the user's own rule, so it overrides the default attribution. (PR #8 has the line and keeps it.)
 7. **Keep the branch.** Review fixes go on the same branch. Don't rebase or force-push it unless the maintainer asks. If upstream releases again before the PR is merged, merge their release into the branch and retest it.
@@ -116,7 +122,7 @@ Steps, in order. Don't skip one without the user's explicit OK:
 
 - PR #3 (Windows build fix) was taken by the maintainer as commit `b34487b` with our authorship, and shipped in 1.3.0.
 - Issue #2's file-validation findings are all fixed upstream.
-- The message offering our features was posted on 2026-11-20 as kidbee85-beep/TrackWerk#7 (local copy: `drafts/upstream-message.md`). It asks whether PRs should come one at a time or all at once. **No feature PR goes up before the maintainer answers there.**
-- Open upstream PR: kidbee85-beep/TrackWerk#8, the Archive search crash fix (branch `upstream/archive-utf8-crash`, one commit, 3 files), sent on 2026-11-21 as a bug fix, separate from #7.
-- Ready, not sent: `upstream/refuse-newer-files` (feature 1 of #7), built on upstream 1.3.0 with its own check `ptnewer-files-check`. It waits for the user's hand test and the maintainer's answer on #7.
+- The message offering our features was posted on 2026-11-20 as kidbee85-beep/TrackWerk#7 (local copy: `drafts/upstream-message.md`). The maintainer answered on 2026-11-22: one PR at a time on current `main` (see step 5 above).
+- kidbee85-beep/TrackWerk#8, the Archive search crash fix (branch `upstream/archive-utf8-crash`), was merged on 2026-11-21 after one review fix (`618b5ee`).
+- Next, not sent: `upstream/refuse-newer-files` (feature 1 of #7), with its own check `ptnewer-files-check`, merged up to upstream `main` `1d7daae` on 2026-11-23. It waits for the user's hand test and go-ahead.
 - Our audit batches 1-2 are not to be sent: upstream fixed those itself.

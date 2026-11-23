@@ -124,5 +124,5 @@ Steps, in order. Don't skip one without the user's explicit OK:
 - Issue #2's file-validation findings are all fixed upstream.
 - The message offering our features was posted on 2026-11-20 as kidbee85-beep/TrackWerk#7 (local copy: `drafts/upstream-message.md`). The maintainer answered on 2026-11-22: one PR at a time on current `main` (see step 5 above).
 - kidbee85-beep/TrackWerk#8, the Archive search crash fix (branch `upstream/archive-utf8-crash`), was merged on 2026-11-21 after one review fix (`618b5ee`).
-- Next, not sent: `upstream/refuse-newer-files` (feature 1 of #7), with its own check `ptnewer-files-check`, merged up to upstream `main` `1d7daae` on 2026-11-23. It waits for the user's hand test and go-ahead.
+- Open upstream PR: kidbee85-beep/TrackWerk#10, refuse files from a newer TrackWerk (feature 1 of #7, branch `upstream/refuse-newer-files`, on upstream `main` `1d7daae`), sent on 2026-11-23. Next after it's merged or closed: durable Windows saves.
 - Our audit batches 1-2 are not to be sent: upstream fixed those itself.

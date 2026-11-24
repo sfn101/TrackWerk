@@ -78,7 +78,8 @@ void wav(const std::filesystem::path& path, const std::vector<float>& x, uint32_
     f.write("data", 4); u32(bytes);
     for (float v : x) { const int16_t s = int16_t(std::lround(std::fmax(-1.f, std::fmin(1.f, v)) * 32767)); f.write(reinterpret_cast<const char*>(&s), 2); }
 }
-// The same tone on both channels of a 16-bit stereo WAV.
+// The tone on the left and inverted on the right of a 16-bit stereo WAV: identical sides would load
+// as mono (specs/fake-stereo-mono.md).
 void wav_stereo(const std::filesystem::path& path, const std::vector<float>& x, uint32_t rate = 48000) {
     std::ofstream f(path, std::ios::binary);
     auto u32 = [&](uint32_t v) { f.write(reinterpret_cast<const char*>(&v), 4); };
@@ -86,7 +87,7 @@ void wav_stereo(const std::filesystem::path& path, const std::vector<float>& x, 
     const uint32_t bytes = uint32_t(x.size() * 4);
     f.write("RIFF", 4); u32(36 + bytes); f.write("WAVEfmt ", 8); u32(16); u16(1); u16(2); u32(rate); u32(rate * 4); u16(4); u16(16);
     f.write("data", 4); u32(bytes);
-    for (float v : x) { const int16_t s = int16_t(std::lround(std::fmax(-1.f, std::fmin(1.f, v)) * 32767)); f.write(reinterpret_cast<const char*>(&s), 2); f.write(reinterpret_cast<const char*>(&s), 2); }
+    for (float v : x) { const int16_t s = int16_t(std::lround(std::fmax(-1.f, std::fmin(1.f, v)) * 32767)); const int16_t r = int16_t(-s); f.write(reinterpret_cast<const char*>(&s), 2); f.write(reinterpret_cast<const char*>(&r), 2); }
 }
 }  // namespace
 

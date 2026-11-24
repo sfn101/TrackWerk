@@ -2014,7 +2014,9 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
       "both (STEREO), or the two mixed",
       "together (MONO). SAVE writes",
       "what you pick here. A mono file",
-      "is always MONO."},
+      "is always MONO. MONO (L=R): a",
+      "stereo file with two identical",
+      "sides, kept as one to save RAM."},
      {"A+D-PAD picks the source"}},
     /* SE_RATE */
     {"RATE: how much detail to keep", "HIGH is the full rate, NORM", "half of it, LOFI a quarter.",

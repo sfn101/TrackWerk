@@ -337,6 +337,7 @@ void InputDispatcher::init_sample_editor_state() {
     se.totalFrames   = host_.sample_length(se.instrumentId);
     se.sampleRate    = host_.sample_rate_of(se.instrumentId);
     se.hasStereoData = host_.has_stereo_data(se.instrumentId);
+    se.foldedStereo  = host_.is_folded_stereo(se.instrumentId);
     // BIT opens at the sample's own depth, which is also the highest it can offer.
     se.sourceBitDepth = host_.sample_bit_depth(se.instrumentId);
     se.bitDepth       = se.sourceBitDepth;
@@ -1327,6 +1328,7 @@ void InputDispatcher::save_sample_to(const std::string& path, bool adopt_name) {
             set_status(s_, "SAVED; RELOAD NOT DONE: NOT ENOUGH MEMORY", false);
         }
         se.hasStereoData = host_.has_stereo_data(se.instrumentId);
+        se.foldedStereo  = host_.is_folded_stereo(se.instrumentId);
         mark_modified();
     } catch (const std::bad_alloc&) {
         set_status(s_, "SAVED; RELOAD NOT DONE: NOT ENOUGH MEMORY", false);

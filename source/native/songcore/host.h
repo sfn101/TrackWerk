@@ -353,6 +353,7 @@ class SongcoreHost {
 
     int  sample_length(int id) const { return engine_ ? engine_->getSampleLength(id) : 0; }
     bool has_stereo_data(int id) const { return engine_ && engine_->hasStereoData(id); }
+    bool is_folded_stereo(int id) const { return engine_ && engine_->isFoldedStereo(id); }
     // The depth the sample came in at — the ceiling of the BIT cell.
     int  sample_bit_depth(int id) const { return engine_ ? engine_->getSampleBitDepth(id) : 16; }
 

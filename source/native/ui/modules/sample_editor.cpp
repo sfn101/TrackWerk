@@ -481,7 +481,8 @@ void SampleEditorModule::draw(Canvas& c, int x, int y, const SampleEditorState& 
         c.draw_label(helpHint, helpX, y + 9, t.textParam, 12);
     c.draw_text(stats, statsX, y + 10, t.textParam, 1, 2);
     const int fieldX[] = {10, 219, 428};
-    const std::string source = s.hasStereoData ? at(source_values(), s.sourceMode) : "MONO";
+    const std::string source = s.hasStereoData ? at(source_values(), s.sourceMode)
+                             : s.foldedStereo  ? "MONO (L=R)" : "MONO";
     const std::string pitch = (s.pitchSemitones >= 0 ? "+" : "") + std::to_string(s.pitchSemitones);
     const std::string labels[2][3] = {{"ZOOM", "SOURCE", "RATE"}, {"PITCH", "DURATION", "BIT"}};
     const std::string values[2][3] = {{s.zoom_display(), source, at(rate_values(), s.rateMode)},

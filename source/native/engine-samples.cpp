@@ -229,17 +229,21 @@ int AudioEngine::loadSampleFromWavFile(int id, const char* path) {
         if (newR) std::memset(newR + frameIdx, 0, (size_t)(totalFrames - frameIdx) * sizeof(float));
     }
 
+    float* keptR = ownR.release();
+    const bool folded = foldIdenticalStereo(newL, keptR, totalFrames, path);
+
     // As loadSample; every stale per-slot buffer (undo, rate cache) goes.
     {
         std::lock_guard<std::mutex> lock(sampleEditMutex);
         freeSampleUndo(id);   // every part of the backup, its RATE basis too
         setSampleSourceFormat(id, bitsPerSample, isFloat);
-        setSampleBuffers(id, ownL.release(), ownR.release(), totalFrames, sampleRate);
+        setSampleBuffers(id, ownL.release(), keptR, totalFrames, sampleRate);
+        sampleFoldedLR[id].store(folded);
     }
 
     lastLoadFailure_ = LoadFailure::NONE;
     LOGD("loadSampleFromWavFile: id=%d %d frames %s rate=%d bits=%d fmt=%d",
-         id, totalFrames, channels == 2 ? "stereo" : "mono", sampleRate, bitsPerSample, audioFormat);
+         id, totalFrames, keptR ? "stereo" : "mono", sampleRate, bitsPerSample, audioFormat);
     return sampleRate;
 }
 
@@ -315,21 +319,34 @@ int AudioEngine::loadSampleFromCompressed(int id, const char* path) {
 
     // The decoded buffers become the slot's — no copy.
     const int frames = static_cast<int>(pcm.frames());
-    const bool stereo = pcm.stereo();
     float* newL = nullptr;
     float* newR = nullptr;
     pcm.release(newL, newR);
+    const bool folded = foldIdenticalStereo(newL, newR, frames, path);
+    const bool stereo = newR != nullptr;
     {
         std::lock_guard<std::mutex> lock(sampleEditMutex);
         freeSampleUndo(id);   // every part of the backup, its RATE basis too
         setSampleSourceFormat(id, bits, false);
         setSampleBuffers(id, newL, newR, frames, sr);
+        sampleFoldedLR[id].store(folded);
     }
 
     lastLoadFailure_ = LoadFailure::NONE;
     LOGD("loadSampleFromCompressed: id=%d %d frames %s rate=%d (%s)",
          id, frames, stereo ? "stereo" : "mono", sr, ext);
     return sr;
+}
+
+bool AudioEngine::foldIdenticalStereo(const float* left, float*& right, int frames, const char* path) {
+    if (!left || !right || frames <= 0) return false;
+    // Bit-exact, as the spec asks: memcmp also tells -0.0 from 0.0 and compares NaN patterns.
+    if (std::memcmp(left, right, static_cast<size_t>(frames) * sizeof(float)) != 0) return false;
+    delete[] right;
+    right = nullptr;
+    LOGD("Sample loaded as MONO (L=R): %s, %lld KB saved", path ? path : "?",
+         (long long)((int64_t)frames * (int64_t)sizeof(float) >> 10));
+    return true;
 }
 
 bool AudioEngine::hasStereoData(int id) {

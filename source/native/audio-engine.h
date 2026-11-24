@@ -108,6 +108,8 @@ public:
     // mp3/flac/ogg/opus/AAC by extension (audio-decoders.h). Returns the source rate, 0 on failure.
     int loadSampleFromCompressed(int id, const char* path);
     bool hasStereoData(int id);
+    // The file was stereo with bit-identical sides, so only one channel was kept (MONO (L=R)).
+    bool isFoldedStereo(int id) const { return id >= 0 && id < 256 && sampleFoldedLR[id].load(); }
     // The depth the audio came in at (16 for a lossy decode). The sample editor's BIT offers this and
     // lower; SAVE writes it.
     int  getSampleBitDepth(int id) const;
@@ -869,6 +871,9 @@ private:
                                                 // non-null, always has exactly this length
     std::atomic<uint32_t> sampleGen[256];
     std::atomic<int>      sampleFileRate[256];   // the PCM's own rate (Hz), see setSampleBuffers
+    std::atomic<bool>     sampleFoldedLR[256];   // see isFoldedStereo; any buffer change clears it
+    // Frees `right` and nulls it when it equals `left` bit for bit. Load thread only.
+    bool foldIdenticalStereo(const float* left, float*& right, int frames, const char* path);
     void touchSample(int id) { sampleGen[id].fetch_add(1); }   // caller holds sampleEditMutex
     // Undo retains exact working float samples, including 24/32-bit detail and over-unity peaks.
     float*   sampleBackups[256] = {};

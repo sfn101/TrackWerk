@@ -61,6 +61,7 @@ More visualizers (item 20) and wide mode (item 10) are separate features. Upstre
   - The START release no longer cancels a typed search.
   - Commits: f3e64b1 (picker) and 4863b4b (START), on branch `windows-sources`.
   - Tested on Windows only. Linux desktop has passed CI only.
+  - **2026-11-24, Android emulator** (CI APK from `main` 30f5537): A on PASTE LINK or on search brings up no keyboard. Not yet known whether it is the emulator or real Android; waiting for a test on a phone.
 
 ## Later (no spec yet)
 

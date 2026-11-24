@@ -15,7 +15,7 @@ Work top to bottom. Each item has its own spec; finish (build, test on Windows, 
 | 9 | Sharp scaling | [sharp-scaling.md](sharp-scaling.md) | Done |
 | U | Merge upstream 1.3.0 | [upstream-1.3-merge.md](upstream-1.3-merge.md) | Done |
 | 10 | Wide mode (16:9) | [wide-mode.md](wide-mode.md) | Done |
-| 11 | Fake stereo loads as mono | [fake-stereo-mono.md](fake-stereo-mono.md) | Spec ready |
+| 11 | Fake stereo loads as mono | [fake-stereo-mono.md](fake-stereo-mono.md) | Done |
 | 12 | Drumlab: manual sequencing and layout | [drumlab-manual.md](drumlab-manual.md) | Spec ready |
 | 13 | Sound: master limiter | [master-limiter.md](master-limiter.md) | Spec ready |
 | 14 | Sound: sample interpolation | [sample-interpolation.md](sample-interpolation.md) | Spec ready |

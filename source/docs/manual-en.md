@@ -3490,3 +3490,23 @@ Rows: Lyrics, Voice (frog, man, woman, child), Croak, Vibrato, Glide, Coda (0 = 
 **Control sheets.** Each family draws its values its own way: dials (Rings, Elements, Low End and Sirens), an LCD (Braids, Vintage Chips), a bar graph (Gravity, Spectral) and plain blocks elsewhere. The values and keys are the same everywhere.
 
 **Sample Pack.** The TrackWerk Sample Pack and the Drum Machines Samples are ordinary WAV folders. Copy them into the Samples folder and load them from the sample browser or the Sample Editor.
+
+**Studio > Drumlab.** A drum sequencer for up to 8 lanes (Kick, Snare, Closed Hat, Open Hat, Perc 1, Perc 2, Tom, FX). Generate a pattern from a style, or CLEAR the grid and add every hit by hand. Nothing reaches the song until APPLY.
+
+- **Two pages:** GROOVE (Style, Sources, Length, Density, Variation, Swing, Humanize, Fill, Seed; Map X / Y and Chaos in the Map style) and SOURCES (each lane's SLOT and LOCK). GENERATE, CLEAR, PREVIEW and APPLY TO SONG sit under both.
+- **Empty lanes:** a SLOT left of `00` reads `--`, an empty lane. A lane with no loaded sound is silent: Generate, Preview and Apply skip it. One active lane is enough.
+- **CLEAR** empties every unlocked lane, so Step Edit can start from nothing. If the grid holds hits that were never applied, it first asks `CLEAR PATTERN?`: A clears, B keeps them.
+- **APPLY TO SONG** (A twice) appends the pattern after the last used SONG row, in empty, unused chains and phrases. Only lanes with a sound and at least one hit are written; the others stay empty at the new row.
+
+| Key | Where | Does |
+| --- | --- | --- |
+| L + LEFT/RIGHT | Outside Step Edit | Switch between the GROOVE and SOURCES pages |
+| L or R alone | Anywhere | Show the previous / next 16-step bar |
+| A + arrows | A setting or a lane | Edit the value (UP/DOWN in larger steps) |
+| A | A lane's SLOT | Open Step Edit (empty grid if nothing was generated yet) |
+| A | Step Edit | Toggle the hit on the selected step |
+| A + UP/DOWN | Step Edit, on a hit | Velocity, in steps of 8 (1-127) |
+| A + LEFT/RIGHT | Step Edit, on a hit | Delay (timing nudge), 0-11 ticks |
+| L + DOWN | Step Edit | Start or stop the preview loop |
+| B + UP / B + DOWN | Step Edit | Undo / redo the last step edit |
+| B | Step Edit | Back to the pages |

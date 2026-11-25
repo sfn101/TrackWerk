@@ -351,6 +351,10 @@ bool studio_button(const ButtonEvent& e,AppState& s,songcore::SongcoreHost& host
   return harmony_button(e,s,host,engine);
  if(s.studioTab==7&&s.sourceSampler.listFocused&&!s.studioBUsed&&e.button==Button::B)
   return studio_source_button(e,s,host,engine);
+ // B answers Drumlab's CLEAR PATTERN? (keep); its release must not also leave the Studio.
+ if(s.studioTab==5&&s.drumLab.confirmClear&&e.button==Button::B&&e.action==ButtonAction::PRESSED){
+  s.studioBUsed=true;return drumlab_button(e,s.drumLab,host,engine);
+ }
  if(s.studioTab==5&&s.drumLab.gridFocused&&!s.studioBUsed&&
     (e.button==Button::B||e.button==Button::DPAD_UP||e.button==Button::DPAD_DOWN))
   return drumlab_button(e,s.drumLab,host,engine);

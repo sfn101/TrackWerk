@@ -17,6 +17,7 @@ Work top to bottom. Each item has its own spec; finish (build, test on Windows, 
 | 10 | Wide mode (16:9) | [wide-mode.md](wide-mode.md) | Done |
 | 11 | Fake stereo loads as mono | [fake-stereo-mono.md](fake-stereo-mono.md) | Done |
 | 12 | Drumlab: manual sequencing and layout | [drumlab-manual.md](drumlab-manual.md) | Spec ready |
+| 12a | Drumlab: load a lane's sound (L+A) | [drumlab-load-sound.md](drumlab-load-sound.md) | Spec ready |
 | 13 | Sound: master limiter | [master-limiter.md](master-limiter.md) | Spec ready |
 | 14 | Sound: sample interpolation | [sample-interpolation.md](sample-interpolation.md) | Spec ready |
 | 15 | Sound: oversampled drive | [oversampled-drive.md](oversampled-drive.md) | Spec ready |

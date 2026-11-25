@@ -142,6 +142,9 @@ struct AppState {
 
     // INSTRUMENT reached from the pool: R+LEFT goes back to the pool, not PHRASE.
     bool instrumentFromPool = false;
+    // INSTRUMENT reached with Drumlab's L+A: a B tap reopens Drumlab. Forgotten once you go
+    // anywhere but INSTRUMENT and the screens it opens (browser, sample editor, MODS).
+    bool instrumentFromDrumlab = false;
 
     // SONG / CHAIN / PHRASE share this cursor; on SONG `cursorColumn` is the track, 1..8.
     int cursorRow    = 0;

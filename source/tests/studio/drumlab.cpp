@@ -126,7 +126,11 @@ int main(int argc,char**argv){
     auto unavailable=project();for(auto& chain:unavailable.chains)chain.phraseRefs[0]=0;no_change(s,unavailable);
     unavailable=project();for(auto& phrase:unavailable.phrases)phrase.steps[0].note=songcore::Note::C4();no_change(s,unavailable);
     unavailable=project();unavailable.tracks[7].chainRefs.resize(256,-1);unavailable.tracks[7].chainRefs[255]=0;no_change(s,unavailable);
-    unavailable=project();unavailable.instruments[4].sampleFilePath.reset();no_change(s,unavailable);
+    {   // a lane with no source is skipped, not a blocker: it writes no chain
+        auto silent=project();silent.instruments[4].sampleFilePath.reset();songcore::SongcoreHost silentHost(nullptr,48000);
+        assert(silentHost.push_project(songcore::serialize_project(silent)));auto t=s;assert(drumlab_apply(t,silentHost));
+        assert(silentHost.project().tracks[4].chainRefs[t.appliedSongRow]==-1&&silentHost.project().tracks[3].chainRefs[t.appliedSongRow]>=0);
+    }
     unavailable=project();unavailable.instruments[4].root=songcore::Note::EMPTY();no_change(s,unavailable);
     unavailable=project();for(auto& groove:unavailable.grooves)groove.steps={16,8,-1};no_change(s,unavailable);
     auto dirty=s;dirty.dirty=true;no_change(dirty,project());
@@ -190,15 +194,16 @@ int main(int argc,char**argv){
     assert(engine->getActiveVoiceCount()>0);drumlab_stop(held,audioHost,*engine);
     for(int i=0;i<20;++i)engine->processLiveBlock(block,512,2,48000);
     assert(engine->getActiveVoiceCount()==0);
-    // Present path metadata cannot make an unloaded WAV or SF source previewable.
+    // Present path metadata cannot make an unloaded WAV or SF source previewable: the lane is
+    // skipped (silent) while the loaded lanes play, and the document is never touched.
     audioHost.clear_instrument(0);audioHost.edit_project().instruments[0].sampleFilePath="missing-drum.wav";
     DrumLabState missing;missing.activeLanes=5;assert(drumlab_generate(missing));
     const auto missingDocument=songcore::serialize_project(audioHost.project());
-    assert(!drumlab_preview(missing,audioHost,*engine)&&missing.status.find("not loaded")!=std::string::npos);
+    assert(drumlab_preview(missing,audioHost,*engine)&&missing.status.find("silent")!=std::string::npos);drumlab_stop(missing,audioHost,*engine);
     assert(songcore::serialize_project(audioHost.project())==missingDocument);
     auto& unloadedSF=audioHost.edit_project().instruments[0];unloadedSF.instrumentType=songcore::InstrumentType::SOUNDFONT;
     unloadedSF.soundfontPath="missing-drum.sf2";unloadedSF.sampleFilePath.reset();
-    assert(!drumlab_preview(missing,audioHost,*engine)&&missing.status.find("not loaded")!=std::string::npos);
+    assert(drumlab_preview(missing,audioHost,*engine)&&missing.status.find("silent")!=std::string::npos);drumlab_stop(missing,audioHost,*engine);
     // MIDI START must discard preview lookahead BEFORE planning the new transport.
     assert(audioHost.push_project(songcore::serialize_project(sampleProject)));assert(audioHost.load_media("").loaded==8);audioHost.push_params();
     engine->processLiveBlock(block,512,2,48000); // let the audio-thread project-reset request complete before injecting bytes
@@ -220,7 +225,7 @@ int main(int argc,char**argv){
     assert(engine->getActiveVoiceCount()==0);
     assert(songcore::serialize_project(audioHost.project())==original);
     // Controls follow their visible geometry: list rows move vertically, SLOT / LOCK and the
-    // three bottom action buttons move horizontally. Boundaries do not wrap onto another axis.
+    // four bottom action buttons move horizontally. Boundaries do not wrap onto another axis.
     {
         DrumLabState navigation;navigation.row=16;
         const auto preserved=songcore::serialize_project(audioHost.project());
@@ -228,11 +233,12 @@ int main(int argc,char**argv){
         move(Button::DPAD_DOWN);assert(navigation.row==17);
         move(Button::DPAD_RIGHT);assert(navigation.row==18);
         move(Button::DPAD_RIGHT);assert(navigation.row==19);
-        move(Button::DPAD_RIGHT);assert(navigation.row==19);
-        move(Button::DPAD_DOWN);assert(navigation.row==19);
+        move(Button::DPAD_RIGHT);assert(navigation.row==20);
+        move(Button::DPAD_RIGHT);assert(navigation.row==20);
+        move(Button::DPAD_DOWN);assert(navigation.row==20);
         move(Button::DPAD_UP);assert(navigation.row==16);
-        move(Button::DPAD_DOWN);assert(navigation.row==19); // retain the last action column
-        move(Button::DPAD_LEFT);assert(navigation.row==18);
+        move(Button::DPAD_DOWN);assert(navigation.row==20); // retain the last action column
+        move(Button::DPAD_LEFT);assert(navigation.row==19);
         move(Button::DPAD_UP);assert(navigation.row==16);
         move(Button::DPAD_LEFT);assert(navigation.row==16&&navigation.col==0);
         move(Button::DPAD_RIGHT);assert(navigation.row==16&&navigation.col==1);
@@ -250,7 +256,7 @@ int main(int argc,char**argv){
     drumlab_button({Button::DPAD_RIGHT,ButtonAction::PRESSED,{true}},audioState,audioHost,*engine);
     const auto seedBefore=audioState.seed;drumlab_button({Button::A,ButtonAction::RELEASED,{}},audioState,audioHost,*engine);
     assert(audioState.seed==seedBefore&&audioState.dirty);
-    assert(drumlab_generate(audioState));audioState.row=19;
+    assert(drumlab_generate(audioState));audioState.row=20;
     drumlab_button({Button::A,ButtonAction::RELEASED,{}},audioState,audioHost,*engine);assert(audioState.confirmApply&&audioState.applySerial==0);
     drumlab_button({Button::A,ButtonAction::RELEASED,{}},audioState,audioHost,*engine);assert(!audioState.confirmApply&&audioState.applySerial==1);
     audioHost.play_song(audioState.appliedSongRow);assert(!drumlab_preview(audioState,audioHost,*engine));audioHost.stop();

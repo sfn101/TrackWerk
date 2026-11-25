@@ -351,6 +351,10 @@ bool studio_button(const ButtonEvent& e,AppState& s,songcore::SongcoreHost& host
   return harmony_button(e,s,host,engine);
  if(s.studioTab==7&&s.sourceSampler.listFocused&&!s.studioBUsed&&e.button==Button::B)
   return studio_source_button(e,s,host,engine);
+ // B answers Drumlab's CLEAR PATTERN? (keep); its release must not also leave the Studio.
+ if(s.studioTab==5&&s.drumLab.confirmClear&&e.button==Button::B&&e.action==ButtonAction::PRESSED){
+  s.studioBUsed=true;return drumlab_button(e,s.drumLab,host,engine);
+ }
  if(s.studioTab==5&&s.drumLab.gridFocused&&!s.studioBUsed&&
     (e.button==Button::B||e.button==Button::DPAD_UP||e.button==Button::DPAD_DOWN))
   return drumlab_button(e,s.drumLab,host,engine);
@@ -359,6 +363,12 @@ bool studio_button(const ButtonEvent& e,AppState& s,songcore::SongcoreHost& host
   const auto serial=s.drumLab.applySerial;
   const bool handled=drumlab_button(e,s.drumLab,host,engine);
   if(s.drumLab.applySerial!=serial)++s.projectVersion;
+  if(s.drumLab.openInstrument>=0){   // L+A: leave as B does, onto INSTRUMENT (the browser follows in the dispatcher)
+   studio_synth_stop_audition(s,host);source_sampler_stop(s.sourceSampler);if(s.captureBackend&&s.capture.active())s.captureBackend->stop();
+   s.studioOpen=false;s.studioConfirm=false;s.studioMessage.clear();engine.studioRack.punch.store(0);host.stop_preview();restore_appearance_context(s);
+   s.currentInstrument=s.drumLab.openInstrument;s.currentScreen=ScreenType::INSTRUMENT;s.instrumentFromDrumlab=true;
+   if(!s.drumLab.openBrowser)s.drumLab.openInstrument=-1;
+  }
   return handled;
  }
  if(s.studioTab==7&&e.button!=Button::B&&!(is_dpad(e.button)&&e.mods.b)){

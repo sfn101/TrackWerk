@@ -58,6 +58,9 @@ Drumlab is centred, like the rest of the Studio (wide-mode.md).
 
 Per-step chance (`CHA`), ratchets (`RPT`) and pitch (`PIT`). They are a later item of their own.
 
+Packing several lanes onto one track (decided 2026-11-25: no). Apply keeps one track per lane: a track plays one
+note at a time, so lanes sharing a track would cut each other's tails (long kicks, snare rooms).
+
 ## Help
 
 - Drumlab's Studio help pages (`studio_help.cpp`): CLEAR, the two pages, the Step Edit keys and empty lanes.

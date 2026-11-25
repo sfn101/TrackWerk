@@ -687,6 +687,27 @@ void switch_page(DrumLabState& s) {
     else { s.grooveRow = s.row; s.row = std::clamp(s.sourcesRow, 9, 16); }
     if (hidden_setting(s, s.row)) s.row = 0;
 }
+
+// L+A on a lane: open its instrument, with the sample browser when nothing is loaded there. A --
+// lane first takes the first free instrument that no other lane points at.
+void request_lane_sound(DrumLabState& s, songcore::SongcoreHost& host, AudioEngine& engine) {
+    const auto& p = host.project();
+    const int lane = s.row - 9;
+    int id = s.lanes[lane].instrument;
+    if (id == DRUMLAB_NO_SOURCE) {
+        for (int candidate = 0; candidate < std::min<int>(128, p.instruments.size()) && id < 0; ++candidate) {
+            bool taken = !songcore::instrument_is_free(p.instruments[candidate]);
+            for (const auto& other : s.lanes) taken |= other.instrument == candidate;
+            if (!taken) id = candidate;
+        }
+        if (id < 0) { s.status = "No free instrument left for this lane."; return; }
+        s.lanes[lane].instrument = id;
+    }
+    if (id < 0 || id >= static_cast<int>(p.instruments.size())) return;
+    drumlab_stop(s, host, engine);
+    s.openInstrument = id;
+    s.openBrowser = songcore::instrument_is_free(p.instruments[id]);
+}
 }  // namespace
 
 bool drumlab_button(const ButtonEvent& e, DrumLabState& s, songcore::SongcoreHost& host, AudioEngine& engine) {
@@ -708,6 +729,12 @@ bool drumlab_button(const ButtonEvent& e, DrumLabState& s, songcore::SongcoreHos
     if (s.gridFocused) return grid_button(e, s, host, engine);
     if (s.confirmClear && e.button == Button::B) {   // B keeps the pattern; the Studio routes it here
         if (e.action == ButtonAction::PRESSED) { s.confirmClear = false; s.status = "Pattern kept."; }
+        return true;
+    }
+    if (e.button == Button::A && e.mods.l && e.action == ButtonAction::PRESSED) {   // L+A: the lane's sound
+        s.aUsed = true;   // A's release must not also open Step Edit
+        s.confirmApply = s.confirmClear = false;
+        if (s.row >= 9 && s.row <= 16) request_lane_sound(s, host, engine);
         return true;
     }
     if (e.button == Button::A) {
@@ -871,7 +898,7 @@ void drumlab_draw(Canvas& c, const DrumLabState& s, const Theme& t, const songco
             map_style(s)?"Map X / Y moves through the rhythm map. Left / Right: Slot, Lock, Density.":
                          "Left / Right selects SLOT / LOCK or the bottom action buttons.",
             "Generate, or Clear to start empty. Locked lanes keep their hits.",
-            "A on a lane's SLOT opens Step Edit. A toggles a hit, B returns.",
+            "A on SLOT opens Step Edit. L+A on a lane loads or opens its sound.",
             "Step Edit: A+Up/Down velocity, A+Left/Right delay, L+Down loops.",
             "Apply needs A twice; only lanes with a sound and hits are written.",
             "B+Up undoes and B+Down redoes the last step edit.",
@@ -947,7 +974,7 @@ void drumlab_draw(Canvas& c, const DrumLabState& s, const Theme& t, const songco
         c.draw_label(text,x+(w-Canvas::label_width(text,12))/2,418,selected?t.background:ink,12);
     }
     c.draw_label(Canvas::clip_label(s.status,604,12),18,449,s.dirty||s.confirmClear?t.textTitle:muted,12);
-    const char* footer = onLane&&s.col==SLOT?"A: Step Edit   A + arrows: Slot   L+Left/Right: Page   Select: Help":
+    const char* footer = onLane&&s.col==SLOT?"A: Step Edit  A+arrows: Slot  L+A: Sound  L+Left/Right: Page  Select: Help":
                          editRhythm?"Left / Right: Field   A + arrows: Edit   L+Left/Right: Page   Select: Help":
                                     "A + arrows: Edit   L / R: Bar   L+Left/Right: Page   Select: Help";
     c.draw_label(footer,18,464,muted,12);

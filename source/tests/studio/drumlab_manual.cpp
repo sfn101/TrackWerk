@@ -3,6 +3,8 @@
 #include "ui/drumlab.h"
 #include "ui/canvas.h"
 #include "ui/theme.h"
+#include "ui/app_state.h"
+#include "ui/studio_help.h"
 #include "audio-engine.h"
 #include "songcore/host.h"
 #include "songcore/project_io.h"
@@ -200,6 +202,37 @@ int main(int argc, char** argv) {
         check(s.row == 0, "Up stops at the page's first row");
         s.row = 9; rig.press(s, Button::DPAD_UP);
         check(s.row == 9, "Up does not cross from SOURCES into GROOVE");
+    }
+
+    // L+A on a lane (drumlab-load-sound.md): open its instrument, with the browser when it is empty.
+    {
+        DrumLabState s; s.row = 10;   // SNR, instrument 01, loaded
+        const auto la = [&] { rig.press(s, Button::A, l); rig.release(s, Button::A); };
+        la();
+        check(s.openInstrument == 1 && !s.openBrowser && !s.gridFocused, "a loaded lane asks for INSTRUMENT 01, no browser");
+        s.openInstrument = -1; s.lanes[1].instrument = 40;   // nothing loaded in 40
+        la();
+        check(s.openInstrument == 40 && s.openBrowser, "an empty instrument asks for the browser on it");
+        s.openInstrument = -1; s.openBrowser = false;
+        s.lanes[1].instrument = DRUMLAB_NO_SOURCE; s.lanes[3].instrument = 8;   // 8 is free but taken by OH
+        la();
+        check(s.lanes[1].instrument == 9 && s.openInstrument == 9 && s.openBrowser,
+              "a -- lane takes the first free instrument no other lane uses");
+        s.openInstrument = -1; s.openBrowser = false; s.row = 4;
+        la();
+        check(s.openInstrument == -1 && !s.gridFocused, "L+A on GROOVE does nothing");
+    }
+
+    // The Studio's Drumlab help fits its panels (quick help 8 lines, topic pages 10).
+    {
+        AppState app; app.studioTab = 5; Canvas c;
+        check(studio_help_wrapped_lines(c, studio_help_quick_content(app)).size() <= 8, "Drumlab quick help fits");
+        app.drumLab.gridFocused = true;
+        check(studio_help_wrapped_lines(c, studio_help_quick_content(app)).size() <= 8, "Step Edit quick help fits");
+        bool pagesFit = true;
+        for (int page = 0; page < STUDIO_HELP_PAGES; ++page)
+            pagesFit &= studio_help_wrapped_lines(c, studio_help_content(app, 5, page)).size() <= 10;
+        check(pagesFit, "Drumlab help pages fit");
     }
 
     // Screens for a reviewer (PPM): both pages, Step Edit, the CLEAR question and help.

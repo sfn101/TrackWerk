@@ -70,6 +70,10 @@ struct DrumLabState {
     int grooveRow = 0, sourcesRow = 9;
     bool confirmClear = false;   // CLEAR PATTERN? is showing: A clears, B keeps
     bool unapplied = false;      // the grid changed since the last Apply (or Clear)
+    // L+A on a lane (drumlab-load-sound.md): a request the app carries out after the event —
+    // close the Studio, open INSTRUMENT on `openInstrument`, with the sample browser if `openBrowser`.
+    int openInstrument = -1;
+    bool openBrowser = false;
     std::string status = "Generate a pattern, or Clear and add steps by hand.";
     uint32_t applySerial = 0;
     int appliedSongRow = -1;

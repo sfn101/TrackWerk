@@ -363,6 +363,12 @@ bool studio_button(const ButtonEvent& e,AppState& s,songcore::SongcoreHost& host
   const auto serial=s.drumLab.applySerial;
   const bool handled=drumlab_button(e,s.drumLab,host,engine);
   if(s.drumLab.applySerial!=serial)++s.projectVersion;
+  if(s.drumLab.openInstrument>=0){   // L+A: leave as B does, onto INSTRUMENT (the browser follows in the dispatcher)
+   studio_synth_stop_audition(s,host);source_sampler_stop(s.sourceSampler);if(s.captureBackend&&s.capture.active())s.captureBackend->stop();
+   s.studioOpen=false;s.studioConfirm=false;s.studioMessage.clear();engine.studioRack.punch.store(0);host.stop_preview();restore_appearance_context(s);
+   s.currentInstrument=s.drumLab.openInstrument;s.currentScreen=ScreenType::INSTRUMENT;
+   if(!s.drumLab.openBrowser)s.drumLab.openInstrument=-1;
+  }
   return handled;
  }
  if(s.studioTab==7&&e.button!=Button::B&&!(is_dpad(e.button)&&e.mods.b)){

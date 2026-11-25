@@ -3504,6 +3504,7 @@ Rows: Lyrics, Voice (frog, man, woman, child), Croak, Vibrato, Glide, Coda (0 = 
 | L or R alone | Anywhere | Show the previous / next 16-step bar |
 | A + arrows | A setting or a lane | Edit the value (UP/DOWN in larger steps) |
 | A | A lane's SLOT | Open Step Edit (empty grid if nothing was generated yet) |
+| L + A | A lane, SOURCES page | The lane's sound: an empty instrument opens INSTRUMENT with the sample browser to load one; a loaded one opens INSTRUMENT to tweak or change it. A `--` lane first takes the first free instrument. Reopen the Studio to return to Drumlab |
 | A | Step Edit | Toggle the hit on the selected step |
 | A + UP/DOWN | Step Edit, on a hit | Velocity, in steps of 8 (1-127) |
 | A + LEFT/RIGHT | Step Edit, on a hit | Delay (timing nudge), 0-11 ticks |

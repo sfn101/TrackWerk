@@ -92,6 +92,12 @@ void InputDispatcher::set_now(long long now_ms) {
             }
         }
     }
+    if (s_.drumLab.openInstrument >= 0) {   // Drumlab L+A on an empty instrument: INSTRUMENT > LOAD
+        s_.drumLab.openInstrument = -1;
+        s_.drumLab.openBrowser = false;
+        open_file_browser(AppState::BrowserPurpose::LOAD_SOURCE, browser_dir(BrowserDir::SAMPLES),
+                          instrument_source_extensions(), true);
+    }
     if (s_.pendingStudioPresetBrowser) {
         s_.pendingStudioPresetBrowser = false;
         const bool effect = s_.studioTab == 1;

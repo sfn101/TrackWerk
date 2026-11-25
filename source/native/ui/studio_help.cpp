@@ -225,7 +225,7 @@ StudioHelpContent studio_help_quick_content(const AppState& s) {
                 "A  Toggle the hit    L + Down  Preview the loop",
                 "A + Up / Down  Velocity    A + Left / Right  Delay",
                 "B + Up / Down  Undo / Redo    B  Return to Drumlab controls"}};
-        return {"Drumlab", {"Up / Down  Choose a setting or lane", "L + Left / Right  Groove or Sources page",
+        return {"Drumlab", {"Up / Down  Setting or lane    L + Left / Right  Page",
             "A + arrows  Edit a value    Slot -- leaves a lane empty",
             "A on Clear  Empty the grid    A on Slot  Open Step Edit",
             "L + A on a lane  Load or open its sound in INSTRUMENT",

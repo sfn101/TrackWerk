@@ -223,12 +223,17 @@ int main(int argc, char** argv) {
         check(s.openInstrument == -1 && !s.gridFocused, "L+A on GROOVE does nothing");
     }
 
-    // The Studio's Drumlab help fits its panels (quick help 8 lines, topic pages 10).
+    // The Studio's Drumlab help fits its panels, by ptcontext-help-check's rules: quick help 3-5
+    // entries in at most 7 lines, topic pages at most 10 lines.
     {
         AppState app; app.studioTab = 5; Canvas c;
-        check(studio_help_wrapped_lines(c, studio_help_quick_content(app)).size() <= 8, "Drumlab quick help fits");
+        const auto quick_fits = [&] {
+            const auto q = studio_help_quick_content(app);
+            return q.lines.size() >= 3 && q.lines.size() <= 5 && studio_help_wrapped_lines(c, q).size() <= 7;
+        };
+        check(quick_fits(), "Drumlab quick help fits");
         app.drumLab.gridFocused = true;
-        check(studio_help_wrapped_lines(c, studio_help_quick_content(app)).size() <= 8, "Step Edit quick help fits");
+        check(quick_fits(), "Step Edit quick help fits");
         bool pagesFit = true;
         for (int page = 0; page < STUDIO_HELP_PAGES; ++page)
             pagesFit &= studio_help_wrapped_lines(c, studio_help_content(app, 5, page)).size() <= 10;

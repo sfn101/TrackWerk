@@ -5,6 +5,10 @@
 #include "ui/theme.h"
 #include "ui/app_state.h"
 #include "ui/studio_help.h"
+#include "ui/studio.h"
+#include "ui/button_mapper.h"
+#include "ui/input_dispatcher.h"
+#include "ui/std_filesystem.h"
 #include "audio-engine.h"
 #include "songcore/host.h"
 #include "songcore/project_io.h"
@@ -221,6 +225,44 @@ int main(int argc, char** argv) {
         s.openInstrument = -1; s.openBrowser = false; s.row = 4;
         la();
         check(s.openInstrument == -1 && !s.gridFocused, "L+A on GROOVE does nothing");
+    }
+
+    // B on INSTRUMENT goes back to Drumlab, but only when L+A brought you there.
+    if (argc > 1) {
+        const auto dir = std::filesystem::path(argv[1]) / "data";
+        std::filesystem::create_directories(dir);
+        auto enginePtr = std::make_unique<AudioEngine>(); auto& engine = *enginePtr;   // too big for the stack
+        songcore::SongcoreHost host(&engine, 48000); host.new_project();
+        host.edit_project().instruments[1].sampleFilePath = "/@mutable/p22-100-160-120.wav";   // loaded: no browser
+        AppState app; app.project = &host.edit_project();
+        StdFileSystem fs(dir.string()); InputDispatcher dispatch(app, host, fs); MapperState mapper;
+        uint64_t now = 1000;
+        const auto send = [&](Button b, ButtonAction a, ButtonMods m = {}) {
+            now += 400; dispatch.set_now(static_cast<long long>(now));
+            handle_button(ButtonEvent{b, a, m}, dispatch, mapper, now);
+        };
+        const auto tap_b = [&] { send(Button::B, ButtonAction::PRESSED); send(Button::B, ButtonAction::RELEASED); };
+        const auto l_a = [&] {
+            app.studioOpen = true; app.studioTab = 5; app.drumLab.row = 10;   // SNR -> instrument 01
+            studio_button({Button::A, ButtonAction::PRESSED, l}, app, host, engine, fs);
+            studio_button({Button::A, ButtonAction::RELEASED, {}}, app, host, engine, fs);
+            dispatch.set_now(static_cast<long long>(now += 16));
+        };
+        l_a();
+        check(!app.studioOpen && app.currentScreen == ScreenType::INSTRUMENT && app.currentInstrument == 1 &&
+              app.instrumentFromDrumlab, "L+A opens INSTRUMENT 01 from Drumlab");
+        ButtonMods b; b.b = true;
+        send(Button::B, ButtonAction::PRESSED);
+        send(Button::DPAD_RIGHT, ButtonAction::PRESSED, b); send(Button::DPAD_RIGHT, ButtonAction::RELEASED, b);
+        send(Button::B, ButtonAction::RELEASED);
+        check(app.currentInstrument == 2 && !app.studioOpen && app.currentScreen == ScreenType::INSTRUMENT,
+              "B+Right still steps the instrument and stays");
+        tap_b();
+        check(app.studioOpen && app.studioTab == 5 && !app.instrumentFromDrumlab, "a B tap goes back to Drumlab");
+        l_a();
+        app.currentScreen = ScreenType::SONG; dispatch.set_now(static_cast<long long>(now += 16));
+        app.currentScreen = ScreenType::INSTRUMENT; tap_b();
+        check(!app.studioOpen && !app.instrumentFromDrumlab, "after going elsewhere, B on INSTRUMENT is plain again");
     }
 
     // The Studio's Drumlab help fits its panels, by ptcontext-help-check's rules: quick help 3-5

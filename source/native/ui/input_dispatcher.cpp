@@ -92,6 +92,11 @@ void InputDispatcher::set_now(long long now_ms) {
             }
         }
     }
+    // The Studio's Synth page is where a synth instrument's sound is edited from INSTRUMENT: kept.
+    if (s_.instrumentFromDrumlab && ((s_.studioOpen && s_.studioTab != 0) ||
+        (s_.currentScreen != ScreenType::INSTRUMENT && s_.currentScreen != ScreenType::FILE_BROWSER &&
+         s_.currentScreen != ScreenType::SAMPLE_EDITOR && s_.currentScreen != ScreenType::MODS)))
+        s_.instrumentFromDrumlab = false;   // left INSTRUMENT another way: B is plain again
     if (s_.drumLab.openInstrument >= 0) {   // Drumlab L+A on an empty instrument: INSTRUMENT > LOAD
         s_.drumLab.openInstrument = -1;
         s_.drumLab.openBrowser = false;

@@ -60,6 +60,16 @@ GestureResult InputDispatcher::instrument_screen(Gesture g) {
         case Gesture::B_UP:    page_instrument(s_, +1);  return GestureResult::TAKEN;
         case Gesture::B_DOWN:  page_instrument(s_, -1);  return GestureResult::TAKEN;
 
+        // Reached with Drumlab's L+A: a B tap goes back to Drumlab (on its release, so B+D-PAD
+        // still steps the instrument). Elsewhere a B tap does nothing here.
+        case Gesture::B:
+            if (!s_.instrumentFromDrumlab) return GestureResult::PASS;
+            s_.instrumentFromDrumlab = false;
+            host_.stop_preview();
+            s_.studioOpen = true;
+            s_.studioTab = 5;
+            return GestureResult::TAKEN;
+
         default:
             return instrument_audition(g);
     }

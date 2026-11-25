@@ -23,7 +23,10 @@ L is already Drumlab's extra key (pages, preview). A alone, A+arrows and L+arrow
 - **On the GROOVE page or the buttons:** nothing.
 - Preview and grid auditions stop first, as when the Studio closes.
 
-Back to Drumlab: reopen the Studio as usual; it remembers the Drumlab tab, page and lane.
+**Back to Drumlab (added 2026-11-25):** a **B tap on INSTRUMENT** reopens the Studio on Drumlab, same page and lane,
+but only when L+A brought you there. It survives the screens INSTRUMENT opens for editing the sound (the sample
+browser, the sample editor, MODS, the Studio's Synth page); going anywhere else forgets it, and B is then plain
+again (a B tap does nothing on INSTRUMENT today). B fires on its release there, so B+arrows still step the instrument.
 
 ## Files and platforms
 
@@ -35,13 +38,15 @@ No file-format change. Loading is INSTRUMENT's own path, so it works on every pl
 - L+A on an empty instrument asks for the browser on that number.
 - L+A on `--` picks the first free number not used by another lane and sets the SLOT to it; none free: no request.
 - L+A on GROOVE does nothing; A's release after L+A does not open Step Edit.
+- From L+A: B+Right still steps the instrument, a B tap reopens Drumlab; after going elsewhere B is plain.
 
 ## Out of scope
 
-Coming back to Drumlab automatically; loading several lanes in one go.
+Loading several lanes in one go.
 
 ## Help
 
 - Studio help (`studio_help.cpp`): the Drumlab key list and topic page.
 - Drumlab's own help overlay and footer hint.
 - Manual: the Drumlab key table.
+- INSTRUMENT's SELECT help (`help_text.h`): its B line.

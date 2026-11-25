@@ -440,7 +440,8 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
       "B+←/→ goes to another instrument",
       "B+↑/↓ jumps 16 instruments",
       "R+↑ opens its MODS",
-      "R+← goes back to the phrase"}},
+      "R+← goes back to the phrase",
+      "B goes back to Drumlab (L+A)"}},
     /* SCREEN_TABLE */
     {"TABLE: a pattern inside a note", "Plays along with each note of", "its instrument, row by row.",
      {"A short sequence that plays",

@@ -481,7 +481,8 @@ void SampleEditorModule::draw(Canvas& c, int x, int y, const SampleEditorState& 
         c.draw_label(helpHint, helpX, y + 9, t.textParam, 12);
     c.draw_text(stats, statsX, y + 10, t.textParam, 1, 2);
     const int fieldX[] = {10, 219, 428};
-    const std::string source = s.hasStereoData ? at(source_values(), s.sourceMode) : "MONO";
+    const std::string source = s.hasStereoData ? at(source_values(), s.sourceMode)
+                             : s.foldedStereo  ? "MONO (L=R)" : "MONO";
     const std::string pitch = (s.pitchSemitones >= 0 ? "+" : "") + std::to_string(s.pitchSemitones);
     const std::string labels[2][3] = {{"ZOOM", "SOURCE", "RATE"}, {"PITCH", "DURATION", "BIT"}};
     const std::string values[2][3] = {{s.zoom_display(), source, at(rate_values(), s.rateMode)},
@@ -489,7 +490,8 @@ void SampleEditorModule::draw(Canvas& c, int x, int y, const SampleEditorState& 
     for (int row = 0; row < 2; ++row)
         for (int col = 0; col < 3; ++col)
             sample_field(c, x + fieldX[col], y + 28 + row * 22, 202, labels[row][col], values[row][col],
-                         s.cursorRow == row + 1 && s.cursorCol == col, t);
+                         s.cursorRow == row + 1 && s.cursorCol == col, t,
+                         row == 0 && col == 1 && !s.hasStereoData && s.foldedStereo ? 2 : 3);   // MONO (L=R) fits only at 2
 
     if (scene_layout(t).splitSampler) {
         constexpr int waveWidth = 406, waveHeight = 171, railX = 424, railWidth = 206;

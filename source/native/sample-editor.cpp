@@ -22,6 +22,7 @@ static inline float cacheI16ToF32(int16_t v) { return v / 32768.0f; }
 void AudioEngine::setSampleBuffers(int id, float* newL, float* newR, int newLen, int sourceRate,
                                    bool keepRateBasis) {
     studioCodes[id].store(-1);
+    sampleFoldedLR[id].store(false);   // the loaders set it again after this
     if (!keepRateBasis) dropRateBasis(id);
     if (sourceRate > 0) sampleFileRate[id].store(sourceRate, std::memory_order_release);
     delete[] samples[id];

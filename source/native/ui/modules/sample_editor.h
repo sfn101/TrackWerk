@@ -61,6 +61,7 @@ struct SampleEditorState {
     int  sourceMode    = 0;
     int  rateMode      = 0;      // 0 = HIGH, 1 = NORM, 2 = LOFI  (a DESTRUCTIVE decimation)
     bool hasStereoData = false;  // the loaded sample has a right channel
+    bool foldedStereo = false;   // a stereo file with identical sides, kept as one channel
 
     // ── Row 2: the edit controls ─────────────────────────────────────────────────────────────────
     // A pending shift in semitones; SAVE bakes it.

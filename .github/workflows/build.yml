@@ -105,5 +105,7 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           build/windows/native/Release/ptwide-mode-check.exe "$env:RUNNER_TEMP/ptwide-mode-check"
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          build/windows/native/Release/ptfake-stereo-check.exe "$env:RUNNER_TEMP/ptfake-stereo-check"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           build/windows/native/Release/ptfile-validation-check.exe "$env:RUNNER_TEMP/ptfile-validation-check"
           if ($LASTEXITCODE) { exit $LASTEXITCODE }

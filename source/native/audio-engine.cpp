@@ -26,6 +26,7 @@ AudioEngine::AudioEngine() {
         sampleLengths[i] = 0;
         sampleGen[i] = 0;
         sampleFileRate[i] = SAMPLE_RATE;
+        sampleFoldedLR[i] = false;
         sampleBitDepth[i] = 16;
     }
     resetTic00Cursors();

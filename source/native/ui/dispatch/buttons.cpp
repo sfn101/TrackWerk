@@ -34,7 +34,9 @@ void InputDispatcher::on_help_button(Button button) {
         s_.helpScroll = 0;
     } else if (s_.helpFull && (button == Button::DPAD_UP || button == Button::DPAD_DOWN)) {
         // UP / DOWN scroll a topic longer than the box (phase B2); a short one does not move.
-        const int max = help_overlay_max_scroll(help_entry(help_topic(s_)));
+        std::string moreTitle;
+        const HelpEntry* more = help_more_entry(s_, moreTitle);
+        const int max = help_overlay_max_scroll(help_entry(help_topic(s_)), more, moreTitle.c_str());
         s_.helpScroll = std::clamp(s_.helpScroll + (button == Button::DPAD_DOWN ? 3 : -3), 0, max);
     } else if (button == Button::B || button == Button::SELECT) {
         on_help_dismiss();

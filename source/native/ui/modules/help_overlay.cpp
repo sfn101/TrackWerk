@@ -82,12 +82,13 @@ void draw_key_caps(Canvas& c, const std::vector<std::string>& caps, int x, int y
 
 }  // namespace
 
-void HelpOverlayModule::draw(Canvas& c, HelpTopic topic, const Theme& t, int scroll) const {
+void HelpOverlayModule::draw(Canvas& c, HelpTopic topic, const Theme& t, int scroll, const HelpEntry* more,
+                             const char* moreTitle) const {
     const Canvas::OriginScope inMiddle(c, wide_dx());   // a 640-wide dialog, in the middle
     const HelpEntry& e = help_entry(topic);
 
-    const int rows      = help_overlay_rows(e);
-    const int maxScroll = help_overlay_max_scroll(e);
+    const int rows      = help_overlay_rows(e, more, moreTitle);
+    const int maxScroll = help_overlay_max_scroll(e, more, moreTitle);
     if (scroll > maxScroll) scroll = maxScroll;
     if (scroll < 0) scroll = 0;
     const int visible = rows < max_visible_rows() ? rows : max_visible_rows();
@@ -118,8 +119,7 @@ void HelpOverlayModule::draw(Canvas& c, HelpTopic topic, const Theme& t, int scr
         const std::string text(word, static_cast<size_t>(bytes));
         const int x = row_x(drawRow) + col * CHAR_W, y = boxY + row_dy(drawRow);
         // A group heading in the key list ("MOVE:"): one capitalised word with a colon, in the title colour.
-        if (isKey && col == 0 && text.size() >= 5 && text.back() == ':' &&
-            text.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ:") == std::string::npos) {
+        if (isKey && col == 0 && help_key_is_heading(text.c_str())) {
             c.draw_text(text, x, y + TEXT_PADDING, t.textTitle, CHAR_SPACING, FONT_SCALE);
             return;
         }
@@ -128,7 +128,7 @@ void HelpOverlayModule::draw(Canvas& c, HelpTopic topic, const Theme& t, int scr
             return;
         }
         c.draw_text(text, x, y + TEXT_PADDING, isKey ? t.textEmpty : t.textValue, CHAR_SPACING, FONT_SCALE);
-    }, true, help_overlay_scrolls(e));
+    }, true, help_overlay_scrolls(e, more, moreTitle), more, moreTitle);
 
     // More text above or below: a thin bar on the right edge, and an arrow at the end that hides text.
     if (maxScroll > 0) {

@@ -18,6 +18,8 @@
 #include "ui/mascot_sprite_large.h"
 #include "ui/theme.h"
 
+#include <string>
+
 namespace pt::ui {
 
 namespace help_overlay_geometry {
@@ -94,7 +96,9 @@ static_assert(HELP_TITLE_MAX_CHARS == BESIDE_COLS,
 template <class Emit>
 // `below`: everything after the title's own line starts under the mascot, so a topic that scrolls moves
 // whole paragraphs and never splits one between the rows beside the mascot and the scrolling ones.
-constexpr int help_overlay_flow(const HelpEntry& e, Emit&& emit, bool air = false, bool below = false) {
+// `more`: a second key list after the topic's own (the screen's complete one), under `moreTitle`.
+constexpr int help_overlay_flow(const HelpEntry& e, Emit&& emit, bool air = false, bool below = false,
+                                const HelpEntry* more = nullptr, const char* moreTitle = nullptr) {
     using namespace help_overlay_geometry;
     constexpr int TOO_WIDE = 1000;
 
@@ -166,6 +170,22 @@ constexpr int help_overlay_flow(const HelpEntry& e, Emit&& emit, bool air = fals
             else         ++row;
         }
     }
+    if (more != nullptr) {
+        const int lastMore = last_written(more->keys, HELP_KEY_LINES);
+        if (lastMore >= 0) {
+            ++row;   // a blank row, then the heading in the prose colour, then the screen's list
+            if (row < BESIDE_ROWS) row = BESIDE_ROWS;
+            isKey = false;
+            if (!flow(moreTitle)) return TOO_WIDE;
+            end_paragraph();
+            isKey = true;
+            for (int i = 0; i <= lastMore; ++i) {
+                if (!flow(more->keys[i])) return TOO_WIDE;
+                if (col > 0) end_paragraph();
+                else         ++row;
+            }
+        }
+    }
     return row;
 }
 
@@ -187,26 +207,42 @@ constexpr bool help_overlay_words_fit() {
 static_assert(detail::help_overlay_words_fit(), "a help topic holds a word wider than the full overlay's rows");
 
 // Whether a topic is laid out to scroll: too tall for the box with its text beside the mascot.
-constexpr bool help_overlay_scrolls(const HelpEntry& e) {
-    return help_overlay_flow(e, detail::HelpFlowNoEmit{}, true) > help_overlay_geometry::max_visible_rows();
+constexpr bool help_overlay_scrolls(const HelpEntry& e, const HelpEntry* more = nullptr,
+                                    const char* moreTitle = nullptr) {
+    return help_overlay_flow(e, detail::HelpFlowNoEmit{}, true, false, more, moreTitle) >
+           help_overlay_geometry::max_visible_rows();
 }
 
 // The rows a topic needs (title counted), with the blank row under the title.
-constexpr int help_overlay_rows(const HelpEntry& e) {
-    return help_overlay_flow(e, detail::HelpFlowNoEmit{}, true, help_overlay_scrolls(e));
+constexpr int help_overlay_rows(const HelpEntry& e, const HelpEntry* more = nullptr,
+                                const char* moreTitle = nullptr) {
+    return help_overlay_flow(e, detail::HelpFlowNoEmit{}, true, help_overlay_scrolls(e, more, moreTitle), more,
+                             moreTitle);
 }
 
 // How far a topic scrolls, in rows: 0 when it fits.
-constexpr int help_overlay_max_scroll(const HelpEntry& e) {
-    const int over = help_overlay_rows(e) - help_overlay_geometry::max_visible_rows();
+constexpr int help_overlay_max_scroll(const HelpEntry& e, const HelpEntry* more = nullptr,
+                                      const char* moreTitle = nullptr) {
+    const int over = help_overlay_rows(e, more, moreTitle) - help_overlay_geometry::max_visible_rows();
     return over > 0 ? over : 0;
+}
+
+// The full help of a cell also lists every key of its screen, below its own (phase B2): that screen's
+// topic, or null where the shown topic is already the screen's or an overlay's own.
+inline const HelpEntry* help_more_entry(const AppState& s, std::string& title) {
+    if (s.qwerty.isOpen || s.confirm.is_open() || s.eq.isOpen || s.themeEditor.isOpen) return nullptr;
+    const HelpTopic screen = help_screen_topic(s.currentScreen);
+    if (screen == HelpTopic::NONE || screen == help_topic(s)) return nullptr;
+    title = std::string("ALL KEYS ON ") + screen_label(s.currentScreen) + ":";
+    return &help_entry(screen);
 }
 
 class HelpOverlayModule {
   public:
     // The backdrop, the box and `topic`, scrolled down by `scroll` rows (clamped); the caller decides
     // whether it is up.
-    void draw(Canvas& c, HelpTopic topic, const Theme& t, int scroll = 0) const;
+    void draw(Canvas& c, HelpTopic topic, const Theme& t, int scroll = 0, const HelpEntry* more = nullptr,
+              const char* moreTitle = nullptr) const;
 };
 
 }  // namespace pt::ui

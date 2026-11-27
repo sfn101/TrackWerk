@@ -17,24 +17,56 @@ constexpr KeyBarItem SONG_ITEMS[]       = {{"R+→", "chain"}, {"R+B", "mute"}, 
                                            {"B+←/→", "live"}};
 constexpr KeyBarItem CHAIN_ITEMS[]      = {{"R+→", "phrase"}, {"R+←", "song"}, {"B+←/→", "track"},
                                            {"L+B", "mark"}};
-constexpr KeyBarItem PHRASE_ITEMS[]     = {{"R+→", "instrument"}, {"SELECT+←/→", "overview"},
-                                           {"SELECT+↑/↓", "undo/redo"}, {"B+←/→", "track"}};
-constexpr KeyBarItem INSTRUMENT_ITEMS[] = {{"R+SELECT", "studio"}, {"R+↑", "pool"}, {"R+↓", "mods"},
-                                           {"B+←/→", "instrument"}};
-constexpr KeyBarItem TABLE_ITEMS[]      = {{"R+←", "instrument"}, {"L+B", "mark"}, {"L+A", "paste"}};
-constexpr KeyBarItem MIXER_ITEMS[]      = {{"R+B", "mute"}, {"R+A", "solo"}, {"L+R", "all on"}};
+constexpr KeyBarItem PHRASE_ITEMS[]     = {{"R+→", "inst"}, {"SELECT+↑/↓", "undo/redo"},
+                                           {"SELECT+←/→", "overview"}, {"L+→", "fill"}};
+constexpr KeyBarItem INSTRUMENT_ITEMS[] = {{"R+↑", "mods"}, {"R+→", "table"}, {"B+←/→", "next inst"},
+                                           {"R+SELECT", "studio"}};
+constexpr KeyBarItem TABLE_ITEMS[]      = {{"R+←", "inst"}, {"B+←/→", "table"}, {"A+START", "audition"},
+                                           {"L+B", "mark"}};
+constexpr KeyBarItem GROOVE_ITEMS[]     = {{"R+↓", "phrase"}, {"R+↑", "scale"}, {"B+←/→", "groove"},
+                                           {"B+↑/↓", "qnt"}};
+constexpr KeyBarItem SCALE_ITEMS[]      = {{"R+↓", "groove"}, {"B+←/→", "scale"}, {"R+←/→", "phrase"}};
+constexpr KeyBarItem MODS_ITEMS[]       = {{"R+↓", "inst"}, {"R+↑", "pool"}, {"B+←/→", "next inst"},
+                                           {"A+START", "audition"}};
+constexpr KeyBarItem INST_POOL_ITEMS[]  = {{"R+→", "edit"}, {"R+↓", "mods"}, {"A+START", "audition"},
+                                           {"B+↑/↓", "jump 16"}};
+constexpr KeyBarItem MIXER_ITEMS[]      = {{"R+B", "mute"}, {"R+A", "solo"}, {"L+R", "all on"},
+                                           {"R+↓", "effects"}};
+constexpr KeyBarItem EFFECTS_ITEMS[]    = {{"R+↑", "mixer"}, {"R+←/→", "tracker"}};
+constexpr KeyBarItem PROJECT_ITEMS[]    = {{"R+↓", "back"}, {"R+↑", "perform"}, {"R+←/→", "tracker"}};
+constexpr KeyBarItem BACK_ITEMS[]       = {{"B", "back"}};   // SETTINGS, MIDI, MIDI_MAP
+constexpr KeyBarItem PERFORM_ITEMS[]    = {{"B+←/→", "tile kind"}, {"L+A", "add track"},
+                                           {"L+←/→", "track"}, {"R+↓", "project"}};
+constexpr KeyBarItem VISUALIZER_ITEMS[] = {{"A+←/→", "style"}, {"R+→", "song"}};
+
+template <int N>
+const KeyBarItem* list(const KeyBarItem (&items)[N], int& count) {
+    static_assert(N <= KEY_BAR_MAX_ITEMS, "a key bar holds at most KEY_BAR_MAX_ITEMS");
+    count = N;
+    return items;
+}
 
 }  // namespace
 
 const KeyBarItem* key_bar_items(ScreenType screen, int& count) {
-    const auto list = [&](const KeyBarItem* items, int n) { count = n; return items; };
     switch (screen) {
-        case ScreenType::SONG:       return list(SONG_ITEMS, 4);
-        case ScreenType::CHAIN:      return list(CHAIN_ITEMS, 4);
-        case ScreenType::PHRASE:     return list(PHRASE_ITEMS, 4);
-        case ScreenType::INSTRUMENT: return list(INSTRUMENT_ITEMS, 4);
-        case ScreenType::TABLE:      return list(TABLE_ITEMS, 3);
-        case ScreenType::MIXER:      return list(MIXER_ITEMS, 3);
+        case ScreenType::SONG:       return list(SONG_ITEMS, count);
+        case ScreenType::CHAIN:      return list(CHAIN_ITEMS, count);
+        case ScreenType::PHRASE:     return list(PHRASE_ITEMS, count);
+        case ScreenType::INSTRUMENT: return list(INSTRUMENT_ITEMS, count);
+        case ScreenType::TABLE:      return list(TABLE_ITEMS, count);
+        case ScreenType::GROOVE:     return list(GROOVE_ITEMS, count);
+        case ScreenType::SCALE:      return list(SCALE_ITEMS, count);
+        case ScreenType::MODS:       return list(MODS_ITEMS, count);
+        case ScreenType::INST_POOL:  return list(INST_POOL_ITEMS, count);
+        case ScreenType::MIXER:      return list(MIXER_ITEMS, count);
+        case ScreenType::EFFECTS:    return list(EFFECTS_ITEMS, count);
+        case ScreenType::PROJECT:    return list(PROJECT_ITEMS, count);
+        case ScreenType::SETTINGS:
+        case ScreenType::MIDI:
+        case ScreenType::MIDI_MAP:   return list(BACK_ITEMS, count);
+        case ScreenType::PERFORM:    return list(PERFORM_ITEMS, count);
+        case ScreenType::VISUALIZER: return list(VISUALIZER_ITEMS, count);
         default:                     count = 0; return nullptr;
     }
 }

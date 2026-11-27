@@ -46,8 +46,6 @@ One built-in chord list for the whole app:
 
 - `CHD`, through `chord_voicing` / `chord_notes`, which now take the song's chord table instead of the constant.
 - HARMONY.
-- The piano roll's chord pen. Its list gains `CREATE A CHORD…`, which opens this screen; the chord saved there is armed
-  in the pen on return (piano-roll.md).
 - Later, Chords on synths.
 
 ## Tests

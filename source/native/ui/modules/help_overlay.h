@@ -79,8 +79,10 @@ static_assert(HELP_TITLE_MAX_CHARS == BESIDE_COLS,
 
 // Walks `e`'s text as laid out, calling `emit(row, col, word, bytes, is_key)` per word; returns the
 // rows used (title counted), or a huge number if a word fits no row. Columns are code points.
+// `air` adds a blank row between the title's own line and the rest (specs/help-and-lessons.md, phase
+// B); the overlay uses it only where the box still fits (`help_overlay_air`).
 template <class Emit>
-constexpr int help_overlay_flow(const HelpEntry& e, Emit&& emit) {
+constexpr int help_overlay_flow(const HelpEntry& e, Emit&& emit, bool air = false) {
     using namespace help_overlay_geometry;
     constexpr int TOO_WIDE = 1000;
 
@@ -121,6 +123,7 @@ constexpr int help_overlay_flow(const HelpEntry& e, Emit&& emit) {
     const int titleLen = help_title_length(e.line1);
     if (!flow(e.line1 + titleLen + (e.line1[titleLen] == ':' ? 1 : 0))) return TOO_WIDE;
     end_paragraph();
+    if (air) ++row;
 
     const int lastBody = last_written(e.body, HELP_BODY_LINES);
     if (lastBody < 0) {
@@ -171,6 +174,12 @@ constexpr bool help_overlay_fits() {
 
 static_assert(detail::help_overlay_fits(),
               "a help topic's text, re-wrapped for the full overlay, makes a box taller than the canvas");
+
+// The blank row under the title, wherever the box still fits with it.
+constexpr bool help_overlay_air(const HelpEntry& e) {
+    return help_overlay_geometry::box_h(help_overlay_flow(e, detail::HelpFlowNoEmit{}, true)) <=
+           help_overlay_geometry::MAX_BOX_H;
+}
 
 class HelpOverlayModule {
   public:

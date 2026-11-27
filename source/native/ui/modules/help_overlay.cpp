@@ -35,7 +35,8 @@ void HelpOverlayModule::draw(Canvas& c, HelpTopic topic, const Theme& t) const {
     const Canvas::OriginScope inMiddle(c, wide_dx());   // a 640-wide dialog, in the middle
     const HelpEntry& e = help_entry(topic);
 
-    const int boxH = box_h(help_overlay_flow(e, detail::HelpFlowNoEmit{}));
+    const bool air  = help_overlay_air(e);
+    const int  boxH = box_h(help_overlay_flow(e, detail::HelpFlowNoEmit{}, air));
     const int boxY = box_y(boxH);
 
     c.reset_clip();
@@ -53,7 +54,7 @@ void HelpOverlayModule::draw(Canvas& c, HelpTopic topic, const Theme& t) const {
         c.draw_text(std::string(word, static_cast<size_t>(bytes)), row_x(row) + col * CHAR_W,
                     boxY + row_dy(row) + TEXT_PADDING, isKey ? t.textEmpty : t.textValue,
                     CHAR_SPACING, FONT_SCALE);
-    });
+    }, air);
 
     constexpr const char* HINT = "A QUICK   B / SELECT BACK";
     const int hintW = static_cast<int>(std::char_traits<char>::length(HINT)) * CHAR_W - CHAR_SPACING;

@@ -1061,6 +1061,8 @@ if(PT_STUDIO_CHECK OR PT_SAFETY_CHECK)
  target_link_libraries(ptsample-interp-check PRIVATE pt-ui)
  add_executable(ptoversampled-drive-check ../tests/studio/oversampled_drive.cpp)
  target_link_libraries(ptoversampled-drive-check PRIVATE pt-ui)
+ add_executable(pthelp-units-check ../tests/studio/help_units.cpp)
+ target_link_libraries(pthelp-units-check PRIVATE pt-ui)
  if(NOT PT_STUDIO_CHECK)   # upstream's file-validation check; the Linux build adds it in its own block
   add_executable(ptfile-validation-check ../tests/studio/file_validation.cpp)
   target_link_libraries(ptfile-validation-check PRIVATE songcore)

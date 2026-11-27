@@ -350,13 +350,15 @@ inline const std::vector<std::vector<std::string>>& effect_descriptions() {
                       "does nothing in a table"},
         /* 46 CHD */ {"CHD: Chord on this note", "x=chord 0=maj 1=min .. F=m11", "y=0-3 inversion, +4 drop-2",
                       "+8 drop-3, +C spread"},
-        /* 47 LPO */ {"LPO: Loop window slide", "moves the whole loop, both ends", "10=one loop 01=a 16th", "F0=back a loop  adds up"},
-        /* 48 MPG */ {"MPG: MIDI program change", "xx=program (00-7F)", "external instruments only"},
-        /* 49 MPB */ {"MPB: MIDI pitch bend", "00=down 80=centre FF=up", "how far: the instrument BEND", "external only, holds till stop"},
-        /* 50 CCA */ {"CCA: MIDI CC slot A", "xx=value (00-FF)", "moves the CC number set in", "the instrument CC A row"},
-        /* 51 CCB */ {"CCB: MIDI CC slot B", "xx=value (00-FF)", "moves the CC number set in", "the instrument CC B row"},
-        /* 52 CCC */ {"CCC: MIDI CC slot C", "xx=value (00-FF)", "moves the CC number set in", "the instrument CC C row"},
-        /* 53 CCD */ {"CCD: MIDI CC slot D", "xx=value (00-FF)", "moves the CC number set in", "the instrument CC D row"},
+        /* 47 PRB */ {"PRB: Chance this row plays", "xx=chance (00 and FF=always)", "80=about half the passes",
+                      "same rows every play and export"},
+        /* 48 LPO */ {"LPO: Loop window slide", "moves the whole loop, both ends", "10=one loop 01=a 16th", "F0=back a loop  adds up"},
+        /* 49 MPG */ {"MPG: MIDI program change", "xx=program (00-7F)", "external instruments only"},
+        /* 50 MPB */ {"MPB: MIDI pitch bend", "00=down 80=centre FF=up", "how far: the instrument BEND", "external only, holds till stop"},
+        /* 51 CCA */ {"CCA: MIDI CC slot A", "xx=value (00-FF)", "moves the CC number set in", "the instrument CC A row"},
+        /* 52 CCB */ {"CCB: MIDI CC slot B", "xx=value (00-FF)", "moves the CC number set in", "the instrument CC B row"},
+        /* 53 CCC */ {"CCC: MIDI CC slot C", "xx=value (00-FF)", "moves the CC number set in", "the instrument CC C row"},
+        /* 54 CCD */ {"CCD: MIDI CC slot D", "xx=value (00-FF)", "moves the CC number set in", "the instrument CC D row"},
     };
     return d;
 }

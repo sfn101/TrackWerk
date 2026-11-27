@@ -95,9 +95,10 @@ inline bool settings_row_visible(SettingsRow row, const PlatformCaps& caps) {
     }
 }
 
-// Can the cursor stop here? LATENCY is shown, never selected: the walk steps over it.
+// Can the cursor stop here? Every visible row, LATENCY too: it is read-only, but SELECT on it explains
+// the number (specs/help-and-lessons.md, phase A).
 inline bool settings_row_selectable(SettingsRow row, const PlatformCaps& caps) {
-    return row != SettingsRow::LATENCY && settings_row_visible(row, caps);
+    return settings_row_visible(row, caps);
 }
 
 // The next selectable row in display order, `delta` ±1, wrapping; `from` if there is no other.

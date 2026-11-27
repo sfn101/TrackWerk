@@ -45,6 +45,10 @@ Studio's recorder records mics, line-ins and USB interfaces into Documents\Track
 If it says WINDOWS BLOCKS THE MIC, open Windows Settings > Privacy & security > Microphone and turn on
 "Let desktop apps access your microphone".
 
+SETTINGS > AUDIO OUT picks where the sound goes: SYSTEM (Windows' own output) or an installed
+ASIO driver (your interface's, or ASIO4ALL), which cuts the delay between a key press and the
+sound. SETTINGS > LATENCY shows that delay. The buffer size is set in the driver's own panel.
+
 
 CONTROLS
 --------

@@ -10,23 +10,21 @@ pitched down go dull. Better modes fix that.
 ## Modes
 
 - **The list:** NONE, LINEAR (today's), CUBIC, SINC 8, SINC 8 LP.
-- **Source:** ported from OpenMPT's resampler, only where it fits the float mixer. It is BSD-3, which fits GPL-3; its
-  notice goes in `docs/licenses/THIRD-PARTY-NOTICES.md`.
+- **Source (decided 2026-11-27):** written for TrackWerk from the standard formulas (Catmull-Rom cubic, windowed
+  sinc), not ported: no download and no new licence notice.
 - No separate Hermite: it would sound the same as CUBIC.
 - The downsample effect keeps its own quantized read.
 
-## Where the mode is saved
+## Where the mode is saved (decided 2026-11-27)
 
-- **The song** keeps its mode in the file. Opening a song plays the song's mode.
-- **The device** keeps a default. A new song starts with it, and closing a song and starting a new one goes back to it.
-  Opening a song never changes it.
-- **Old songs** (no mode in the file) load as LINEAR, so they sound as they did. Saving writes the mode; not saving
-  changes nothing.
-- **The SETTINGS mode row** changes the open song's mode. On a new song it first asks whether the choice is for this song
-  only or for the device default, with an info text that explains the difference. That is the only way to change the
-  device default.
-- **File format:** the mode raises the song's `version` and `minReader` (refuse-newer-files.md). An older app would play
-  it as LINEAR, which changes the sound.
+- **The song** keeps its mode: PROJECT > `INTERP`, changed per song like `LIMITER`. Opening a song plays the song's mode.
+- **New songs** start on the device default, SETTINGS > `INTERP DEFAULT` (factory: CUBIC). Changing it never changes
+  an open or saved song.
+- **Old songs** (no mode in the file) open as LINEAR, so they sound as they did.
+- No "this song or the device default?" question: the two rows are separate.
+- **File format:** a song whose mode isn't LINEAR saves as format 3 (`version` 3, `minReader` 3), so older apps refuse
+  it with `UPDATE TO OPEN`. A LINEAR song writes no field and keeps the lowest format its other settings need (1, or 2
+  for LIMITER CLEAN).
 
 ## Device limit
 
@@ -73,7 +71,5 @@ pitched down go dull. Better modes fix that.
 
 ## Help
 
-- SELECT help for the two SETTINGS rows (mode and limit), including the "this song or device default" question
-  (`help_text.h`).
-- Manual, SETTINGS section: the modes, the two saved places, and the limit.
-- THIRD-PARTY-NOTICES: the OpenMPT notice.
+- SELECT help for PROJECT `INTERP` and the two SETTINGS rows, `INTERP DEFAULT` and `INTERP LIMIT` (`help_text.h`).
+- Manual: the PROJECT row, and the SETTINGS rows for the default and the limit.

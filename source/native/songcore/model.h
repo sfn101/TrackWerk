@@ -486,6 +486,9 @@ struct Project {
     // PROJECT > LIMITER: 0 CLASSIC, 1 CLEAN. ⚠️ 0 is what a file without the field plays with;
     // new_project() starts songs on CLEAN.
     int limiterMode = 0;
+    // PROJECT > INTERP (sample-interp.h). ⚠️ 1 (LINEAR) is what a file without the field plays with;
+    // a new song takes the device default (SongcoreHost::new_project).
+    int interpMode = 1;
     std::vector<EqPreset> eqPresets;              // 128, filled by the factory
     // ⚠️ `reverbFeedback` is the DCAY cell (the tail's length); the JSON key keeps the old name. The
     // room is `reverbSize`.

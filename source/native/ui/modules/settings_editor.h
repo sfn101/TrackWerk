@@ -81,6 +81,12 @@ struct SettingsValues {
     // ⚠️ This default reaches upgrading installs, so it is the long-standing behaviour.
     int  helpMode         = 1;
 
+    // ── Sample interpolation (specs/sample-interpolation.md), sample-interp.h's numbers ──────────
+    // INTERP DEFAULT: what a new song's PROJECT > INTERP starts on. INTERP LIMIT: the highest mode live
+    // playback uses; renders ignore it. The handheld shell lowers the factory limit before loading.
+    int  interpDefault    = 2;   // CUBIC
+    int  interpLimit      = 4;   // SINC 8 LP: every mode
+
     // ── The rows every platform has ──────────────────────────────────────────────────────────────
     // SCALING (specs/sharp-scaling.md): SCALING_INT, SCALING_SHARP or SCALING_BILINEAR. A new install
     // gets SHARP; an older settings.json's scalingBilinear carries over (settings_store.cpp).

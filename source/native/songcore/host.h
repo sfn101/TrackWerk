@@ -291,6 +291,8 @@ class SongcoreHost {
 
     // A blank document, and an engine that has forgotten the last one.
     void new_project();
+    // SETTINGS > INTERP DEFAULT: the INTERP a new song starts with (sample-interp.h).
+    void set_new_song_interp(int mode) { newSongInterp_ = mode >= 0 && mode < 5 ? mode : 2; }
 
     // Unused chains and phrases back to factory; no engine call.
     void clean_seq() { songcore::clean_unused_seq(project_); }
@@ -607,6 +609,7 @@ class SongcoreHost {
 
     std::string granularError_;
     Project project_ = make_default_project();
+    int newSongInterp_ = 2;   // CUBIC
     std::string projectSha_ = "-";
     // set_app_root() plus the last load_media(); both empty ⇒ no resolving (the tools' default)
     MediaRoots mediaRoots_;

@@ -367,6 +367,9 @@ enum class HelpTopic {
     SET_SCREEN,
     SET_TOUCH_BUTTONS,
     PROJECT_LIMITER,
+    PROJECT_INTERP,
+    SET_INTERP_DEFAULT,
+    SET_INTERP_LIMIT,
 
     COUNT
 };
@@ -2688,6 +2691,33 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
       "apps cannot open CLEAN songs,",
       "CLASSIC ones open anywhere."},
      {"A+←/→ picks CLASSIC or CLEAN"}},
+    /* PROJECT_INTERP */
+    {"INTERP: sample quality", "How a pitched sample is read.", "CUBIC and SINC sound clearer.",
+     {"NONE: gritty, no smoothing.",
+      "LINEAR: the older sound, dull",
+      "when pitched down. CUBIC: clear.",
+      "SINC 8: clearer still. SINC 8",
+      "LP also stops harsh tones when",
+      "pitched up. Older songs open on",
+      "LINEAR. Older apps cannot open",
+      "a song that is not on LINEAR."},
+     {"A+←/→ picks the mode"}},
+    /* SET_INTERP_DEFAULT */
+    {"INTERP DEF: new songs", "The INTERP a new song starts", "on. Open songs keep theirs.",
+     {"Sets PROJECT INTERP for every",
+      "new song. It never changes a",
+      "song you open or have saved.",
+      "Each song keeps its own INTERP."},
+     {"A+←/→ picks the mode"}},
+    /* SET_INTERP_LIMIT */
+    {"INTERP MAX: device ceiling", "The best mode this device plays.", "Lower it if the audio crackles.",
+     {"Higher modes cost more CPU. A",
+      "song asking for more plays at",
+      "this mode and keeps its own.",
+      "Exports always use the mode the",
+      "song asks for, so they sound the",
+      "same on every device."},
+     {"A+←/→ picks the mode"}},
 };
 
 // ─── Rules 2 and 3, as compile errors — at runtime they fail silently ────────────────────────────
@@ -2883,6 +2913,7 @@ inline HelpTopic project_cell_topic(int row, int column) {
         case ProjectRow::TRANSPOSE: return HelpTopic::PROJECT_TRANSPOSE;
         case ProjectRow::SWING:     return HelpTopic::PROJECT_SWING;
         case ProjectRow::LIMITER:   return HelpTopic::PROJECT_LIMITER;
+        case ProjectRow::INTERP:    return HelpTopic::PROJECT_INTERP;
         case ProjectRow::NAME:      return HelpTopic::PROJECT_NAME;
         case ProjectRow::PROJECT:
             return column == 1   ? HelpTopic::PROJECT_SAVE
@@ -3012,6 +3043,8 @@ inline HelpTopic settings_cell_topic(int row, int column) {
         case SettingsRow::SCALING:    return HelpTopic::SET_SCALING;
         case SettingsRow::SCREEN:     return HelpTopic::SET_SCREEN;
         case SettingsRow::TOUCH_BTNS: return HelpTopic::SET_TOUCH_BUTTONS;
+        case SettingsRow::INTERP_DEF: return HelpTopic::SET_INTERP_DEFAULT;
+        case SettingsRow::INTERP_LIM: return HelpTopic::SET_INTERP_LIMIT;
         case SettingsRow::OVERLAY:
             return second ? HelpTopic::SET_OVERLAY_STRENGTH : HelpTopic::SET_OVERLAY;
         case SettingsRow::BTN_SOUND:

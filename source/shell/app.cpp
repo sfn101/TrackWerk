@@ -299,6 +299,10 @@ void make_app_folders(const AppConfig& cfg, ui::FileSystem& filesystem) {
 
 // settings.json, then config.json and the factory banks.
 void load_settings_and_config(ui::FileSystem& filesystem, ui::AppState& state, SdlInput& input) {
+#ifdef PT_HANDHELD
+    // shortcut: CUBIC is the handheld ceiling until it is measured on an RGB20S (specs/sample-interpolation.md).
+    state.settings.interpLimit = INTERP_CUBIC;
+#endif
     // ⚠️ False also means a file that would not parse — and the save at quit overwrites it, so say so.
     if (ui::load_settings(filesystem, state.settings, state.theme)) {
         std::printf("settings: %s\n", filesystem.settings_path().c_str());
@@ -1398,6 +1402,20 @@ void FrameLoop::draw_frame(Uint64 now) {
     const bool masterMaxChanged = oldMasterMaxL != state.masterMaximum[0] ||
                                   oldMasterMaxR != state.masterMaximum[1];
 
+    // SETTINGS > INTERP DEF / INTERP MAX, read every frame like the metronome. The status line says so
+    // when the song asks for more than this device plays live.
+    host.set_new_song_interp(state.settings.interpDefault);
+    engineRef.setInterpLimit(state.settings.interpLimit);
+    {
+        static bool wasLimited = false;
+        const bool limited = engineRef.interpLimited();
+        if (limited && !wasLimited) {
+            state.statusMessage = std::string("INTERP LIMITED TO ") + interp_name(state.settings.interpLimit);
+            state.statusSuccess = false;
+        }
+        wasLimited = limited;
+    }
+
     // Read every frame so no edit site has to push it. 0x80 lands at -12 dBFS, below the limiter.
     engineRef.setMetronome(state.settings.metronomeEnabled,
                            static_cast<float>(state.settings.metronomeVolume) / 255.0f * 0.5f);
@@ -1722,6 +1740,13 @@ int run(const AppConfig& cfg) {
         senderOn = midiSender.start();
     }
 
+    // A blank boot song starts on the user's INTERP DEFAULT, so it is read before the song opens.
+    {
+        ui::SettingsValues early;
+        ui::Theme earlyTheme = ui::theme_default();
+        ui::load_settings(filesystem, early, earlyTheme);
+        host.set_new_song_interp(early.interpDefault);
+    }
     log_startup_phase("opening boot project begin");
     if (!open_boot_project(cfg, host)) return 1;
     log_startup_phase("opening boot project ready");

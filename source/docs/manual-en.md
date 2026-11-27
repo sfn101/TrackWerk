@@ -1,7 +1,7 @@
 # TrackWerk 1.3 Reference Manual
 
-**Manual revision:** TrackWerk 1.3 core reference  
-**Covers:** the inherited PocketTracker core. For current TrackWerk Studio, design, sampling and installation workflows, use the [illustrated handbook](https://kidbee85-beep.github.io/TrackWerk/guide.html).
+**Manual revision:** TrackWerk 1.3, this fork's complete reference  
+**Covers:** every screen, the Studio, and what this fork adds (see [What this fork adds](#appendix-what-this-fork-adds)).
 
 ---
 
@@ -35,7 +35,8 @@
 26. [Workflow Tips](#26-workflow-tips)
 27. [Configuration File (config.json)](#27-configuration-file-configjson)
 28. [Appendix: Controls Cheat Sheet](#appendix-controls-cheat-sheet)
-29. [Appendix: Studio additions in 1.3](#appendix-studio-additions-in-13)
+29. [Appendix: Studio](#appendix-studio)
+30. [Appendix: What this fork adds](#appendix-what-this-fork-adds)
 
 ---
 
@@ -61,7 +62,9 @@ PocketTracker stores everything in a single project file (`.ptp`). Sounds come f
 1. Download the latest `.apk` from the project releases page.
 2. On your Android device, enable **Install from unknown sources** in Settings → Security.
 3. Open the downloaded `.apk` and tap **Install**.
-4. Launch the app and choose a folder for it to work in — see below. PocketTracker asks for **no permissions at all**.
+4. Launch the app and choose a folder for it to work in — see below. TrackWerk asks for no storage permission; it asks to show notifications (Android 13 and later) and for the microphone only when you record.
+
+**Updating.** Install the new `.apk` over the existing TrackWerk app. Do not uninstall first: uninstalling can remove the app's own data. Every release keeps the same app ID (`com.kidbunka.trackwerk`) and a higher version code, so Android accepts it as an update.
 
 ### Choosing your folder
 
@@ -308,6 +311,15 @@ Both keyboard and gamepad work simultaneously.
 | SELECT | Show help for the cell under the cursor; file-management modifier in the file browser; cancels the keyboard overlay |
 | START | Play / Stop |
 
+More chords that open things:
+
+| Input | Action |
+|---|---|
+| R + SELECT | Open Studio on the Synth page for the current instrument (from SONG, CHAIN, PHRASE, INSTRUMENT, TABLE, the instrument pool, MODS, GROOVE, SCALE, MIXER, EFFECTS, PROJECT). Either press order works. Inside Studio, R + SELECT leaves it. |
+| L + SELECT | Open Studio on the Punch page (same screens). |
+| SELECT + START | Open the show view. |
+| Hold L + R for one second | Open the AUDIO DRIVERS list (Windows, and Linux devices that play through ALSA). UP/DOWN chooses an output, **A** switches to it, **B** closes. A quick L + R stays CANCEL. |
+
 > [!TIP]
 > Pressing **A** on an empty note cell re-inserts the last note you placed — same pitch, same instrument. This is the fastest way to place a drum pattern: move to the row, press A, move on.
 
@@ -320,6 +332,8 @@ Tap **SELECT** for help on the cell the cursor is on. **SETTINGS → HELP** choo
 - **OFF** — **SELECT** shows no help.
 
 The strip uses the theme's **VIZ BG** and **VIZ WAVE** colours.
+
+**First Beat.** A guided first song for someone new to trackers. Open help with **SELECT**, then press **START** to begin. If the current song has unsaved changes, it asks first. It then starts a new project named `FIRSTBEAT` (or `FIRSTBEAT2`, `FIRSTBEAT3`, …) and walks through ten steps: put a chain in on SONG, a phrase in on CHAIN, reach PHRASE, give instrument 00 a built-in synth sound, enter four notes, play them, change a note, delete a note, save, and load the song again. Each step is ticked off by what you actually do, never by a timer. A small card shows the current step. In help, **L** steps back one step; **START** again ends First Beat.
 
 ---
 
@@ -1576,6 +1590,8 @@ Navigate here: **R+UP** from SONG or CHAIN.
 | SETTINGS | Open the SETTINGS screen (press A). |
 | MIDI | Open the MIDI screen (press A) — see [section 22](#22-midi-screen). |
 
+**Credits for found sounds.** When the song plays a sample taken from Studio > Sources, EXPORT and COLLECT also write a credits file: `<name>-CREDITS.txt` beside a mix or in the stems folder, and `CREDITS.txt` in the collected song folder. It lists each found sound with its creator, licence and links, then the sounds that are not cleared for a release. It is a reading aid; the licence page it links to is what counts.
+
 A song whose files have gone missing from their own folders plays the copies in its `Songs/` folder, and a collected song whose copies are gone plays the originals.
 
 **Damaged songs.** A song file with values the app cannot use (a tempo outside 20..999, an instrument number outside 00..7F, a phrase shorter than 16 steps, a groove step outside -1..255) is not loaded straight away: the box `FILE DAMAGED - REPAIR?` opens.
@@ -1638,6 +1654,7 @@ All value rows are edited with **A + D-pad**. A single **A** press is reserved f
 | SCREEN | 4:3 / 16:9 | The picture's shape. **4:3** (the default) is the classic 640×480 picture. **16:9** fills a wide screen; see *Wide mode* below. The change applies the next time the app starts: until then the row shows `RESTART TO APPLY`. |
 | SCALING | INT / SHARP / BILINEAR | How the picture is enlarged to your screen, crispest to softest. **INT** enlarges by whole steps only: perfectly crisp, but on a screen that isn't a whole multiple of 640×480 (a 960×544 RG505, a 1280×720 handheld) it stays small with wide borders. **SHARP** (the default for new installs) fills the screen like BILINEAR and stays nearly as crisp as INT: it enlarges by a whole step first, then shrinks smoothly to fit. **BILINEAR** fills the screen but looks soft. If a device's graphics can't do SHARP, the row shows `SHARP (BILINEAR)` and the app uses BILINEAR. An older install keeps its choice: INT stays INT, BILINEAR stays BILINEAR. |
 | AUDIO OUT | SYSTEM / an ASIO driver | **Windows only.** Where the sound goes. **SYSTEM** plays through Windows' own output. Picking an installed ASIO driver (your audio interface's, or ASIO4ALL) plays straight to it, with much less delay between a press and the sound. The switch happens at once; the buffer size is set in the driver's own control panel. A driver usually takes the interface for itself, so other programs may go quiet on it while PocketTracker plays. If the driver cannot be opened — another program holds it, or the interface is unplugged — the app keeps playing through the previous output and says why. Unplugged while playing, it moves to **SYSTEM** (AUDIO OUT LOST) and goes back to the interface when it is plugged in again. |
+| LATENCY | read only | The delay from a key press to the sound, at best, in milliseconds: the audio buffer the output plays through, plus 1.5 ms on a song with LIMITER CLEAN. It reads `>= 10.7 MS` when the system tells only the app's own buffer (the real delay is then a little longer), and `-` before the output has opened. The buffer size is the main lever: smaller is faster but may crackle; on Windows an ASIO driver is fastest. The cursor can stop on it for its **SELECT** help; nothing changes it here. |
 | INTERP DEF | NONE / LINEAR / CUBIC / SINC 8 / SINC 8 LP | The sample quality a **new** song starts with: its PROJECT > INTERP (see §19). CUBIC from the factory. It never changes a song you open or have saved; each song keeps its own. |
 | INTERP MAX | NONE … SINC 8 LP | The best sample quality this device plays live. A song asking for more plays at this mode, keeps its own setting, and the status line says `INTERP LIMITED TO <mode>`. Higher modes cost more CPU: lower this if the audio crackles. Exports, stems and resample always use the song's own mode, so a file sounds the same from any device. SINC 8 LP (every mode) from the factory, CUBIC on the handhelds. |
 | BTN SOUND | ON / OFF (+ VOL) | Play a click sound on button press. The **VOL** sub-column to its right sets click volume (`00`–`FF`). |
@@ -1650,6 +1667,7 @@ All value rows are edited with **A + D-pad**. A single **A** press is reserved f
 | NOTE PREV | ON / OFF | On the PHRASE screen, play the note under the cursor for as long as you hold **A** — when you insert it, change it with A + D-pad, or just hold A on it. Not in selection mode, and not while playing. |
 | VISUALIZER | SCOPE … RIDGE (23 styles) | Visualizer style for the top bar and the VI screen (see §3 for descriptions). |
 | HELP | OFF / SHORT / FULL | What a tap of **SELECT** shows: nothing, three lines in the visualizer strip, or a full help screen (see §5.2, *Help on SELECT*). |
+| APPEARANCE | PALETTE / FONT > | Press **A** to open the Appearance page. **B** returns to SETTINGS. |
 | THEME | theme name > | Shows the current theme name. Press A to open the THEME EDITOR. |
 | TEMPLATE | SAVE / CLEAR | SAVE stores the current project as a template for new projects. CLEAR removes the saved template. |
 | ABXY | AUTO / XBOX / NINTENDO | Which face button your controller has **printed** A. Appears only while a controller is attached. **AUTO** trusts the controller and is right for a handheld's built-in pad and for a real Switch pad. Use **NINTENDO** if A is the right-hand button but the app reads it as B - common with 8BitDo pads in XInput mode, which report themselves as Xbox controllers. **XBOX** = A is the bottom button. Keyboard keys are never affected. |
@@ -1666,6 +1684,19 @@ Unclip the controller or turn the phone and it centres again.
 the on-screen buttons off. On a device that has both, the LAYOUT row offers **FULL** (no on-screen
 buttons) and **PORTRAIT** (keep them), so you can use the touchscreen and the controller together.
 BTN SOUND and BTN VIBRO appear only while the on-screen buttons are actually shown.
+
+### Appearance and Scenes
+
+The Appearance page has four rows:
+
+| Row | What it does |
+|---|---|
+| Design collection | **A** opens SCENE PRESETS: 40 complete looks (colours, material, lettering) in ten families of four: UNSCII, ASCII, DOS, TERM, ANSI, RASTER, INTRO, VECTOR, DAYLIGHT and HARDWARE. LEFT/RIGHT changes the family, UP/DOWN the look, **A** applies, **B** goes back. **A + LEFT/RIGHT** on this row steps through the built-in palettes instead. |
+| Material | The surface texture behind panels (18 choices). |
+| Typeface | The lettering of the grid, Studio, browser and sample editor: CLASSIC and 16 others. It does not change the palette. |
+| Motion | ON / OFF. ON animates the cursor, lists, tabs and the Studio pictures. OFF keeps the interface still; the playing row stays marked. |
+
+The DAYLIGHT family (NEWSPRINT, SUNNY LCD, WHITE PRINT, HIGH CONTRAST) has light backgrounds for a screen used outdoors. A design choice never changes the song. THEME still opens the THEME EDITOR for single colours.
 
 ### Wide mode (16:9)
 
@@ -2044,6 +2075,20 @@ the note and every effect on it are skipped, and the row still takes its time.
 
 A pass is one time the track starts the phrase, counted on each track from the moment playback
 starts — so starting from the middle of a song counts from 1 again. `NTH` does nothing in a table.
+
+---
+
+### PRB `XX` — Probability
+
+The row plays with a chance of `XX` out of 256 on each pass of its phrase. On the other passes it is an empty row: the note and every effect on it are skipped, and the row still takes its time. `00` and `FF` always play; `80` plays about half the time.
+
+```
+    00    C-4 00  ---                ← every pass
+    04    E-4 00  PRB 80             ← about every other pass
+    08    G-4 00  PRB 40             ← about one pass in four
+```
+
+The draw depends only on the track, phrase, row and pass, not on a clock. So a render, a second play-through and the MIDI export all skip the same rows, and two `PRB 80` rows do not copy each other. `NTH` and `PRB` on one row must both agree for it to play.
 
 ---
 
@@ -2797,6 +2842,12 @@ sample — handy for grabbing a sound straight from a clip without a separate co
 - Format: `.ptt` (JSON color theme)
 - Saved/loaded from: SETTINGS → THEME → open THEME EDITOR → SAVE / LOAD
 
+### Studio folders
+
+- `SysEx/`: DX7 voice banks (`.syx`) for the FM SYSEX synth. Files are read in name order; up to 29 files are used, unreadable or oversized ones are skipped.
+- `Presets/Lyrics/`: Froggy's lyric templates (`.txt`). The first look at an empty folder writes a few starter lines.
+- `Samples/Resampled/`: live resample takes, named `LiveTake_<time>_<n>.wav`.
+
 ### Resampled instruments
 
 Created via Selection Resampling:
@@ -3412,6 +3463,7 @@ Open with **A** on an EQ cell.
 | CHD | Chord | `XY` | X = one of 16 chords, Y = inversion and layout. This row's note only. ARC right of it strums it. In a table: columns at TIC 00, FC, FE |
 | CHA | Chance | `XY` | X = chance of the nearest filled FX to its left (or the note), Y = to its right (0=never F=always) |
 | NTH | Nth Pass | `XY` | The row plays on pass X of every Y passes of its phrase (Y=0: on pass X only). Phrase only |
+| PRB | Probability | `XX` | The row plays with a chance of XX/256 on each pass (00 and FF always). Same rows every play and export. Phrase only |
 | LAT | Latency | `XX` ticks | Delays row trigger |
 | GRV | Groove | `XX` | Assigns groove to this track |
 | HOP | Hop/Jump | `XY` | Phrase: next phrase starts at row Y (FF=stop track). Table: jump to row Y, X times (0=forever) |
@@ -3486,9 +3538,85 @@ Note offsets:  C   C#  D   D#  E   F   F#  G   G#  A   A#  B
 
 ---
 
-## Appendix: Studio additions in 1.3
+## Appendix: Studio
 
-This appendix lists the keys of the 1.3 Studio additions. The illustrated update guide (`docs/site/update-1.3.html`) shows them with pictures.
+Studio is where sounds are made and shaped: synths, effects, the master stage, Punch, recording, Drumlab, Sources and Harmony. This appendix is its full reference.
+
+**Opening and leaving Studio.** **R + SELECT** opens Studio on the Synth page for the current instrument; **L + SELECT** opens it on Punch. **B** (a tap) returns to the tracker. **START** plays and stops the song as usual.
+
+**Sections.** Studio has eight sections, in this order: Synth, FX, Master, Punch, Record, Drumlab, Sources, Harmony. **B + LEFT/RIGHT** steps to the previous or next one. **B + SELECT** opens a list of all eight: UP/DOWN chooses, **A** opens, **B** goes back. Changing section stops any preview there.
+
+**Help in Studio.** **SELECT** opens a short QUICK HELP for the page you are on. **A** switches to the detailed help, which has three pages (Workflow, Controls, Current context; LEFT/RIGHT) for each of nine topics (UP/DOWN). **B** or **SELECT** closes it. Opening help stops a held Punch or a preview.
+
+**Synth page.** The rows are TARGET SLOT, SYNTH MODEL, PRESET, three macros (HARMONICS, TIMBRE, MORPH on most models; each model names its own), and APPLY. There are 128 models with 16 sounds each.
+
+- **A** on SYNTH MODEL or PRESET opens the picker. **Hold L** to audition while you browse.
+- **A + arrows** edits a value (UP/DOWN in larger steps). **R + LEFT/RIGHT** changes page. **Hold L** auditions the sound.
+- The page header reads **DRAFT** until the sound is in the slot. **A** on APPLY puts it in; if the slot already holds a sample, SoundFont or another sound, it asks first (`A AGAIN: REPLACE`). From then on it reads **LIVE**: edits reach the instrument at once.
+- On the bottom row, RIGHT selects **A/B**. **A** stores the current sound as A; edit freely, then **A** on A/B swaps between your two versions while you listen. **A + UP** stores the current sound as a new A.
+- Pages: the macros, one or more Engine pages, Filter / Drive, Amplifier / Tune, ADSR envelope and XY pad. On the XY pad, hold **L** and use the D-pad to move the dot: X and Y are the first two macros.
+
+**Sound browser.** In the PRESET picker, LEFT/RIGHT moves along the tabs MODEL, FAV, RECENT, ALL, BASS, LEAD, KEYS, CHORD, PAD, TEXTURE, FX and DRUM. MODEL lists the current model's 16 sounds; the others list the factory instrument presets by type. UP/DOWN chooses a sound, **A + UP/DOWN** moves a page.
+
+| Key | Does |
+|---|---|
+| Hold L | Listen; the slot is not changed |
+| A + LEFT/RIGHT | Preview level (10–200 %, preview only) |
+| A | Use the sound in this slot; A again keeps it |
+| B | Undo and close |
+| R | Star a factory sound; starred sounds are on FAV (up to 64) |
+
+RECENT holds the last 24 sounds used.
+
+**FM SYSEX (Vintage Chips).** Plays DX7-format voices. The **Bank** row offers three built-in banks, then each `.syx` file in the `SysEx/` folder. **Voice** picks one of the bank's 32 voices. The song keeps a copy of the chosen voice, so it plays the same even without the bank file. Brightness and Envelope sound as stored at their centre; Velocity is the key strength the voice responds to. Only DX7 voice banks are read: other SysEx dumps are skipped.
+
+**Low End and Sirens.** Four models, sixteen sounds each:
+
+| Model | Macros | Rows |
+|---|---|---|
+| ACID BOX | Cutoff, Resonance, Env mod | Wave (saw / square), Decay, Accent, Squash, Sub |
+| REESE BASS | Detune, Cutoff, Movement | Voices (two or three saws), Sub, Resonance, Squash, Drift speed |
+| DUB SIREN | LFO rate, LFO depth, Sweep | Wave, LFO shape, Cutoff, Resonance, Sweep time, Fine tune, Ping |
+| CROAKER | Croak, Throat, Dip | Species (tree frog, bullfrog, toad, peeper), Pulses, Croak depth, Throat, Chirp, Bubble |
+
+Every model also has Output tone and Drive. CROAKER's pages are named Stage, Frog, Croak, Air. For echo and space, use the instrument's reverb and delay sends.
+
+**The frog stage.** Froggy and Croaker draw a frog on their first page (Stage) and on the XY pad page. Its mouth and throat follow the level of what is playing; the firefly is the XY pad's dot. The readouts F1, F2 and F3 are the formants the current settings give an "ah". Froggy shows the word being sung, with one dot per syllable. The picture moves only while SETTINGS > APPEARANCE > Motion is ON.
+
+**Sample Granular.** **A + DOWN** on SYNTH MODEL switches the page to Sample Granular, which plays a loaded recording as grains.
+
+- **A** on LOAD SOURCE chooses the audio. Crop long sources first: the whole file is decoded into memory.
+- On the waveform, **A** switches between View and Position. In View, **A + UP/DOWN** zooms and **A + LEFT/RIGHT** pans. In Position, **A + LEFT/RIGHT** nudges the grain start and **A + UP/DOWN** jumps further.
+- Hold **R + SELECT** to audition, and move Position while you listen. **R + LEFT/RIGHT** changes page.
+- **A** on GRAIN PRESET browses the factory banks (**L/R** change bank). **A + DOWN** adds the highlighted preset to Favorites (up to 16), **A + UP** opens Favorites.
+- A/B works as on the Synth page; **A + LEFT/RIGHT** on A/B blends the two.
+- REC records the root or the playing mix; STOP saves the WAV; USE TAKE opens it in a free instrument slot.
+- A preset saved with settings only keeps your current source; a full patch names its source file, which must travel with the project (use COLLECT).
+
+**FX page.** A mix effect after the tracks. Rows: FACTORY PRESET (**A** applies it), MODULE, MIX, COLOR, TEXTURE, FEEDBACK, ACTIVE (on/off), USER SLOT (1–16), SAVE CUSTOM, LOAD CUSTOM and FX LIBRARY (browse the preset files by category). The module decides what COLOR and TEXTURE do.
+
+**Master page.** The last stage before the output. Rows: FACTORY PRESET, ACTIVE, SATURATION, COMP THRESHOLD (−48 to 0 dB), COMP RATIO (1:1 to 20:1), ATTACK (1–100 ms), RELEASE (20–1000 ms), STEREO WIDTH, OUTPUT GAIN (±20 dB), PEAK CEILING (−12 to 0 dBFS), HIGH PASS (off, 10–200 Hz), USER SLOT, SAVE CUSTOM, LOAD CUSTOM and MASTER LIBRARY. FX and Master keep separate custom slots; loading one never changes the other. On both pages, **A + UP/DOWN** changes a value in steps of 16.
+
+**Punch.** 64 momentary effects in eight banks of eight: RHYTHM, TAPE, FILTER, DUB / SPACE, CUT / GLITCH, GRANULAR, MODULATION, DAMAGE. The screen shows the bank as 4 × 2 pads.
+
+| Key | Does |
+|---|---|
+| D-pad | Choose a pad |
+| L / R | Previous / next bank |
+| Hold A | Play the effect on the mix; release A to return to the dry mix |
+
+Punch changes only what you hear; it never rewrites notes. Help, STOP, a bank change and leaving the page all release it.
+
+**Live resample.** Records what TrackWerk plays (after FX and Master, Punch included) into a new sample.
+
+| Key | Where | Does |
+|---|---|---|
+| L + R + START | Anywhere | Start recording; again, stop and save |
+| B + DOWN | Synth, Punch, Record (internal mix) | Take length: FREE (up to 60 s), 1, 2, 4 or 8 bars |
+| B + UP | Same pages, song stopped | Load the saved take into an empty instrument and open it in the sample editor |
+
+A bar length is counted at the song's tempo, and every take stops at 60 seconds. On the Synth page with the song stopped, L + R + START records the synth sound on its own. The take is saved in the background; the status line says when it is ready. B + UP needs a stopped song and an empty target slot, and refuses while the sample editor holds unsaved edits; the take is kept either way. The last take is still offered after a restart.
+
 
 **Studio > Synth, model picker.** Models are sorted by purpose into tabs (Voices and Frogs, Vintage Chips, Low End and Sirens, Plaits: Macro, Braids: Digital, Rings: Strings, Elements: Modal, Grain Oscillators, Studio DSP, Gravity, Spectral). LEFT/RIGHT changes the tab, UP/DOWN the model, A chooses. The preset row shows the position (for example `4 / 16`).
 
@@ -3531,3 +3659,95 @@ Rows: Lyrics, Voice (frog, man, woman, child), Croak, Vibrato, Glide, Coda (0 = 
 | L + DOWN | Step Edit | Start or stop the preview loop |
 | B + UP / B + DOWN | Step Edit | Undo / redo the last step edit |
 | B | Step Edit | Back to the pages |
+
+**Drumlab: Euclidean and Map styles.** (add to the existing Drumlab block) The Style row offers Hip Hop, Boom Bap, Lo-Fi, Drum & Bass, House, Techno, Dub, Breakbeat, Euclidean and Map. With **Euclidean**, each lane gets three more columns (LEFT/RIGHT to reach them): PERIOD (the cycle length in steps), HITS (how many hits are spread evenly over it) and ROTATE (moves the hits later). **A + UP/DOWN** changes them by 4. Density, Variation and Fill are hidden in this style. With **Map**, each lane has its own Density, and the Map X, Map Y and Chaos rows replace Density, Variation and Fill. A locked lane keeps its rhythm, and its Euclidean or Map values cannot be changed until it is unlocked.
+
+**Sources: Archive and radio.** (before the existing YouTube text in §25, or here) Studio > Sources finds a recording, plays it, marks a range and turns it into a sample. Providers: Internet Archive, Wikimedia Commons, YouTube (opt-in), Radio Browser (live) and SomaFM (live).
+
+- **Provider** and **Genre**: **A** opens a list, **A** takes the highlighted entry, **B** keeps the old one. LEFT/RIGHT on the row changes it at once.
+- **Browse sources**: **A** opens shelves (archive) or genres (radio). **L/R** changes provider, LEFT/RIGHT the group, UP/DOWN the shelf.
+- **Search**: type a query, or use RANDOM for the chosen genre.
+- **License filter**: All licenses, Release-safe, or No credit needed. Release-safe hides non-commercial, no-derivatives and unknown terms.
+- **Results** and **Tracks**: **A** opens a result's tracks; **A** on a track plays it.
+- **IN marker** / **OUT marker**: **A** sets the mark at the playhead; **A + arrows** trims it by 10 ms or 1 s. **R + LEFT/RIGHT** seeks 5 s.
+- **Quick clip**: LEFT/RIGHT picks 10, 20, 30, 40 or 60 s; **A** marks that much from the playhead.
+- **Render selection** saves the range and opens it in the sample editor. **Target slot** is where it goes; a slot in use is replaced only after **A** again.
+- An MP3 plays while it downloads. LOADED shows what has arrived; IN, OUT and Render reach only that part.
+- Live radio: **Record live** takes 10 to 60 s (LEFT/RIGHT) and **A** starts or finishes it. Where the station keeps a history, **Rewind** goes back, **A** returns to live, and **Save last** opens the audio up to the playhead in the sample editor. **Favorite station** saves or removes the current station.
+
+Each saved take keeps a `.source.json` file with its title, creator, links and licence. Check the licence before you release music made with it; a radio recording's licence does not cover sampling.
+
+**Harmony.** Plays chords, varies a progression and writes it into a phrase. There are 48 starting progressions: six styles (Jazz, Soul, Hip-Hop, House, Electro, Ambient) with eight presets each.
+
+| Row | Does |
+|---|---|
+| TONIC | Moves every chord to another key |
+| STYLE / PRESET | Loads a progression |
+| INSTRUMENT | The sound used: a loaded sample, a SoundFont or an external MIDI instrument (not a Studio synth) |
+| LENGTH | 4 or 8 chord slots |
+| CHORD SLOT | LEFT/RIGHT chooses a slot. Hold **A** to hear it, **L** locks or unlocks it |
+| ROOT / SHAPE / VOICING | Edit the selected slot |
+| STRUM | Spreads the chord's notes (0–4) |
+| GENERATE | **A** varies the unlocked slots; locked slots stay |
+| LOOP | **A** plays all slots in turn; **A** again stops |
+| WRITE PHRASE | **A** twice writes the chords into the current phrase |
+
+Harmony plays only while the song is stopped. WRITE PHRASE works when Studio was opened from an empty phrase on the PHRASE screen: each slot becomes a note with a `CHD` command (and `ARC` when STRUM is set), spread evenly over the 16 rows. A phrase with anything in it is left alone. Back on PHRASE, **SELECT + UP** undoes the write.
+
+---
+
+## Appendix: What this fork adds
+
+This build is a fork of TrackWerk. Everything below works on every platform unless it says otherwise, and each item
+points to where the manual explains it in full.
+
+### Sound
+
+- **Master limiter (PROJECT > LIMITER).** CLEAN, the default for new songs, is louder and transparent; CLASSIC is the
+  original. Old songs keep CLASSIC. See [PROJECT Screen](#19-project-screen).
+- **Sample interpolation (PROJECT > INTERP).** Five ways to read a sample at another pitch, per song; new songs start on
+  SETTINGS > INTERP DEF, and SETTINGS > INTERP MAX caps live playback on slow devices. See
+  [PROJECT Screen](#19-project-screen) and [SETTINGS Screen](#20-settings-screen).
+- **Cleaner drive.** On INTERP CUBIC and above the instrument DRIVE and the `DRV` command run at double rate, so high
+  notes stay clean.
+- **Fake stereo loads as mono.** A stereo sample whose two sides are exact copies keeps one side only: half the memory,
+  the same sound.
+
+### Files and safety
+
+- **Songs from a newer TrackWerk are refused** with `UPDATE TO OPEN` instead of being opened with parts missing. Songs
+  that use LIMITER CLEAN or an INTERP other than LINEAR need this version; switch them back to share with older ones.
+- **Damaged songs can be repaired** on request (`FILE DAMAGED - REPAIR?`).
+- **Safe saving:** the last five versions in `Backups/`, a locked file left alone and saved beside it as
+  `NAME-backup.ptp`, a read-only folder falling back to `Projects/`.
+- **COPY** saves the song under a new name and keeps the old file. See [PROJECT Screen](#19-project-screen).
+
+### Screen
+
+- **Wide mode** (SETTINGS > SCREEN 16:9) uses the whole width of a wide screen.
+- **Sharp scaling** (SETTINGS > SCALING SHARP) fills the screen and stays crisp.
+- **The VI screen** shows the visualizer across the main area, with more visualizer styles.
+- **SETTINGS > LATENCY** shows the delay from a key press to the sound. SELECT on it explains the number.
+
+### Studio
+
+- **Drumlab** can be filled by hand, and **L + A** on a lane opens that lane's sound.
+- **Recording on Windows:** Studio RECORD records mics, line-ins and USB interfaces on Windows too. See
+  [Recording a mic, line-in or USB interface](#recording-a-mic-line-in-or-usb-interface).
+
+### Studio SOURCE
+
+Studio > Sources finds audio to sample on the internet and turns a piece of it into an instrument (the full controls are in [Appendix: Studio](#appendix-studio)). It needs a network
+connection; Android, Windows and Linux desktops have it, the handhelds don't.
+
+- **Providers:** Internet Archive, Wikimedia Commons, YouTube (off until you turn it on), Radio Browser and SomaFM. The
+  last two are live radio: you sample from what is playing.
+- **YouTube** is opt-in: **A** twice on **Provider** turns it on, **A** once turns it off. Search, a random genre search,
+  or a pasted link; see [YouTube in Studio > Sources](#youtube-in-studio--sources). Videos up to 15 minutes; live
+  streams are refused.
+- **Previews** are decoded into a cache (`Cache/Digging/`, at most 512 MB), so moving through a track and auditioning
+  is instant. A track too long for the cache is refused with a message.
+- **Taking a clip** saves the chosen part as a WAV in `Samples/Clips/`, with a `.source.json` file beside it that keeps
+  where it came from (title, author, licence, page), and loads it into the instrument slot you chose.
+- Respect each source's licence: Wikimedia and the Internet Archive name it on the clip's source page.
+

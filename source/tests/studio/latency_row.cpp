@@ -1,8 +1,9 @@
 // ptlatency-row-check: SETTINGS > LATENCY (specs/latency-display.md). Its text, its place right under
-// AUDIO OUT, shown on every platform, and never selected: the cursor walk steps over it.
+// AUDIO OUT, shown on every platform, selectable for its help, and never edited.
 // Builds with GCC and MSVC; no assert.
 // usage: ptlatency-row-check [ignored]
 #include "ui/modules/settings_editor.h"
+#include "ui/help_text.h"
 
 #include <cstdio>
 #include <string>
@@ -33,20 +34,16 @@ int main() {
     for (SettingsRow r : SETTINGS_DISPLAY_ORDER) found += (r == SettingsRow::LATENCY);
     check(found == 1, "in the display order exactly once");
 
-    // Not selectable: the cursor walk steps over it both ways, and it is never the first row.
+    // Selectable, for its SELECT help (specs/help-and-lessons.md): DOWN from AUDIO OUT lands on it, and
+    // it has its own help entry.
     PlatformCaps all;
     all.audioOutputs = true;
     const int out = static_cast<int>(SettingsRow::AUDIO_OUT);
-    const int next = settings_next_visible_row(out, +1, all);
-    check(next != static_cast<int>(SettingsRow::LATENCY) &&
-          settings_display_index(static_cast<SettingsRow>(next)) > settings_display_index(SettingsRow::LATENCY),
-          "DOWN from AUDIO OUT jumps over LATENCY");
-    check(settings_next_visible_row(next, -1, all) == out, "UP comes back to AUDIO OUT");
-    bool landed = false;
-    for (int r = 0, i = 0; i < SETTINGS_ROW_COUNT * 2; ++i)
-        landed |= (r = settings_next_visible_row(r, +1, PlatformCaps{})) == static_cast<int>(SettingsRow::LATENCY);
-    check(!landed && settings_first_visible_row(PlatformCaps{}) != static_cast<int>(SettingsRow::LATENCY),
-          "never reached, even with no AUDIO OUT row");
+    check(settings_next_visible_row(out, +1, all) == static_cast<int>(SettingsRow::LATENCY),
+          "DOWN from AUDIO OUT lands on LATENCY");
+    check(settings_next_visible_row(static_cast<int>(SettingsRow::LATENCY), -1, all) == out, "UP goes back to AUDIO OUT");
+    check(detail::settings_cell_topic(static_cast<int>(SettingsRow::LATENCY), 1) == HelpTopic::SET_LATENCY,
+          "SELECT on LATENCY explains it");
 
     // Even if a row number pointed at it, A+D-PAD would change nothing.
     SettingsValues v;

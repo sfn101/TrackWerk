@@ -2,6 +2,7 @@
 #include "songcore/host.h"
 #include "songcore/project_io.h"
 #include "ui/studio.h"
+#include "ui/fx_helper.h"
 #include "ui/studio_help.h"
 #include "ui/std_filesystem.h"
 #include "studio/synth.h"
@@ -24,6 +25,11 @@ void image(const std::filesystem::path& path,const AppState& s) {
 }
 int main(int argc,char**argv) {
     assert(argc==2);const auto out=std::filesystem::absolute(argv[1]);std::filesystem::create_directories(out);
+    // The effect help is looked up by position: one entry per EFFECT_TYPES code, each naming its own code,
+    // so a missing line can never shift every help after it onto the wrong command.
+    assert(effect_descriptions().size()==static_cast<size_t>(songcore::EFFECT_TYPE_COUNT));
+    for(int i=1;i<songcore::EFFECT_TYPE_COUNT;++i)
+        assert(effect_descriptions()[static_cast<size_t>(i)][0].rfind(songcore::effect_name(songcore::EFFECT_TYPES[i])+":",0)==0);
     StdFileSystem fs((out/"app-data").string());auto engine=std::make_unique<AudioEngine>();
     engine->setDeviceSampleRate(48000);songcore::SongcoreHost host(engine.get(),48000);
     assert(host.push_project(songcore::serialize_project(songcore::make_default_project())));

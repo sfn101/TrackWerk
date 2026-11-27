@@ -370,6 +370,7 @@ enum class HelpTopic {
     PROJECT_INTERP,
     SET_INTERP_DEFAULT,
     SET_INTERP_LIMIT,
+    SET_LATENCY,
 
     COUNT
 };
@@ -395,7 +396,7 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
       "R+B mutes, R+A solos a track",
       "L+R brings every track back",
       "L+B marks cells, B copies them",
-      "L+A pastes"}},
+      "L+A pastes, A,A resamples them"}},
     /* SCREEN_CHAIN */
     {"CHAIN: a list of phrases", "Up to 16 phrases, played from", "top to bottom.",
      {"A chain plays up to 16 phrases,",
@@ -425,7 +426,7 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
       "R+START plays the whole song",
       "R+→ opens the instrument",
       "R+← goes back to the chain",
-      "B+D-PAD goes to another phrase",
+      "B+←/→ other track, ↑/↓ in chain",
       "L+B marks cells, B copies them",
       "L+A pastes",
       "L+B+A copies it to a new phrase",
@@ -1103,14 +1104,18 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
       "New songs go to Projects. The",
       "old version is kept in Backups",
       "(the last five). Another song",
-      "with that name asks first."},
+      "with that name asks first. A",
+      "locked file is left alone: the",
+      "song is saved as NAME-backup."},
      {"A saves"}},
     /* PROJECT_LOAD */
     {"LOAD: open another song", "Opens the file browser to", "pick one.",
      {"Opens the file browser on your",
       "songs. With changes, LOAD asks",
       "first: B keeps your work. A",
-      "damaged song offers a repair."},
+      "damaged song offers a repair.",
+      "A song from a newer TrackWerk",
+      "is refused: update to open it."},
      {"A opens the file browser",
       "A there loads it, B goes back",
       "REPAIR: A fixes, loads unsaved",
@@ -2547,7 +2552,8 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
       "Move that folder to share the",
       "song. Your own files stay put."},
      {"A collects. If the folder is",
-      "there, it asks what to do."}},
+      "there, it asks what to do:",
+      "REPLACE, NEW COPY or CANCEL"}},
     /* INST_STUDIO */
     {"STUDIO: shape this sound", "Opens synths, effects and", "mastering for this instrument.",
      {"Opens the Studio directly for",
@@ -2621,7 +2627,10 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
     {"KEYBOARD: edit text", "A types. B removes a letter.", "START keeps your text.",
      {"D-pad moves between the keys.",
       "R+←/→ moves the text cursor.",
-      "R+↑/↓ switches keyboard layout."},
+      "R+↑/↓ switches keyboard layout.",
+      "A suggested name: the first B",
+      "clears it all, unless you typed",
+      "or moved the cursor first."},
      {"A types the selected key",
       "B deletes one letter",
       "R+←/→ moves the text cursor",
@@ -2721,6 +2730,17 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
       "song asks for, so they sound the",
       "same on every device."},
      {"A+←/→ picks the mode"}},
+    /* SET_LATENCY */
+    {"LATENCY: press to sound", "From a key press to the sound,", "at best. Shown only.",
+     {"It counts the audio buffer the",
+      "output plays through and, on a",
+      "song with LIMITER CLEAN, its",
+      "1.5 ms look-ahead. The buffer",
+      "is the main lever: smaller is",
+      "faster but may crackle. When",
+      "only the buffer is known, the",
+      "real delay is a bit longer."},
+     {"Shown only: nothing to change"}},
 };
 
 // ─── Rules 2 and 3, as compile errors — at runtime they fail silently ────────────────────────────
@@ -3071,7 +3091,7 @@ inline HelpTopic settings_cell_topic(int row, int column) {
             return second ? HelpTopic::SET_TEMPLATE_CLEAR : HelpTopic::SET_TEMPLATE_SAVE;
         case SettingsRow::RESUME:     return HelpTopic::SET_RESUME;
         case SettingsRow::TRACE:      return HelpTopic::SET_TRACE;
-        case SettingsRow::LATENCY:    return HelpTopic::NONE;   // the cursor never lands on it
+        case SettingsRow::LATENCY:    return HelpTopic::SET_LATENCY;
     }
     return HelpTopic::NONE;
 }

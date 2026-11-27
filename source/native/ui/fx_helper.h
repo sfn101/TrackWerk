@@ -339,7 +339,7 @@ inline const std::vector<std::vector<std::string>>& effect_descriptions() {
         /* 36 LPF */ {"LPF: Low-pass filter ON", "xx=cutoff (00=dark FF=open)", "switches the filter ON", "unlike CUT which only moves it"},
         /* 37 HPF */ {"HPF: High-pass filter ON", "xx=cutoff (00=open FF=thin)", "switches the filter ON", "unlike CUT which only moves it"},
         /* 38 BPF */ {"BPF: Band-pass filter ON", "xx=centre (00=low FF=high)", "switches the filter ON", "unlike CUT which only moves it"},
-        /* 39 DRV */ {"DRV: Overdrive", "xx=amount (00=clean FF=heavy)", "this note only"},
+        /* 39 DRV */ {"DRV: Overdrive", "xx=amount (00=clean FF=heavy)", "this note only", "cleaner on INTERP CUBIC and up"},
         /* 40 CRU */ {"CRU: Bit crush + downsample", "x=bits crushed (0=off F=most)", "y=rate drop (0=off F=most)", "this note only"},
         /* 41 FIN */ {"FIN: Fine tune", "00=flat 80=in tune FF=sharp", "one semitone either way", "bends a note already playing"},
         /* 42 TSX */ {"TSX: Transpose multiplier", "xx=how far TSP moves a note", "01=normal 02=twice 00=never", "FF=the other way FE=2x that"},

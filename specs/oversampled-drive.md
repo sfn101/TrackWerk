@@ -22,7 +22,9 @@ with a small up/down filter pair, removes most of it.
 
 - **The drive module in the instrument chain**, wherever it runs: mono and stereo paths. `odPrev` (the fading-out
   setting) is oversampled the same way.
-- **The sample editor's destructive DRIVE** runs offline, so it uses 4× for the cleanest result.
+- **The sample editor's destructive DRIVE** runs offline, so it always uses the oversampled drive, with its delay
+  removed so the edit stays in place. Built at 2× (2026-11-27): 4× through two stages has a delay that isn't a whole
+  frame, so the edit would shift by half a frame. Revisit if 2× is not clean enough there.
 - **Unchanged:** crush (its aliasing is its sound), the Studio's own drives, and every other effect.
 
 ## CPU

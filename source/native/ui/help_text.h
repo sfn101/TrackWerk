@@ -366,6 +366,7 @@ enum class HelpTopic {
     PROJECT_SAVE_AS,
     SET_SCREEN,
     SET_TOUCH_BUTTONS,
+    PROJECT_LIMITER,
 
     COUNT
 };
@@ -2676,6 +2677,17 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
       "shows them, and another hides",
       "them again."},
      {"A+←/→ picks AUTO, ALWAYS or OFF"}},
+    /* PROJECT_LIMITER */
+    {"LIMITER: mix safety net", "CLEAN: clear and louder.", "CLASSIC: the older sound.",
+     {"CLEAN looks 1.5 ms ahead, so",
+      "bass stays clean and the two",
+      "sides move together. CLASSIC",
+      "is quieter and a bit warmer.",
+      "New songs start on CLEAN, older",
+      "songs open on CLASSIC. Older",
+      "apps cannot open CLEAN songs,",
+      "CLASSIC ones open anywhere."},
+     {"A+←/→ picks CLASSIC or CLEAN"}},
 };
 
 // ─── Rules 2 and 3, as compile errors — at runtime they fail silently ────────────────────────────
@@ -2870,6 +2882,7 @@ inline HelpTopic project_cell_topic(int row, int column) {
             return column == 2 ? HelpTopic::PROJECT_TAP : HelpTopic::PROJECT_TEMPO;
         case ProjectRow::TRANSPOSE: return HelpTopic::PROJECT_TRANSPOSE;
         case ProjectRow::SWING:     return HelpTopic::PROJECT_SWING;
+        case ProjectRow::LIMITER:   return HelpTopic::PROJECT_LIMITER;
         case ProjectRow::NAME:      return HelpTopic::PROJECT_NAME;
         case ProjectRow::PROJECT:
             return column == 1   ? HelpTopic::PROJECT_SAVE

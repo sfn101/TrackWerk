@@ -233,9 +233,10 @@ CursorContext InputDispatcher::project_context() const {
 
 bool InputDispatcher::project_edit(const InputAction& action) {
     Project& p = host_.edit_project();
-    return project_
-        .handle_input(p, s_.projectCursorRow, s_.projectCursorColumn, action)
-        .modified;
+    const bool modified = project_.handle_input(p, s_.projectCursorRow, s_.projectCursorColumn, action).modified;
+    // LIMITER is master-bus state: the engine hears the switch at once.
+    if (modified && s_.projectCursorRow == static_cast<int>(ProjectRow::LIMITER)) host_.push_globals();
+    return modified;
 }
 
 CursorContext InputDispatcher::settings_context() const {

@@ -413,7 +413,9 @@ inline std::vector<T> parse_pool(const json& j, const char* k, F&& parse_elem) {
 // tracks); raise only version for harmless data (view state, a remembered cursor). An older app never
 // carries data it does not know through SAVE.
 struct FileFormat { int version; int minReader; };
-inline constexpr FileFormat SONG_FORMAT{1, 1};
+// 2: PROJECT > LIMITER (specs/master-limiter.md). A CLASSIC song still saves as {1, 1}: it holds
+// nothing format 1 lacks. See song_format().
+inline constexpr FileFormat SONG_FORMAT{2, 2};
 inline constexpr FileFormat INSTRUMENT_FORMAT{1, 1};
 inline constexpr FileFormat SCALE_FORMAT{1, 1};
 inline constexpr FileFormat GROOVE_FORMAT{1, 1};
@@ -554,6 +556,7 @@ inline Project parse_project(const json& j) {
     p.masterBusFx     = get_int(j, "masterBusFx", p.masterBusFx);
     p.dustDepth       = get_int(j, "dustDepth", p.dustDepth);
     p.limiterPreGain  = get_int(j, "limiterPreGain", p.limiterPreGain);
+    p.limiterMode     = get_int(j, "limiter", p.limiterMode) == 1 ? 1 : 0;
     p.eqPresets       = parse_pool<EqPreset>(j, "eqPresets", parse_eq_preset);
     p.reverbFeedback  = get_int(j, "reverbFeedback", p.reverbFeedback);
     p.reverbDamp      = get_int(j, "reverbDamp", p.reverbDamp);
@@ -1011,13 +1014,19 @@ inline void emit_pool(JsonWriter& w, const char* key, const std::vector<T>& pool
 
 }  // namespace detail
 
+// The numbers a song is saved with: the lowest format that holds everything in it, so a song using
+// nothing newer still opens in older apps.
+inline FileFormat song_format(const Project& p) {
+    return p.limiterMode != 0 ? SONG_FORMAT : FileFormat{1, 1};
+}
+
 // Serialize a Project to its .ptp bytes (minified, no trailing newline).
 inline std::string serialize_project(const Project& p) {
     using namespace detail;
     JsonWriter w{JsonLayout::Minified};
     w.begin_object();
     // This app's numbers, never the file's: whatever a newer file held beyond them is gone.
-    if (p.version != 0)         emit_format(w, SONG_FORMAT);
+    if (p.version != 0)         emit_format(w, song_format(p));
     if (p.name != "UNTITLED")   w.field_string("name", p.name);
     if (p.tempo != 128)         w.field_int("tempo", p.tempo);
     if (p.swing != 50)          w.field_int("swing", std::clamp(p.swing, 50, 75));
@@ -1027,6 +1036,7 @@ inline std::string serialize_project(const Project& p) {
     if (p.masterBusFx != 0)     w.field_int("masterBusFx", p.masterBusFx);
     if (p.dustDepth != 0)       w.field_int("dustDepth", p.dustDepth);
     if (p.limiterPreGain != 0)  w.field_int("limiterPreGain", p.limiterPreGain);
+    if (p.limiterMode != 0)     w.field_int("limiter", p.limiterMode);
     if(!p.m8SourceHex.empty())w.field_string("m8SourceHex",p.m8SourceHex);
     if(!p.m8ImportReport.empty())w.field_string("m8ImportReport",p.m8ImportReport);
     w.key("kidBunkaStudio");w.begin_object();w.field_int("version",1);

@@ -109,5 +109,7 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           build/windows/native/Release/ptdrumlab-manual-check.exe "$env:RUNNER_TEMP/ptdrumlab-manual-check"
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          build/windows/native/Release/ptmaster-limiter-check.exe "$env:RUNNER_TEMP/ptmaster-limiter-check"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           build/windows/native/Release/ptfile-validation-check.exe "$env:RUNNER_TEMP/ptfile-validation-check"
           if ($LASTEXITCODE) { exit $LASTEXITCODE }

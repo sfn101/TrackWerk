@@ -96,6 +96,7 @@ void ProjectModule::draw(Canvas& c, int x, int y, const ProjectState& s) const {
     param_row(ProjectRow::TRANSPOSE, "TRANSPOSE", hex2(p.transpose));
     const int swing = clamp(p.swing, 50, 75);
     param_row(ProjectRow::SWING, "SWING", std::to_string(swing) + (swing == 50 ? "% OFF" : "% 16TH"));
+    param_row(ProjectRow::LIMITER, "LIMITER", p.limiterMode == 1 ? "CLEAN" : "CLASSIC");
 
     // ── NAME — one cell; A opens the keyboard ────────────────────────────────────────────────────
     param_row(ProjectRow::NAME, "NAME",
@@ -190,6 +191,9 @@ CursorContext ProjectModule::cursor_context(const ProjectState& s) const {
             return c;
         }
 
+        case ProjectRow::LIMITER:
+            return cc::enum_cycle(p.limiterMode, 2);
+
         // Everything below is a button: plain A is the dispatcher's.
         case ProjectRow::NAME:
         case ProjectRow::PROJECT:
@@ -228,6 +232,11 @@ ProjectInputResult ProjectModule::handle_input(songcore::Project& project, int c
         case ProjectRow::SWING:
             if (action.type == ActionType::SET_VALUE)
                 project.swing = clamp(action.value, 50, 75);
+            break;
+
+        case ProjectRow::LIMITER:
+            if (action.type == ActionType::SET_VALUE)
+                project.limiterMode = clamp(action.value, 0, 1);
             break;
 
         // The button rows edit nothing.

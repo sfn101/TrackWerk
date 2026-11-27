@@ -85,6 +85,10 @@ RenderStats render_to_wav(Engine& engine, const Project& project, int64_t songFr
     // The range ends, so the notes do; what follows is the tails alone.
     engine.scheduleNoteOffAll(songFrames);
 
+    // LIMITER CLEAN delays the output by its look-ahead: render that much first and drop it, so the
+    // file starts on the beat, as CLASSIC's does.
+    if (const int lead = engine.getLimiterLatencyFrames(); lead > 0) engine.renderOffline(lead, buf.data(), sampleRate);
+
     // ── the song ──
     int64_t rendered = 0;
     while (rendered < songFrames) {

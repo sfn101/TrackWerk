@@ -21,8 +21,11 @@ Before building, measure a real render to confirm the −4 dB.
 - Existing songs (no field) open as CLASSIC, so they sound exactly as before.
 - New songs start as CLEAN.
 - Any song can be switched.
-- **File format:** the new field raises the song's `version` and `minReader` (refuse-newer-files.md). An older app would
-  ignore it and play a CLEAN song through CLASSIC, which changes its sound.
+- **File format (decided 2026-11-27):** a CLEAN song is saved with `version` 2 and `minReader` 2, so an older app
+  that knows file versions (refuse-newer-files.md) refuses it with `UPDATE TO OPEN` instead of playing it through
+  CLASSIC. A CLASSIC song writes no field and stays `version` 1 / `minReader` 1, so it still opens everywhere.
+- Imported songs (M8) start from the default song and stay CLASSIC: their levels were set against it.
+- The old limiter is kept, not replaced: every existing song was mixed through it, and some drive it on purpose.
 
 ## CLEAN
 

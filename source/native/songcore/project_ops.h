@@ -177,6 +177,7 @@ inline void new_project(Project& project) {
     project.version = 1;
     for (auto& track : project.tracks) track.volume = NEW_TRACK_FADER;
     project.masterVolume = NEW_MASTER_FADER;
+    project.limiterMode  = 1;   // CLEAN
     reverb_apply_bank(project, 0);
     delay_apply_bank(project, 0);
 }

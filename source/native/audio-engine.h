@@ -554,6 +554,11 @@ public:
     void setDustDepthForRender(int depth);
     // 0 = unity, 255 = 4× into the limiter.
     void setLimiterPreGain(int depth);
+    // PROJECT > LIMITER: 0 CLASSIC, 1 CLEAN (1.5 ms look-ahead).
+    void setLimiterMode(int mode);
+    // The output delay the limiter in force adds, in frames at the device rate: SETTINGS > LATENCY,
+    // OFFSET AUTO and the renders' alignment read it. Any thread.
+    int getLimiterLatencyFrames() const;
 
 
     // SoundFont voice first.
@@ -767,7 +772,7 @@ private:
         bool  delayPong = false;   int delayTone = 0xFF, delayWobble = 0x00;
         int   delayInputEq = -1, delayReverbSend = 0;
         int   masterEqSlot = -1;
-        int   ottDepth = 0, masterFx = 0, dustDepth = 0, limiterPreGain = 0;
+        int   ottDepth = 0, masterFx = 0, dustDepth = 0, limiterPreGain = 0, limiterMode = 0;
         bool  ottForRender = false, dustForRender = false;   // snap rather than glide (…ForRender)
         bool  pushed = false;   // nothing is replayed until a setter has run
         uint32_t seq[BUS_GROUPS] = {};
@@ -1176,6 +1181,7 @@ private:
     float masterPeakR = 0.0f;
     float masterMaximum[2] = {};
     float limiterInputMaximum = 0.0f;
+    std::atomic<int> limiterModeInForce{0};   // what getLimiterLatencyFrames reads
     // Callback-owned peaks wait here if the UI has the meter lock.
     float pendingMasterMaximum[2] = {};
     float pendingLimiterInputMaximum = 0.0f;

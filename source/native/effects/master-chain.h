@@ -20,7 +20,7 @@ struct MasterChain {
         ott.reset(sampleRate);
         dust.prepare(sampleRate, 512, 2);
         dust.reset();
-        limiter.reset();
+        limiter.prepare(sampleRate);
         masterEq.reset(sampleRate);
     }
 
@@ -46,6 +46,7 @@ struct MasterChain {
     }
 
     void setLimiterPreGain(float g) { limiter.setPreGain(g); }
+    void setLimiterMode(int m) { limiter.setMode(m); }
 
     // Interleaved stereo, in place.
     void process(float* buf, int numFrames, int channelCount, float* limiterInputPeak = nullptr) {

@@ -21,7 +21,7 @@ Work top to bottom. Each item has its own spec; finish (build, test on Windows, 
 | 13 | Sound: master limiter | [master-limiter.md](master-limiter.md) | Done |
 | 14 | Sound: sample interpolation | [sample-interpolation.md](sample-interpolation.md) | Done |
 | 15 | Sound: oversampled drive | [oversampled-drive.md](oversampled-drive.md) | Done |
-| 16 | Recording on Windows | [recording-windows.md](recording-windows.md) | Spec ready |
+| 16 | Recording on Windows | [recording-windows.md](recording-windows.md) | Done |
 | 17 | Help pass | [help-pass.md](help-pass.md) | Spec ready |
 | 18 | Piano roll (melodic sequencer view) | [piano-roll.md](piano-roll.md) | Spec ready |
 | 19 | Chord editor | [chord-editor.md](chord-editor.md) | Spec ready |

@@ -373,7 +373,9 @@ void apply_midi_overrides(const AppConfig& cfg, ui::AppState& state) {
 // in when it is bigger — a sound server can take sound in bigger portions than the app asked for.
 int output_latency_frames(AudioBackend& audio, const AudioEngine& engine) {
     const AudioBackend::OutputLatency lat = audio.outputLatency();
-    return lat.measured ? lat.frames : std::max(lat.frames, engine.getDeviceBlockFrames());
+    // + LIMITER CLEAN's look-ahead, which delays everything the device plays.
+    return (lat.measured ? lat.frames : std::max(lat.frames, engine.getDeviceBlockFrames())) +
+           engine.getLimiterLatencyFrames();
 }
 
 // SETTINGS > LATENCY: the same frames AUTO uses, as text.
@@ -1318,7 +1320,12 @@ void FrameLoop::pump_midi_and_sequencer(Uint64 now) {
     if (now - autoOffsetCheckMs >= 1000) {
         autoOffsetCheckMs = now;
         refresh_latency_text(audio, engineRef, state);   // follows an AUDIO OUT switch within a second
-        if (!audio.outputLatency().measured && derive_midi_auto_offset(audio, engineRef, state)) {
+        // A measured figure is re-read only when the limiter's look-ahead changes (a song switch).
+        static int lastLimiterFrames = 0;
+        const int limiterFrames = engineRef.getLimiterLatencyFrames();
+        const bool limiterMoved = limiterFrames != lastLimiterFrames;
+        lastLimiterFrames = limiterFrames;
+        if ((!audio.outputLatency().measured || limiterMoved) && derive_midi_auto_offset(audio, engineRef, state)) {
             host.set_midi_offset_ms(ui::midi_offset_in_force(state.settings, state.midiAutoOffsetMs));
             std::printf("midi:    OFFSET AUTO now %+d ms (the device takes %d frames at a time)\n",
                         state.midiAutoOffsetMs, engineRef.getDeviceBlockFrames());

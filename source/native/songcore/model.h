@@ -483,6 +483,9 @@ struct Project {
     std::string m8SourceHex, m8ImportReport;
     std::vector<int> studioMaster = {0,0,0,128,128,32,0,255,0,32,96,128,128,250,0};
     int ottDepth = 0, masterBusFx = 0, dustDepth = 0, limiterPreGain = 0;
+    // PROJECT > LIMITER: 0 CLASSIC, 1 CLEAN. ⚠️ 0 is what a file without the field plays with;
+    // new_project() starts songs on CLEAN.
+    int limiterMode = 0;
     std::vector<EqPreset> eqPresets;              // 128, filled by the factory
     // ⚠️ `reverbFeedback` is the DCAY cell (the tail's length); the JSON key keeps the old name. The
     // room is `reverbSize`.

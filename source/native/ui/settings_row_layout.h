@@ -172,14 +172,15 @@ enum class ProjectRow {
     EXIT      = 8,   // EXIT       — only where a launcher takes the process back
     COLLECT   = 9,   // COLLECT    — the song and its files into Songs/<name>
     SWING     = 10,  // Global sixteenth swing, 50% straight .. 75% (3:1).
+    LIMITER   = 11,  // CLASSIC | CLEAN — the master limiter (specs/master-limiter.md)
 };
 
-inline constexpr int PROJECT_ROW_COUNT = 11;
+inline constexpr int PROJECT_ROW_COUNT = 12;
 
 // The order rows are drawn and walked; every ProjectRow exactly once.
 inline constexpr ProjectRow PROJECT_DISPLAY_ORDER[PROJECT_ROW_COUNT] = {
-    ProjectRow::TEMPO,   ProjectRow::SWING,     ProjectRow::TRANSPOSE, ProjectRow::NAME,
-    ProjectRow::PROJECT, ProjectRow::COLLECT,   ProjectRow::EXPORT,  ProjectRow::COMPACT,
+    ProjectRow::TEMPO,   ProjectRow::SWING,     ProjectRow::TRANSPOSE, ProjectRow::LIMITER,
+    ProjectRow::NAME,    ProjectRow::PROJECT,   ProjectRow::COLLECT,   ProjectRow::EXPORT,  ProjectRow::COMPACT,
     ProjectRow::SYSTEM,  ProjectRow::MIDI,      ProjectRow::EXIT,
 };
 
@@ -254,7 +255,7 @@ inline int project_row_max_column(ProjectRow row) {
 
 // Group gaps: after the values, after the actions, and before EXIT.
 inline bool project_row_gap_after(ProjectRow row) {
-    return row == ProjectRow::TRANSPOSE || row == ProjectRow::COMPACT || row == ProjectRow::MIDI;
+    return row == ProjectRow::LIMITER || row == ProjectRow::COMPACT || row == ProjectRow::MIDI;
 }
 
 // How far down a PROJECT row is drawn. Unlike SETTINGS a hidden row adds nothing, so without MIDI,

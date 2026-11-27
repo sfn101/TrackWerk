@@ -778,6 +778,17 @@ void AudioEngine::setLimiterPreGain(int depth) {
     recordBus(BUS_LIMITER);
 }
 
+void AudioEngine::setLimiterMode(int mode) {
+    busSettings.limiterMode = mode == 1 ? 1 : 0;
+    limiterModeInForce.store(busSettings.limiterMode, std::memory_order_relaxed);
+    recordBus(BUS_LIMITER);
+}
+
+int AudioEngine::getLimiterLatencyFrames() const {
+    if (limiterModeInForce.load(std::memory_order_relaxed) != 1) return 0;
+    return CleanLimiter::lookahead_frames(static_cast<float>(deviceSampleRate.load(std::memory_order_relaxed)));
+}
+
 IAudioVoice* AudioEngine::findActiveVoiceForTrack(int trackId) {
     // The current note, for mid-note updates. A releasing SF or fading sampler voice is the previous
     // note's tail — and a decayed SF note stays isActive — so neither is a target.
@@ -982,7 +993,10 @@ void AudioEngine::applyBusSettings() {
         if (s.dustForRender) masterChain.setDustDepthForRender(s.dustDepth / 255.0f);
         else                 masterChain.setDustDepth(s.dustDepth / 255.0f);
     }
-    if (due(BUS_LIMITER)) masterChain.setLimiterPreGain(1.0f + (s.limiterPreGain / 255.0f) * 3.0f);
+    if (due(BUS_LIMITER)) {
+        masterChain.setLimiterPreGain(1.0f + (s.limiterPreGain / 255.0f) * 3.0f);
+        masterChain.setLimiterMode(s.limiterMode);
+    }
 }
 
 void AudioEngine::setOfflineRendering(bool offline) {

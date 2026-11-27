@@ -1557,6 +1557,7 @@ Navigate here: **R+UP** from SONG or CHAIN.
 | TEMPO | BPM. |
 | TEMPO — TAP | Press RIGHT from the tempo value to reach **TAP**, then press A in time with the tempo you want and the number follows your taps. The first tap starts the count and each one after it refines the reading, so tap at least twice. Leave it alone for three seconds and the next press starts a fresh count. |
 | TRANSPOSE | Global semitone offset applied to all tracks. |
+| LIMITER | The master limiter that keeps the mix from clipping, chosen per song with A+LEFT/RIGHT. **CLEAN** looks 1.5 ms ahead, so loud bass and kicks stay clean; it moves both sides together, so the stereo image never shifts, and below its ceiling (−0.3 dB) it changes nothing. **CLASSIC** is the original limiter: it turns the mix down a little and adds a slight warm colour. New songs start on CLEAN; songs made before this setting existed open on CLASSIC and sound exactly as before. CLEAN's 1.5 ms is included in SETTINGS > LATENCY and in MIDI OFFSET AUTO, and exported files are lined up so they carry no extra delay. A CLEAN song can't be opened by older TrackWerk versions (they show `UPDATE TO OPEN`); switch it to CLASSIC to share it with them. |
 
 ### File operations
 

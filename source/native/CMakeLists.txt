@@ -1055,6 +1055,8 @@ if(PT_STUDIO_CHECK OR PT_SAFETY_CHECK)
  target_link_libraries(ptfake-stereo-check PRIVATE pt-ui)
  add_executable(ptdrumlab-manual-check ../tests/studio/drumlab_manual.cpp)
  target_link_libraries(ptdrumlab-manual-check PRIVATE pt-ui)
+ add_executable(ptmaster-limiter-check ../tests/studio/master_limiter.cpp)
+ target_link_libraries(ptmaster-limiter-check PRIVATE pt-ui)
  if(NOT PT_STUDIO_CHECK)   # upstream's file-validation check; the Linux build adds it in its own block
   add_executable(ptfile-validation-check ../tests/studio/file_validation.cpp)
   target_link_libraries(ptfile-validation-check PRIVATE songcore)

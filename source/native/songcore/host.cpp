@@ -100,12 +100,12 @@ int64_t SongcoreHost::play_song_live(int songRow, int mask) {
     before_play(); seq_.playSongLive(songRow, mask); return after_play();
 }
 
-int64_t SongcoreHost::play_chain(int chainId, int trackId) {
-    before_play(); seq_.playChain(chainId, trackId);   return after_play();
+int64_t SongcoreHost::play_chain(int chainId, int trackId, int startRow) {
+    before_play(); seq_.playChain(chainId, trackId, startRow);   return after_play();
 }
 
-int64_t SongcoreHost::play_phrase(int phraseId, int trackId) {
-    before_play(); seq_.playPhrase(phraseId, trackId); return after_play();
+int64_t SongcoreHost::play_phrase(int phraseId, int trackId, int startRow) {
+    before_play(); seq_.playPhrase(phraseId, trackId, startRow); return after_play();
 }
 
 void SongcoreHost::stop() {

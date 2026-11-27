@@ -274,7 +274,37 @@ bool InputDispatcher::on_phrase_history_arrow(Button direction) {
     return true;
 }
 
+bool InputDispatcher::sequence_history_context() const {
+    return s_.project && !s_.studioOpen && !top_layer() &&
+           (s_.currentScreen == ScreenType::SONG || s_.currentScreen == ScreenType::CHAIN ||
+            s_.currentScreen == ScreenType::TABLE);
+}
+
+std::optional<SequenceHistory::Parts> InputDispatcher::sequence_checkpoint() const {
+    if (!sequence_history_context()) return std::nullopt;
+    return SequenceHistory::take(host_.project(), s_.currentScreen == ScreenType::TABLE ? s_.currentTable : -1);
+}
+
+void InputDispatcher::record_sequence_edit(const std::optional<SequenceHistory::Parts>& before) {
+    if (before) seqHistory_.record(*before, host_.project());
+}
+
 bool InputDispatcher::on_phrase_history(Button direction, bool reclaimArrow) {
+    // SONG, CHAIN and TABLE: SELECT+UP undoes, SELECT+DOWN redoes, as on PHRASE.
+    if (!reclaimArrow && sequence_history_context()) {
+        const bool redo = direction == Button::DPAD_DOWN;
+        const auto result = seqHistory_.apply(host_.edit_project(), redo);
+        if (result == SequenceHistory::Result::DIVERGED)
+            set_status(s_, "CHANGED ELSEWHERE / HISTORY CLEARED", false);
+        else if (result == SequenceHistory::Result::EMPTY)
+            set_status(s_, redo ? "NOTHING TO REDO HERE" : "NOTHING TO UNDO HERE", false);
+        else {
+            if (s_.currentScreen == ScreenType::TABLE) host_.invalidate_tables();
+            mark_modified();
+            set_status(s_, std::string(redo ? "REDO / " : "UNDO / ") + std::to_string(seqHistory_.available(redo)) + " LEFT", true);
+        }
+        return true;
+    }
     if (!phrase_editor_context()) return false;
     if (reclaimArrow) {
         const auto& arrow = phraseArrow_;
@@ -774,7 +804,16 @@ void InputDispatcher::phrase_clone() {
     if (next < 0) return;
 
     p.phrases[static_cast<size_t>(next)].steps = p.phrases[static_cast<size_t>(srcPhraseId)].steps;
-    s_.currentPhrase = next;   // …and follow the clone, so you are editing the copy
+    // The chain row that played the original now plays the copy, as CHAIN's L+B+A does: otherwise, under
+    // NAV = SONG, the copy could not be reached again once you left it.
+    const int chainRow = pointer_chain_row(s_);
+    if (s_.currentChain >= 0 && s_.currentChain < static_cast<int>(p.chains.size()) && chainRow >= 0 &&
+        chainRow < songcore::CHAIN_ROWS) {
+        auto& ref = p.chains[static_cast<size_t>(s_.currentChain)].phraseRefs[static_cast<size_t>(chainRow)];
+        if (ref == srcPhraseId) ref = next;
+    }
+    s_.currentPhrase    = next;   // …and follow the clone, so you are editing the copy
+    s_.lastEditedPhrase = next;
     mark_modified();
 }
 
@@ -803,8 +842,21 @@ void InputDispatcher::song_relative_b_vertical(int delta) {
         const int row   = songcore::next_song_cell_v(*s_.project, pointer_song_row(s_), track, delta);
         set_pointer_song_cell(s_, row, track);
     } else {
-        const int row = songcore::next_chain_row(*s_.project, s_.currentChain, pointer_chain_row(s_),
-                                                 delta, /*wrap=*/false);
+        const int from = pointer_chain_row(s_);
+        int row = songcore::next_chain_row(*s_.project, s_.currentChain, from, delta, /*wrap=*/false);
+        // Past the chain's last (first) phrase: on into the next (previous) chain of this track, at its
+        // first (last) phrase, so a whole track is walked from PHRASE without going back to CHAIN.
+        if (row == from) {
+            const int track   = pointer_track(s_);
+            const int songRow = songcore::next_song_cell_v(*s_.project, pointer_song_row(s_), track, delta);
+            const int chain   = songcore::chain_at(*s_.project, track, songRow);
+            const int edge    = songcore::next_chain_row(*s_.project, chain, delta > 0 ? -1 : songcore::CHAIN_ROWS,
+                                                         delta, /*wrap=*/false);
+            if (songRow != pointer_song_row(s_) && edge >= 0 && edge < songcore::CHAIN_ROWS) {
+                set_pointer_song_cell(s_, songRow, track);
+                row = edge;
+            }
+        }
         set_pointer_chain_row(s_, row);
     }
     refresh_song_relative_refs(s_);

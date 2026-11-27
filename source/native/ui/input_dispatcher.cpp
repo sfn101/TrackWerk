@@ -471,8 +471,10 @@ void InputDispatcher::generic_input(InputAction (*fn)(const CursorContext&)) {
     const InputAction action = fn(cursor_context());
     if (action.type == ActionType::NONE) return;
     const auto checkpoint = phrase_checkpoint();
+    const auto sequence   = sequence_checkpoint();
     if (apply_edit(action)) {
         record_phrase_edit(checkpoint);
+        record_sequence_edit(sequence);
         mark_modified();
     }
 }
@@ -489,6 +491,7 @@ void InputDispatcher::selection_or_single(InputAction (*fn)(const CursorContext&
     const int             savedRow = row;
     bool                  any      = false;
     const auto checkpoint = phrase_checkpoint();
+    const auto sequence   = sequence_checkpoint();
 
     for (int r = b.topLeftRow; r <= b.bottomRightRow; ++r) {
         row = r;
@@ -498,6 +501,7 @@ void InputDispatcher::selection_or_single(InputAction (*fn)(const CursorContext&
     row = savedRow;
     if (any) {
         record_phrase_edit(checkpoint);
+        record_sequence_edit(sequence);
         mark_modified();
     }
 }

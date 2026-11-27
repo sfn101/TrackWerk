@@ -72,7 +72,8 @@ void InputDispatcher::on_start() {
         case ScreenType::CHAIN:
             host_.play_chain(s_.currentChain,
                              songcore::track_of_chain(*s_.project, s_.currentChain,
-                                                      remembered_song_track()));
+                                                      remembered_song_track()),
+                             s_.cursorRow);   // from the cursor's row, as SONG does
             break;
 
         // No song cursor: the song from the top. MIDI too — its OFFSET and the mapping list's VAL are
@@ -90,7 +91,8 @@ void InputDispatcher::on_start() {
         default:
             host_.play_phrase(s_.currentPhrase,
                               songcore::track_of_phrase(*s_.project, s_.currentPhrase, s_.currentChain,
-                                                        remembered_song_track()));
+                                                        remembered_song_track()),
+                              s_.currentScreen == ScreenType::PHRASE ? s_.cursorRow : 0);   // PHRASE: from the cursor
             break;
     }
 }

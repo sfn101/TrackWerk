@@ -26,6 +26,7 @@ struct PhraseOverviewState {
     PhraseOverview view;
     int cursorRow = 0;
     int selectedFirst = -1, selectedLast = -1;
+    int height = 70;   // the strip's height: OscilloscopeModule::HEIGHT, less the key bar while it shows
 };
 
 // Session-local history for one phrase. Only an exact expected revision may be restored.

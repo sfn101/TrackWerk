@@ -163,6 +163,7 @@ void SettingsModule::draw(Canvas& c, int x, int y, const SettingsState& s) const
         static constexpr const char* HELP_NAMES[3] = {"NO HINT", "QUICK", "DETAIL"};
         param_row(SettingsRow::HELP, "HELP", HELP_NAMES[clamp(v.helpMode, 0, 2)]);
     }
+    param_row(SettingsRow::KEY_BAR, "KEY BAR", on_off(v.keyBar));
 
     // THEME: the name and a ">" (A opens the editor). ⚠️ The name is clipped two glyphs short so a
     // long name cannot push the ">" out.
@@ -254,6 +255,7 @@ CursorContext SettingsModule::cursor_context(const SettingsState& s) const {
         case SettingsRow::HELP:       return cc::enum_cycle(v.helpMode, 3);
         case SettingsRow::INTERP_DEF: return cc::enum_cycle(v.interpDefault, INTERP_MODE_COUNT);
         case SettingsRow::INTERP_LIM: return cc::enum_cycle(v.interpLimit, INTERP_MODE_COUNT);
+        case SettingsRow::KEY_BAR:    return cc::toggle_binary(v.keyBar);
 
         // A opens the theme editor.
         case SettingsRow::APPEARANCE: return cc::read_only();
@@ -322,6 +324,7 @@ SettingsInputResult SettingsModule::handle_input(SettingsValues& v, Theme& theme
         case SettingsRow::SCREEN:    v.wideScreen         = on; break;
         case SettingsRow::CURSOR:    v.cursorRemember     = on; break;
         case SettingsRow::NOTE_PREV: v.notePreviewEnabled = on; break;
+        case SettingsRow::KEY_BAR:   v.keyBar             = on; break;
         case SettingsRow::FOLDER:    v.rememberFolder     = on; break;
         case SettingsRow::NAV:       v.navSongRelative    = on; break;
         case SettingsRow::RESUME:    v.autosaveResumeAuto = on; break;

@@ -136,6 +136,7 @@ bool load_settings(FileSystem& fs, SettingsValues& values, Theme& theme) {
     values.helpMode           = clamp(get_int(j, "help", values.helpMode), 0, 2);
     values.interpDefault      = clamp(get_int(j, "interpDefault", values.interpDefault), 0, 4);
     values.interpLimit        = clamp(get_int(j, "interpLimit", values.interpLimit), 0, 4);
+    values.keyBar             = get_bool(j, "keyBar", values.keyBar);
 
     // ── MIDI: the cable's half (the song's half is in the .ptp) ──────────────────────────────────
     // Devices by name — port lists reorder on every replug; a missing name resolves to OFF.
@@ -223,6 +224,7 @@ std::string serialize_settings(const SettingsValues& values, const Theme& theme)
     j["help"]               = values.helpMode;             // 0 OFF, 1 SHORT, 2 FULL
     j["interpDefault"]      = values.interpDefault;        // sample-interp.h's InterpMode
     j["interpLimit"]        = values.interpLimit;          // always: the factory value differs per device
+    j["keyBar"]             = values.keyBar;
     j["trace"]              = values.traceEnabled;
     j["autosaveResumeAuto"] = values.autosaveResumeAuto;
     if (values.firstBeatDone) j["firstBeatDone"] = true;   // an older file stays byte-identical

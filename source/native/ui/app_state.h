@@ -437,6 +437,7 @@ struct AppState {
     // Quick actions and the detailed guide are two views of the same contextual modal.
     bool helpOpen = false;
     bool helpFull = false;
+    int  helpScroll = 0;   // rows the full help is scrolled down (phase B2); reset when it opens
 
     // EXPORT renders synchronously with the audio paused; the frame is repainted from the progress.
     bool  isRendering    = false;

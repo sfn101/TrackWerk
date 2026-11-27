@@ -29,9 +29,47 @@ Merged and CI-checked on its own before phase B.
 - **Real units in help lines,** while every grid stays hex: a help entry may add the value in units after the hex, for
   example `VOL 80 = -6 dB`, `DEL 40 = 25%`, `LAT 03 = 3 ticks`. Only where the conversion is exact; a check compares
   each printed unit with the code's own conversion.
-- **Out of this phase:** the always-on key bar (its own roadmap item: it changes every screen's layout).
+- **Out of this phase:** the key bar (phase B2).
 
 Merged and CI-checked on its own before phase C.
+
+## Phase B2: help you can scroll, button icons, the key bar (decided 2026-11-27)
+
+Added after phase B, from the user's own design. Built and merged before phase C, because the lessons point to it.
+
+### The shortcut audit
+
+- Every gesture each screen, overlay and Studio page really handles is listed from the code and compared with its help
+  and the manual. Wrong lines are fixed; missing shortcuts are added to the help. Shortcuts a player would expect but
+  that don't exist (for example moving to the next chain from PHRASE) are listed for the user to approve one by one.
+
+### The full help scrolls
+
+- **More room:** the full help (SETTINGS > HELP DETAIL) is no longer limited to what fits on one screen. UP / DOWN scroll
+  it; every other button closes it as before.
+- **It shows that it scrolls:** a thin scroll bar on the box's right edge, and a small arrow at the bottom (and the top)
+  while there is more text that way.
+- **Better layout:** "what it is" first, then the keys as a list in groups (Move, Edit, Copy and paste, Play, Views),
+  one shortcut a row: the buttons drawn as small icons (A, B, L, R, START, SELECT and the D-pad's four arrows, combined
+  with a +), then what it does.
+- **Every shortcut of a screen** is in its help, not only the 9 that used to fit.
+- The help-box checks change from "fits on screen" to "every line fits the width"; the compact help panel is unchanged.
+
+### The key bar
+
+- **One thin row at the bottom of every tracker screen** (SONG, CHAIN, PHRASE, INSTRUMENT, TABLE, MIXER and the rest),
+  in the small label font and the theme's quiet colours, with the same button icons: the few shortcuts that are **unique
+  to that screen**. The common ones everyone knows (D-pad to move, A to add, B to delete, START to play) are left out.
+- **The last item is always the way to the rest:** `SELECT HELP`.
+- **About 14 px tall,** taken from the bottom of the editor area. A check draws every screen and requires that nothing
+  of the screen sits under the bar.
+- **SETTINGS > KEY BAR ON / OFF,** ON by default, saved in `settings.json`. OFF gives the space back.
+- Replaces the "always-on key bar" idea in the roadmap.
+
+### The top strip (ideas, chosen by the user before they are built)
+
+The strip that shows the oscilloscope, or on PHRASE the NOTES and VELOCITY overview, can show more. Each idea is listed
+in the reply of 2026-11-27; only the ones the user picks are built, each as its own small item.
 
 ## Phase C: the lessons course
 
@@ -142,7 +180,6 @@ as the app names them (`ui/fx_helper.h`).
 
 - Videos, pictures or sound files in the course (the guide is text and tables).
 - Translations.
-- The always-on key bar.
 - Lessons for MIDI, PERFORM and the theme editor (later lessons can add them).
 
 ## Help

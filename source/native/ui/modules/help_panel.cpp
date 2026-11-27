@@ -13,7 +13,7 @@ void HelpPanelModule::draw(Canvas& c, HelpTopic topic, const Theme& t) const {
     std::array<const char*, 5> actions{};
     int count = 0;
     for (const char* key : entry.keys) {
-        if (!key || !*key) continue;
+        if (!key || !*key || help_key_is_heading(key)) continue;   // the full help's group headings
         actions[count++] = key;
         if (count == static_cast<int>(actions.size())) break;
     }

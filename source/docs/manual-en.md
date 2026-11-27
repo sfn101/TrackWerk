@@ -133,7 +133,7 @@ Resampled instruments and CHOP exports are saved to:
 
 ```
 <home>/Samples/Resampled/
-<home>/Samples/Chops/{name}/
+<home>/Samples/Chops/<name>_<time>_<n>/
 ```
 
 On Linux, Windows, PortMaster handhelds and the Miyoo Mini there is no folder to choose: the app owns a `PocketTracker` folder of its own and the same ten sub-folders live in it.
@@ -230,16 +230,17 @@ All screens are arranged in a **5×5 grid**. Navigate by holding **R** and press
 ```
      Col 0      Col 1      Col 2      Col 3      Col 4
      ─────      ─────      ─────      ─────      ─────
-Row 0  ---        ---       SCALE    INST POOL    ---
-Row 1  PROJ       PROJ      GROOVE     MODS       ---
+Row 0  PERFORM   PERFORM    SCALE    INST POOL   PERFORM
+Row 1  PROJ       PROJ      GROOVE     MODS       PROJ
 Row 2  SONG      CHAIN     PHRASE     INST       TABLE
-Row 3                       MIXER
-Row 4                      EFFECTS
+Row 3  MIXER     MIXER     MIXER      MIXER      MIXER
+Row 4  EFFECTS   EFFECTS   EFFECTS    EFFECTS    EFFECTS
 ```
 
-> **SCALE** and **INST POOL** (Row 0) only appear in column 2 and 3 respectively.  
-> **GROOVE** and **MODS** (Row 1) only appear in column 2 and 3 respectively.  
-> **MIXER** and **EFFECTS** (rows 3–4) only appear in the column you are currently on — move left/right first, then navigate up/down.
+> **SCALE** and **INST POOL** (Row 0) only appear in column 2 and 3 respectively; the rest of Row 0 is **PERFORM**.  
+> **GROOVE** and **MODS** (Row 1) only appear in column 2 and 3 respectively; the rest of Row 1 is **PROJECT**.  
+> **MIXER** and **EFFECTS** (rows 3–4) fill every column, so **R + DOWN** reaches them from any screen on Row 2.  
+> **R + LEFT** on SONG opens the **VI** (visualizer); **R + RIGHT** leaves it.
 
 | Combo | Action |
 |---|---|
@@ -261,9 +262,9 @@ The navigation map always shows where you are.
 | THEME EDITOR | SETTINGS screen → cursor on THEME row → A |
 
 > [!NOTE]
-> **A opens, B goes back.** On cells that lead to another screen — the **EQ** cell and the **NAME**
-> cell on PROJECT/INSTRUMENT — a quick **tap of A** opens the editor, while **holding A + a direction**
-> still edits the value on that same cell (e.g. the EQ slot number). The open fires when you *release* A,
+> **A opens, B goes back.** On cells that lead to another screen, a quick **tap of A** opens it (the
+> **NAME** cell on PROJECT/INSTRUMENT opens the keyboard). On the **EQ** cell, **holding A + a direction**
+> still edits the value on that same cell (the EQ slot number). The open fires when you *release* A,
 > so a held A never opens by accident. Inside the EQ EDITOR, **B closes** it and **B + LEFT/RIGHT** still
 > cycles the EQ preset slot.
 
@@ -279,10 +280,10 @@ The navigation map always shows where you are.
 |---|---|
 | D-pad | Move cursor |
 | A | Confirm / Insert |
-| B | Cancel / Delete |
+| B | Back / cancel (A + B deletes) |
 | L | L modifier |
 | R | R modifier |
-| SELECT | Show help for the cell under the cursor; file-management modifier in the file browser; cancels the keyboard overlay |
+| SELECT | Show help for the cell under the cursor; file-management modifier in the file browser. On the keyboard overlay, **SELECT + B** cancels |
 | START | Play / Stop |
 
 #### Keyboard (Bluetooth keyboard or testing on PC)
@@ -307,8 +308,8 @@ Both keyboard and gamepad work simultaneously.
 |---|---|
 | D-pad | Move cursor |
 | A | Insert value (on an empty cell, inserts the last-used value) |
-| B | Delete value / cancel |
-| SELECT | Show help for the cell under the cursor; file-management modifier in the file browser; cancels the keyboard overlay |
+| A + B | Delete value (B alone does nothing outside a selection) |
+| SELECT | Show help for the cell under the cursor; file-management modifier in the file browser. On the keyboard overlay, **SELECT + B** cancels |
 | START | Play / Stop |
 
 More chords that open things:
@@ -327,13 +328,15 @@ More chords that open things:
 
 Tap **SELECT** for help on the cell the cursor is on. **SETTINGS → HELP** chooses what you get:
 
-- **SHORT** — the visualizer strip at the top of the screen becomes three lines describing the cell. Tap **SELECT** again, or press any other button, to put it away. On the sample editor it appears in place of the waveform. The file browser has no room for it, so there it shows nothing.
-- **FULL** — a help screen over everything: the same text, and a longer description where one has been written. Any button closes it, and that press does nothing else.
-- **OFF** — **SELECT** shows no help.
+- **QUICK** (the default) — the visualizer strip at the top of the screen becomes three lines describing the cell. On the sample editor it appears in place of the waveform. The file browser has no room for it, so there it shows nothing.
+- **DETAIL** — a help screen over everything: the same text, and a longer description where one has been written.
+- **NO HINT** — hides the **SELECT HELP** cue on the status line. A tap of **SELECT** still opens QUICK help.
+
+While help is open, **A** switches between QUICK and DETAIL, and **B** or **SELECT** closes it. No press reaches the screen underneath.
 
 The strip uses the theme's **VIZ BG** and **VIZ WAVE** colours.
 
-**First Beat.** A guided first song for someone new to trackers. Open help with **SELECT**, then press **START** to begin. If the current song has unsaved changes, it asks first. It then starts a new project named `FIRSTBEAT` (or `FIRSTBEAT2`, `FIRSTBEAT3`, …) and walks through ten steps: put a chain in on SONG, a phrase in on CHAIN, reach PHRASE, give instrument 00 a built-in synth sound, enter four notes, play them, change a note, delete a note, save, and load the song again. Each step is ticked off by what you actually do, never by a timer. A small card shows the current step. In help, **L** steps back one step; **START** again ends First Beat.
+**First Beat.** A guided first song for someone new to trackers. Open help with **SELECT**, then press **START** to begin. If the current song has unsaved changes, it asks first. It then starts a new project named `FIRSTBEAT` (or `FIRSTBEAT2`, `FIRSTBEAT3`, …) and walks through ten steps: put a chain in on SONG, a phrase in on CHAIN, reach PHRASE, give instrument 00 a built-in synth sound, enter four notes, play them, change a note, delete a note, save, and load the song again. Each step is ticked off by what you actually do, never by a timer. A small card shows the current step. While First Beat runs, **L** in help steps back one step and closes help; **START** in help again ends First Beat.
 
 ---
 
@@ -406,7 +409,7 @@ Works on PHRASE, CHAIN, SONG, and TABLE screens.
 
 | Input | Action |
 |---|---|
-| L + B | Enter selection mode (tap again to cycle: CELL → ROW → SCREEN) |
+| L + B | Enter selection mode (tap again within half a second to widen: CELL → ROW → SCREEN → CELL; a later L + B leaves it) |
 | B (in selection) | Copy selection, exit selection mode |
 | L + A (in selection) | Cut (copy + clear), exit selection mode |
 | L + A (outside selection) | Paste clipboard at cursor |
@@ -414,7 +417,7 @@ Works on PHRASE, CHAIN, SONG, and TABLE screens.
 | L + B + A | Deep-clone the chain or phrase under the cursor into the next free slot |
 | L + R | Leave selection mode (nothing copied) |
 
-**Selection increment:** In selection mode, **A + LEFT/RIGHT** increments or decrements all selected values simultaneously.
+**Selection increment:** In selection mode, **A + LEFT/RIGHT** changes the cursor's column by one step on every selected row; **A + UP/DOWN** does the same with the large step.
 
 **Clearing the clipboard:** the copy buffer deliberately survives leaving a selection — you can select
 again by accident without losing what you copied. Press **L + R** when you are *not* selecting to clear
@@ -472,10 +475,10 @@ tracks go on playing and feeding it.
 | Input | Action |
 |---|---|
 | START | Play / Stop (context-aware) |
-| START on SONG | Play full song from top |
+| START on SONG | Play the song from the cursor row |
 | START on CHAIN | Play current chain |
 | START on PHRASE, INSTRUMENT, MODULATION, TABLE | Play current phrase (loops) |
-| R + START on CHAIN, PHRASE, INSTRUMENT, MODULATION, TABLE | Play the whole song from the song row you came through |
+| R + START on CHAIN, PHRASE, INSTRUMENT, INST.POOL, MODULATION, TABLE, GROOVE, SCALE | Play the whole song from the song row you came through (stops it when playing) |
 | A + START on INSTRUMENT, MODULATION, TABLE | Preview current instrument |
 | START on SAMPLE EDITOR | Preview edited sample |
 | START on SONG in LIVE mode | Queue the chain under the cursor ([LIVE Mode](#live-mode)) |
@@ -593,7 +596,8 @@ When played, the chain loops from slot 00 after the last filled slot.
 | A + LEFT/RIGHT | Increment / decrement |
 | A + UP/DOWN | ±16 (PH) or ±12 semitones (TSP) |
 | A + B | Delete slot |
-| B + LEFT/RIGHT | Switch to previous / next chain |
+| B + LEFT/RIGHT | NAV = SONG (default): the nearest filled song cell left / right on the same song row. NAV = POOL: previous / next chain |
+| B + UP/DOWN | NAV = SONG: the nearest filled song row up / down in this track. NAV = POOL: nothing |
 | START | Play current chain |
 
 > [!TIP]
@@ -626,12 +630,13 @@ Notes are written as pitch + octave: `C-4`, `C#4`, `D-4`, … `G-9`. Range is **
 | Input | Action |
 |---|---|
 | D-pad | Move cursor |
-| A | Insert last-used note / value |
+| A | On an empty note: insert the last-used note, volume and instrument. On an empty FX type: the last command and its value. Nothing on V, I or an FX value |
 | A + LEFT/RIGHT | +1 / −1 semitone (note — or the next note of the scale, see [section 14](#14-scale-screen)), +1 / −1 (other values) |
 | A + UP/DOWN | ±1 octave (note), ±16 (other values) |
-| A + B | Delete value at cursor |
+| A + B | Note: clear it. V: back to `7F`. I: nothing. FX type: clear the command. FX value: `00` |
 | A + B on an empty note | Insert **OFF** — the note sounding on the track is let go |
-| B + LEFT/RIGHT | Switch to previous / next phrase |
+| B + LEFT/RIGHT | NAV = SONG (default): the nearest track whose chain has a phrase at this chain row. NAV = POOL: previous / next phrase |
+| B + UP/DOWN | NAV = SONG: the previous / next filled row of the chain. NAV = POOL: nothing |
 | L + D-pad | Fill rows from the cell under the cursor — see *Fill* below |
 | START | Play current phrase (loops) |
 
@@ -882,7 +887,7 @@ Move the selection start and end markers to define a region for operations.
 | A + UP/DOWN | Move it by a coarse step |
 | A + B | Put it back at the start / end of the sample |
 
-A moved marker lands on the nearest **zero crossing** — the quietest place to cut, so a loop or a crop does not click. LEFT and RIGHT search their own channel, MONO the downmix, and STEREO looks for a frame where **both** channels are quiet.
+While **SNAP** is on, a moved marker lands on the nearest **zero crossing** — the quietest place to cut, so a loop or a crop does not click. LEFT and RIGHT search their own channel, MONO the downmix, and STEREO looks for a frame where **both** channels are quiet.
 
 ### Non-destructive parameters
 
@@ -906,7 +911,7 @@ These modify the waveform in memory (UNDO is available after each operation).
 | DUPL | Copy the selection and add it on to the end of the sample. |
 | PASTE | Insert clipboard at selection start. |
 | DEL | Remove the selection without copying it. |
-| NORMALIZE | Scale amplitude so peak = 0 dBFS. |
+| NORMALIZE | Scale amplitude so peak = -1 dBFS. |
 | FADE IN | Apply a linear fade-in over the selection. |
 | FADE OUT | Apply a linear fade-out over the selection. |
 | SILENCE | Zero out the selection. |
@@ -1003,7 +1008,7 @@ neighbours — its number follows its position — and deleting one renumbers th
 > Anything that changes the sample's **length** — CROP, CUT, DUPL, PASTE, DEL, UNDO, a resizing SYNC —
 > clears every slice boundary, including the ones the file arrived with.
 
-**CHOP** — exports each slice as a separate WAV file to `Samples/Chops/{name}/`.
+**CHOP** — opens a slice preview first. In it, **UP** exports every slice and **DOWN** only one, **LEFT/RIGHT** picks a slice, **START** plays it, **A** exports and **B** goes back. Each export writes a new folder, `Samples/Chops/<name>_<time>_<n>/`, with one WAV per slice (`<name>_001.wav`, …), named after the sample's NAME.
 
 > [!TIP]
 > After using CHOP, you need to manually load the individual slice files onto new instrument slots. There is no automatic batch-load — but using numbered filenames (which CHOP generates) makes the process fast.
@@ -1294,7 +1299,7 @@ While you are typing, the note cell follows the last `SCA` or `SCG` written **at
 | A + LEFT/RIGHT | Step through the built-in scales / change KEY / switch a note ON or off |
 | A | On SAVE or LOAD, run it. Nothing on any other cell |
 | A + B | On the name, put the slot back to Chromatic — all twelve notes on |
-| A + UP/DOWN | Nothing — none of these cells has a large step |
+| A + UP/DOWN | The same as A + LEFT/RIGHT — none of these cells has a large step |
 | B + LEFT/RIGHT | Previous / next scale |
 
 ---
@@ -1579,7 +1584,7 @@ Navigate here: **R+UP** from SONG or CHAIN.
 | Row | Action |
 |---|---|
 | SAVE | Save the song as `<NAME>.ptp`. A song opened from a file saves back into that file's folder; a new, recovered or imported song goes to `Projects/`. If that folder can't be written (read-only, or no permission on Android) it saves in `Projects/` and says `FOLDER READ-ONLY: SAVED IN PROJECTS`. If that file belongs to another song (two songs with the same name), choose REPLACE, NEW COPY (`<NAME>_2`) or CANCEL; the cursor starts on CANCEL. Whatever SAVE replaces is first kept in `<home>/Backups/<NAME>_bak1.ptp` (the last five versions: `_bak1` is the newest); to go back, copy one into `Projects/` and rename it. If the song's file is held by another program (OneDrive or a virus scanner on Windows), the file is left untouched and the song is saved beside it as `<NAME>-backup.ptp`, with `FILE LOCKED: SAVED AS <NAME>-backup.ptp`; load it from LOAD like any song. A later locked save never replaces that backup: it writes `<NAME>-backup-2.ptp`, then `-backup-3`, and so on. |
-| COPY | Save as: save the song under a new name and keep the old file. The keyboard opens on `<NAME>-COPY` (`-COPY-2`, `-COPY-3`… if that is taken too). START saves it beside the old file, and the copy becomes the open song: its NAME changes and the next SAVE writes to the copy. A name you type that is already in use asks `SONG EXISTS - OVERWRITE?` again; it is never numbered for you. SELECT cancels and nothing changes. |
+| COPY | Save as: save the song under a new name and keep the old file. The keyboard opens on `<NAME>-COPY` (`-COPY-2`, `-COPY-3`… if that is taken too). START saves it beside the old file, and the copy becomes the open song: its NAME changes and the next SAVE writes to the copy. A name you type that is already in use asks `SONG EXISTS - OVERWRITE?` again; it is never numbered for you. SELECT + B cancels and nothing changes. |
 | LOAD | Open file browser to load a project. With unsaved changes, **LOAD PROJECT?** asks first: A opens the browser, B keeps your work. A damaged song asks `FILE DAMAGED - REPAIR?` (see below). |
 | COLLECT | Copy the song and every sample and SoundFont it plays into `<home>/Songs/ProjectName/`. Move or share that folder and the song opens anywhere. If the folder is already there, choose REPLACE, NEW COPY (`ProjectName_2`) or CANCEL. Two different samples with the same file name are both kept, the second as `kick_2.wav`. |
 | EXPORT — MIX | Open the RENDER panel, set to a stereo WAV (offline, faster than real-time). |
@@ -1645,7 +1650,7 @@ this panel is how you export one of them without the others.
 
 The SETTINGS screen is opened from the PROJECT screen (cursor on SETTINGS row, press A). Press **B** to return to PROJECT.
 
-All value rows are edited with **A + D-pad**. A single **A** press is reserved for the two action rows: THEME (opens the editor) and TEMPLATE (SAVE / CLEAR).
+All value rows are edited with **A + D-pad**. A single **A** press is reserved for the three action rows: APPEARANCE (opens the Appearance page), THEME (opens the editor) and TEMPLATE (SAVE / CLEAR).
 
 | Setting | Options | Description |
 |---|---|---|
@@ -1666,7 +1671,7 @@ All value rows are edited with **A + D-pad**. A single **A** press is reserved f
 | FOLDER | REMEMBER / REFRESH | With REMEMBER, a sample load reopens at the folder you last loaded a sample from, for as long as the app is running. With REFRESH it always starts at the default (or at whatever `config.json` names — see section 27). |
 | NOTE PREV | ON / OFF | On the PHRASE screen, play the note under the cursor for as long as you hold **A** — when you insert it, change it with A + D-pad, or just hold A on it. Not in selection mode, and not while playing. |
 | VISUALIZER | SCOPE … RIDGE (23 styles) | Visualizer style for the top bar and the VI screen (see §3 for descriptions). |
-| HELP | OFF / SHORT / FULL | What a tap of **SELECT** shows: nothing, three lines in the visualizer strip, or a full help screen (see §5.2, *Help on SELECT*). |
+| HELP | NO HINT / QUICK / DETAIL | What a tap of **SELECT** shows: three lines in the visualizer strip (QUICK, and NO HINT, which also hides the SELECT HELP cue), or a full help screen (DETAIL) (see §5.2, *Help on SELECT*). |
 | APPEARANCE | PALETTE / FONT > | Press **A** to open the Appearance page. **B** returns to SETTINGS. |
 | THEME | theme name > | Shows the current theme name. Press A to open the THEME EDITOR. |
 | TEMPLATE | SAVE / CLEAR | SAVE stores the current project as a template for new projects. CLEAR removes the saved template. |
@@ -1828,7 +1833,7 @@ Open it from the PROJECT screen (cursor on the **MIDI >** row, press A). Press *
 | VELOCITY | ON / OFF | ON: a harder key plays louder. OFF: every key plays at full strength. |
 | MAPPING | — | Press A to open the list of mapped knobs. |
 | PANIC | — | Press A to send all-notes-off, for a note left hanging on an outside synth. |
-| TEST | — | Press A to send one short C-4 on channel 1. The line under the rows says whether it went out. |
+| TEST | CH 01–16 | Press A to send one short C-4 on the channel shown on the row (pick it with A + D-pad). The line under the rows says whether it went out. |
 
 PROG CHG and the mapped knobs are saved with the project. The other rows describe your setup and stay
 as they are from one project to the next.
@@ -2782,7 +2787,7 @@ Two details worth knowing:
 themes, scales, grooves, reverb and delay presets) asks before it replaces a file:
 `INSTRUMENT EXISTS - OVERWRITE?`, `THEME EXISTS - OVERWRITE?` and so on. **A** overwrites. **B** opens
 the keyboard on `<NAME>-COPY` (or `-COPY-2`, `-COPY-3`… if that is taken too), so you can keep both;
-SELECT there cancels and nothing is saved. A preset asks even when you save it again under its own
+SELECT + B there cancels and nothing is saved. A preset asks even when you save it again under its own
 name, because presets do not remember which file they came from. Whatever name you save under becomes
 the name the instrument, scale, groove, reverb or delay row shows, and a saved theme becomes the
 active one.
@@ -2816,7 +2821,7 @@ sample — handy for grabbing a sound straight from a clip without a separate co
 - **Supported containers:** `.mp4`, `.mkv`, `.webm`, `.3gp`, `.mov`. The audio track is decoded
   with the device's built-in codecs. (`.m4a` is **not** here — it loads in place as a sample instead;
   see *Sample files* above.)
-- **How:** INSTRUMENT (or INST_POOL) screen → **SAMPLE** field → **A** → file browser → highlight a video
+- **How:** INSTRUMENT screen → TYPE row → **LOAD** → **A** (or INST.POOL → the NAME of an empty slot → **A**) → file browser → highlight a video
   file → **A**. A keyboard appears, pre-filled with `<filename>_audio`; edit the name if you like, then
   confirm.
 - **What happens:** the first audio track is extracted, **saved as a WAV** in
@@ -2854,8 +2859,8 @@ Created via Selection Resampling:
 
 1. On the SONG screen, enter selection mode (**L+B**).
 2. Select the rows and tracks you want to render.
-3. **Double-tap A** — a confirmation dialog appears.
-4. Choose YES — selected tracks render offline to a WAV file.
+3. **Double-tap A** — the SAMPLE NAME keyboard opens.
+4. Confirm the name — selected tracks render offline to a WAV file.
 5. A new instrument is created in the first empty slot with the rendered audio.
 
 Output: `<home>/Samples/Resampled/Resample_0001.wav`, …
@@ -2864,7 +2869,7 @@ Output: `<home>/Samples/Resampled/Resample_0001.wav`, …
 
 When slice markers are set in the SAMPLE EDITOR, use CHOP to export each slice as a separate WAV:
 
-Output: `<home>/Samples/Chops/{instrument_name}/`
+Output: `<home>/Samples/Chops/<sample name>_<time>_<n>/`, a new folder each time, written only after **A** in the CHOP preview
 
 > [!NOTE]
 > CHOP exports do not automatically load into instrument slots. After chopping, open the INSTRUMENT screen and use the file browser to load the individual slice files onto new instruments.
@@ -3205,7 +3210,7 @@ exports and sample-editor saves keep their own folders.
 | A + LEFT / RIGHT | Edit value (+1 / −1) |
 | A + UP / DOWN | Edit value (+16 / −16, or ±1 octave for notes) |
 | A + B | Delete / clear value |
-| B | Cancel / back / delete |
+| B | Back / cancel (nothing on a grid outside a selection) |
 | START | Play / Stop |
 
 ---
@@ -3243,8 +3248,8 @@ exports and sample-editor saves keep their own folders.
 
 | Input | Screen | Action |
 |---|---|---|
-| B + LEFT / RIGHT | PHRASE | Previous / next phrase |
-| B + LEFT / RIGHT | CHAIN | Previous / next chain |
+| B + LEFT / RIGHT | PHRASE | NAV = SONG: another track's phrase at this chain row. NAV = POOL: previous / next phrase |
+| B + LEFT / RIGHT | CHAIN | NAV = SONG: the next filled song cell left / right. NAV = POOL: previous / next chain |
 | B + LEFT / RIGHT | INSTRUMENT | Previous / next instrument |
 | B + LEFT / RIGHT | TABLE | Previous / next table |
 | B + LEFT / RIGHT | GROOVE | Previous / next groove |
@@ -3259,12 +3264,12 @@ exports and sample-editor saves keep their own folders.
 
 | Input | Action |
 |---|---|
-| L + B | Enter selection mode (tap again: CELL → ROW → SCREEN) |
+| L + B | Enter selection mode (tap again quickly: CELL → ROW → SCREEN; later: leave) |
 | B *(in selection)* | Copy, exit selection |
 | L + A *(in selection)* | Cut (copy + clear), exit selection |
 | L + A *(outside selection)* | Paste at cursor |
 | A + B *(in selection)* | Delete selection (no clipboard), exit |
-| A + LEFT / RIGHT *(in selection)* | Increment / decrement all selected values |
+| A + D-pad *(in selection)* | Change the cursor's column on every selected row |
 | L + B + A | Deep-clone the chain / phrase under the cursor |
 | L + D-pad | Fill rows from one cell (PHRASE) |
 | L + R *(in selection)* | Leave selection mode; the copy buffer survives |
@@ -3280,7 +3285,7 @@ exports and sample-editor saves keep their own folders.
 | START on SONG | Play from current row |
 | START on CHAIN | Play current chain |
 | START on PHRASE, INSTRUMENT, MODULATION, TABLE | Play current phrase (loops) |
-| R + START on CHAIN, PHRASE, INSTRUMENT, MODULATION, TABLE | Play the whole song |
+| R + START on CHAIN, PHRASE, INSTRUMENT, INST.POOL, MODULATION, TABLE, GROOVE, SCALE | Play the whole song / stop |
 | A + START on INSTRUMENT, MODULATION, TABLE | Preview instrument |
 | START on SAMPLE EDITOR | Preview sample |
 | START in file browser | Preview highlighted WAV |
@@ -3327,7 +3332,7 @@ exports and sample-editor saves keep their own folders.
 | A + LEFT / RIGHT | ±1 |
 | A + UP / DOWN | ±16 (PHR), ±12 semitones (TSP) |
 | A + B | Delete slot |
-| B + LEFT / RIGHT | Previous / next chain |
+| B + LEFT / RIGHT | NAV = SONG: next filled song cell left / right. NAV = POOL: previous / next chain |
 
 ---
 
@@ -3335,11 +3340,11 @@ exports and sample-editor saves keep their own folders.
 
 | Input | Action |
 |---|---|
-| A | Insert last-used note / value |
+| A | Insert the last note (empty note) or last command (empty FX type) |
 | A + LEFT / RIGHT | ±1 semitone (note), ±1 (other) |
 | A + UP / DOWN | ±1 octave (note), ±16 (other) |
-| A + B | Delete value |
-| B + LEFT / RIGHT | Previous / next phrase |
+| A + B | Clear note / FX; V back to 7F; OFF on an empty note |
+| B + LEFT / RIGHT | NAV = SONG: another track's phrase. NAV = POOL: previous / next phrase |
 
 ---
 

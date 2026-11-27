@@ -87,6 +87,11 @@ struct SettingsValues {
     int  interpDefault    = 2;   // CUBIC
     int  interpLimit      = 4;   // SINC 8 LP: every mode
 
+    // ── KEY BAR: the screen's own shortcuts at the canvas's foot (ui/key_bar.h) ────────────────
+    // ⚠️ Off here so the tools and checks draw the screens as recorded; the app turns it on before
+    // reading settings.json (shell/app.cpp), so a user gets it on until they switch it off.
+    bool keyBar           = false;
+
     // ── The rows every platform has ──────────────────────────────────────────────────────────────
     // SCALING (specs/sharp-scaling.md): SCALING_INT, SCALING_SHARP or SCALING_BILINEAR. A new install
     // gets SHARP; an older settings.json's scalingBilinear carries over (settings_store.cpp).

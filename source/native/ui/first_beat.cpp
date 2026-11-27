@@ -1,4 +1,6 @@
 #include "ui/first_beat.h"
+#include "ui/modules/help_overlay.h"
+#include "ui/key_bar.h"
 
 #include "songcore/model.h"
 #include "ui/app_state.h"
@@ -201,10 +203,11 @@ void draw_first_beat(Canvas& c, const AppState& s) {
     // its footer hints.
     const bool settings = s.currentScreen == ScreenType::SETTINGS;
     const auto scene = settings ? SceneLayout{} : scene_layout(t);
-    const int w = OscilloscopeModule::WIDTH, h = OscilloscopeModule::HEIGHT;
+    const int barH = key_bar_shown(s) ? KEY_BAR_H : 0;   // the strip is shorter above the key bar
+    const int w = OscilloscopeModule::WIDTH, h = OscilloscopeModule::HEIGHT - barH;
     const int x = SIDE_SPACER;
-    const int y = s.studioOpen ? DESIGN_H - h - 4
-                : scene.scopeBottom ? DESIGN_H - SCREEN_SPACER - h : SCREEN_SPACER;
+    const int y = s.studioOpen ? DESIGN_H - OscilloscopeModule::HEIGHT - 4
+                : scene.scopeBottom ? DESIGN_H - barH - SCREEN_SPACER - h : SCREEN_SPACER;
     const FirstBeatText text = first_beat_text(s.firstBeat.step);
     c.reset_clip();
     c.panel_rect(x, y, w, h, t.background, t.rowCursor, 5);
@@ -214,17 +217,19 @@ void draw_first_beat(Canvas& c, const AppState& s) {
     for (int i = 0; i < FIRST_BEAT_STEPS; ++i)
         c.fill_rect(x + w - 14 - (FIRST_BEAT_STEPS - i) * 12, y + 10, 9, 5,
                     i < done ? t.rowCursor : with_alpha(t.textParam, .25f));
-    c.draw_label("FIRST BEAT", x + 14, y + 6, t.rowCursor, 12);
-    c.draw_label(Canvas::clip_label(text.title, w - 260, 12), x + 104, y + 6, t.textTitle, 12);
-    c.draw_label(Canvas::clip_label(text.todo, w - 28, 15), x + 14, y + 24, t.textValue, 15);
+    // The three lines close up by the key bar's height: 6 / 24 / 48 at 70 px, 4 / 19 / 36 at 54.
+    const int squeeze = OscilloscopeModule::HEIGHT - h;
+    c.draw_label("FIRST BEAT", x + 14, y + 6 - squeeze / 8, t.rowCursor, 12);
+    c.draw_label(Canvas::clip_label(text.title, w - 260, 12), x + 104, y + 6 - squeeze / 8, t.textTitle, 12);
+    c.draw_label(Canvas::clip_label(text.todo, w - 28, 15), x + 14, y + 24 - squeeze * 5 / 16, t.textValue, 15);
     std::string keys = text.keys;
     if (s.caps.touchLayouts) keys += "   (on-screen buttons)";
-    c.draw_label(Canvas::clip_label(keys, w - 28, 12), x + 14, y + 48, t.textParam, 12);
+    c.draw_label(Canvas::clip_label(keys, w - 28, 12), x + 14, y + 48 - squeeze * 3 / 4, t.textParam, 12);
 }
 
 void draw_first_beat_help_strip(Canvas& c, const AppState& s) {
     const Theme& t = s.theme;
-    const int h = 26, y = DESIGN_H - h;
+    const int h = help_overlay_geometry::FOOT_H, y = DESIGN_H - h;   // the full help stays above it
     c.reset_clip();
     c.fill_rect(0, y, DESIGN_W, h, with_alpha(t.background, .94f));
     c.fill_rect(0, y, DESIGN_W, 1, t.rowCursor);

@@ -299,6 +299,7 @@ void make_app_folders(const AppConfig& cfg, ui::FileSystem& filesystem) {
 
 // settings.json, then config.json and the factory banks.
 void load_settings_and_config(ui::FileSystem& filesystem, ui::AppState& state, SdlInput& input) {
+    state.settings.keyBar = true;   // SETTINGS > KEY BAR: on unless settings.json says otherwise
 #ifdef PT_HANDHELD
     // shortcut: CUBIC is the handheld ceiling until it is measured on an RGB20S (specs/sample-interpolation.md).
     state.settings.interpLimit = INTERP_CUBIC;

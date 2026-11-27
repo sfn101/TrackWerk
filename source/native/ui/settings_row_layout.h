@@ -37,9 +37,10 @@ enum class SettingsRow {
     TOUCH_BTNS = 22,   // AUTO / ALWAYS / OFF — the on-screen buttons (touch screens only)
     INTERP_DEF = 23,   // NONE … SINC 8 LP — the INTERP a new song starts on
     INTERP_LIM = 24,   // NONE … SINC 8 LP — the highest INTERP live playback uses
+    KEY_BAR    = 25,   // ON / OFF — the shortcuts bar at the foot of every screen
 };
 
-inline constexpr int SETTINGS_ROW_COUNT = 25;
+inline constexpr int SETTINGS_ROW_COUNT = 26;
 
 // The order rows are drawn and walked; every SettingsRow exactly once.
 inline constexpr SettingsRow SETTINGS_DISPLAY_ORDER[SETTINGS_ROW_COUNT] = {
@@ -52,7 +53,7 @@ inline constexpr SettingsRow SETTINGS_DISPLAY_ORDER[SETTINGS_ROW_COUNT] = {
     SettingsRow::METRONOME,
     SettingsRow::KB_INSERT, SettingsRow::CURSOR,    SettingsRow::NAV,
     SettingsRow::FOLDER,    SettingsRow::NOTE_PREV,
-    SettingsRow::VISUALIZER, SettingsRow::HELP, SettingsRow::APPEARANCE, SettingsRow::THEME,
+    SettingsRow::VISUALIZER, SettingsRow::HELP, SettingsRow::KEY_BAR, SettingsRow::APPEARANCE, SettingsRow::THEME,
     SettingsRow::TEMPLATE,
     SettingsRow::RESUME,    SettingsRow::TRACE,
 };

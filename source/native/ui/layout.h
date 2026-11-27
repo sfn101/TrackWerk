@@ -108,7 +108,7 @@ private:
     void draw_frame(Canvas& c, const AppState& state);
 
     void draw_full_screen(Canvas& c, const AppState& s);   // the browser or the sample editor
-    void draw_scope_strip(Canvas& c, const AppState& s, int y);
+    void draw_scope_strip(Canvas& c, const AppState& s, int y, int h);
     void draw_visualizer_screen(Canvas& c, const AppState& s, int x, int y, int width);
     static OscilloscopeState scope_state(const AppState& s);
     void draw_editor(Canvas& c, const AppState& s, int x, int y, int width);        // or the EQ / theme editor in its place

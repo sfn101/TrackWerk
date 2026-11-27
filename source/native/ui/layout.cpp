@@ -1,6 +1,7 @@
 #include "ui/demo_fx.h"
 #include "ui/perform.h"
 #include "ui/layout.h"
+#include "ui/key_bar.h"
 #include "ui/studio.h"
 #include "ui/scene_picker.h"
 #include "ui/scene_layout.h"
@@ -321,11 +322,13 @@ void TrackerLayout::draw_frame(Canvas& c, const AppState& s) {
     const int editorWidth = vi ? main_area_width() : EDITOR_CLIP_RIGHT - SIDE_SPACER;
     // The editor sits right beside the rail; wide mode's spare space is always on its right.
     const int editorX = scene.railLeft ? (vi ? DESIGN_W : DESIGN_W_4_3) - SIDE_SPACER - editorWidth : SIDE_SPACER;
-    const int editorY = scene.scopeBottom ? SCREEN_SPACER : EDITOR_Y;
-    const int scopeY = scene.scopeBottom ? DESIGN_H - SCREEN_SPACER - OscilloscopeModule::HEIGHT
-                                         : SCREEN_SPACER;
+    // The key bar takes its height from the top strip, so every screen keeps all its rows (phase B2).
+    const int barH    = key_bar_shown(s) ? KEY_BAR_H : 0;
+    const int scopeH  = OscilloscopeModule::HEIGHT - barH;
+    const int editorY = scene.scopeBottom ? SCREEN_SPACER : EDITOR_Y - barH;
+    const int scopeY = scene.scopeBottom ? DESIGN_H - barH - SCREEN_SPACER - scopeH : SCREEN_SPACER;
 
-    draw_scope_strip(c, s, scopeY);
+    draw_scope_strip(c, s, scopeY, scopeH);
     draw_editor(c, s, editorX, editorY, editorWidth);
     // Wide mode's side views (PHRASE: the other tracks; SONG / CHAIN: a peek one level down), in the
     // spare space right of the editor, whichever side the rail is on.
@@ -343,12 +346,12 @@ void TrackerLayout::draw_frame(Canvas& c, const AppState& s) {
                     with_alpha(s.theme.textParam, .22f));
         c.fill_rect(editorX, editorY + ROW_HEIGHT + 4, 36, 1, s.theme.rowCursor);
     }
-    c.stroke_rect(SIDE_SPACER, scopeY, scope_width(), OscilloscopeModule::HEIGHT,
+    c.stroke_rect(SIDE_SPACER, scopeY, scope_width(), scopeH,
                   with_alpha(s.theme.textParam, .18f));
 
     if (s.theme.sceneChrome) {
         const Argb frame = with_alpha(s.theme.textTitle, .44f);
-        c.scene_edge(SIDE_SPACER, scopeY, scope_width(), OscilloscopeModule::HEIGHT, frame);
+        c.scene_edge(SIDE_SPACER, scopeY, scope_width(), scopeH, frame);
         c.scene_edge(editorX - 3, editorY - 2, editorWidth + 6, DESIGN_H - EDITOR_Y - 4, frame);
     }
     if (!settings) draw_track_rail(c, s, scene.railLeft ? SIDE_SPACER : right_bar_x(),
@@ -359,6 +362,7 @@ void TrackerLayout::draw_frame(Canvas& c, const AppState& s) {
     // The editor is the page; title, scope and track rail stay while it changes (shell/app.cpp).
     c.mark_stage(editorX - 3, editorY - 2, editorWidth + 6, DESIGN_H - EDITOR_Y - 4);
 
+    if (key_bar_shown(s)) draw_key_bar(c, s, 0, DESIGN_W);
     draw_overlays(c, s);
 }
 
@@ -378,12 +382,13 @@ void TrackerLayout::draw_full_screen(Canvas& c, const AppState& s) {
 }
 
 // ─── The oscilloscope or Phrase overview ──────────────────────────────────────────────────────────
-void TrackerLayout::draw_scope_strip(Canvas& c, const AppState& s, int y) {
+void TrackerLayout::draw_scope_strip(Canvas& c, const AppState& s, int y, int h) {
     const Theme& t = s.theme;
 
     if (phrase_overview_visible(s)) {
         PhraseOverviewState view{s.project->phrases[static_cast<size_t>(s.currentPhrase)],
                                  s.playheads, t, s.phraseOverview, s.cursorRow};
+        view.height = h;
         if (s.selection.active) {
             const auto bounds = s.selection.bounds();
             view.selectedFirst = bounds.topLeftRow;
@@ -393,7 +398,7 @@ void TrackerLayout::draw_scope_strip(Canvas& c, const AppState& s, int y) {
         return;
     }
 
-    oscilloscope_.draw_sized(c, SIDE_SPACER, y, scope_width(), OscilloscopeModule::HEIGHT, scope_state(s));
+    oscilloscope_.draw_sized(c, SIDE_SPACER, y, scope_width(), h, scope_state(s));
 }
 
 // What the visualizer is handed, the strip's and VI's alike.

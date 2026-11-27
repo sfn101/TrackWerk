@@ -83,10 +83,13 @@ void PhraseEditHistory::clear() {
 
 void PhraseEditorModule::draw_overview(Canvas& c, int x, int y, const PhraseOverviewState& s) const {
     const Theme& t = s.theme;
-    constexpr int width = OscilloscopeModule::WIDTH, height = OscilloscopeModule::HEIGHT;
+    constexpr int width = OscilloscopeModule::WIDTH;
+    const int height = s.height;
     constexpr int slotWidth = 28, slots = songcore::PHRASE_ROWS;
     constexpr int plotWidth = slots * slotWidth;
-    const int left = x + 10, top = y + 28, baseline = y + 61;
+    // At 70 px: the plot from y+28 to y+61, the status line above it; a shorter strip scales both.
+    const int left = x + 10, top = y + height * 28 / 70, baseline = y + height - 9;
+    const int plot = baseline - top;   // 33 at 70 px
     const bool velocity = s.view == PhraseOverview::VELOCITY;
     c.panel_rect(x, y, width, height, t.vizBackground, with_alpha(t.textParam,.18f), 4);
 
@@ -123,7 +126,7 @@ void PhraseEditorModule::draw_overview(Canvas& c, int x, int y, const PhraseOver
             c.fill_rect(mid - 1, top + 2, 3, std::min(playing[step] + 1, 4), t.textPlayhead);
         }
     }
-    for (int guide : {top + 9, top + 17, top + 25, baseline + 1})
+    for (int guide : {top + plot * 9 / 33, top + plot * 17 / 33, top + plot * 25 / 33, baseline + 1})
         c.fill_rect(left, guide, plotWidth, 1, with_alpha(t.textParam,.22f));
 
     int previousX = -1, previousY = -1;
@@ -141,10 +144,10 @@ void PhraseEditorModule::draw_overview(Canvas& c, int x, int y, const PhraseOver
             previousX = -1;
         } else if (velocity) {
             const int value = std::clamp(s.phrase.steps[step].volume, 0, 127);
-            const int bar = std::max(2, value * 24 / 127);
+            const int bar = std::max(2, value * (plot - 9) / 127);
             c.fill_rect(mid - 6, baseline - bar + 1, 13, bar, ink);
         } else {
-            const int point = baseline - 3 - std::clamp(notes[step] - bottomPitch, 0, range) * 22 / range;
+            const int point = baseline - 3 - std::clamp(notes[step] - bottomPitch, 0, range) * (plot - 11) / range;
             if (reached && previousX >= 0)
                 c.line(previousX, previousY, mid, point, with_alpha(t.vizWave,.48f));
             c.fill_rect(mid - 5, point - 1, 11, 3, ink);
@@ -163,7 +166,7 @@ void PhraseEditorModule::draw_overview(Canvas& c, int x, int y, const PhraseOver
                             : songcore::note_name(s.phrase.steps[cursor].note);
     else readout += "---";
     // Status and the two clipboard/selection lines retain the upper portion of the strip.
-    c.draw_label(Canvas::clip_label(readout,140,12), x + width - 150, y + 53, t.textValue,12);
+    c.draw_label(Canvas::clip_label(readout,140,12), x + width - 150, y + height - 17, t.textValue,12);
 }
 
 void PhraseEditorModule::draw(Canvas& c, int x, int y, const PhraseEditorState& s) const {

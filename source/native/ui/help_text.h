@@ -36,7 +36,8 @@ inline constexpr int HELP_MAX_CHARS = 32;
 inline constexpr int HELP_TITLE_MAX_CHARS = 26;
 
 inline constexpr int HELP_BODY_LINES = 8;   // the full overlay's room for body…
-inline constexpr int HELP_KEY_LINES = 9;    // …and for controls, one gesture per line
+inline constexpr int HELP_KEY_LINES = 40;   // …and for controls, one gesture per line; the full help
+                                            // scrolls. A line "MOVE:" (capitals and a colon) is a group heading
 inline constexpr char PHRASE_OVERVIEW_HELP[] = "SELECT+←/→ switches overview";
 
 // Three summary lines, then an optional body and controls. The compact panel shows the summary; the
@@ -371,6 +372,7 @@ enum class HelpTopic {
     SET_INTERP_DEFAULT,
     SET_INTERP_LIMIT,
     SET_LATENCY,
+    SET_KEY_BAR,
 
     COUNT
 };
@@ -2749,6 +2751,16 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
       "only the buffer is known, the",
       "real delay is a bit longer."},
      {"Shown only: nothing to change"}},
+    /* SET_KEY_BAR */
+    {"KEY BAR: shortcuts below", "A thin bar at the foot of each", "screen with its own shortcuts.",
+     {"Shows the few shortcuts that",
+      "are special to the screen you",
+      "are on, and SELECT for help,",
+      "where every shortcut is. The",
+      "common ones (D-pad, A, A+B,",
+      "START) are left out. OFF gives",
+      "the space back to the screen."},
+     {"A+←/→ turns it ON or OFF"}},
 };
 
 // ─── Rules 2 and 3, as compile errors — at runtime they fail silently ────────────────────────────
@@ -3076,6 +3088,7 @@ inline HelpTopic settings_cell_topic(int row, int column) {
         case SettingsRow::TOUCH_BTNS: return HelpTopic::SET_TOUCH_BUTTONS;
         case SettingsRow::INTERP_DEF: return HelpTopic::SET_INTERP_DEFAULT;
         case SettingsRow::INTERP_LIM: return HelpTopic::SET_INTERP_LIMIT;
+        case SettingsRow::KEY_BAR:    return HelpTopic::SET_KEY_BAR;
         case SettingsRow::OVERLAY:
             return second ? HelpTopic::SET_OVERLAY_STRENGTH : HelpTopic::SET_OVERLAY;
         case SettingsRow::BTN_SOUND:

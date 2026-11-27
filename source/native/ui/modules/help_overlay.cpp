@@ -117,6 +117,12 @@ void HelpOverlayModule::draw(Canvas& c, HelpTopic topic, const Theme& t, int scr
         }
         const std::string text(word, static_cast<size_t>(bytes));
         const int x = row_x(drawRow) + col * CHAR_W, y = boxY + row_dy(drawRow);
+        // A group heading in the key list ("MOVE:"): one capitalised word with a colon, in the title colour.
+        if (isKey && col == 0 && text.size() >= 5 && text.back() == ':' &&
+            text.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ:") == std::string::npos) {
+            c.draw_text(text, x, y + TEXT_PADDING, t.textTitle, CHAR_SPACING, FONT_SCALE);
+            return;
+        }
         if (isKey && col == 0 && button_combo(text, caps)) {
             draw_key_caps(c, caps, x, y, t);
             return;

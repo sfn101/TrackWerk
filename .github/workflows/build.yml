@@ -119,5 +119,7 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           build/windows/native/Release/pthelp-units-check.exe
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          build/windows/native/Release/ptkey-bar-check.exe
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           build/windows/native/Release/ptfile-validation-check.exe "$env:RUNNER_TEMP/ptfile-validation-check"
           if ($LASTEXITCODE) { exit $LASTEXITCODE }

@@ -41,6 +41,10 @@ The tools\ folder beside TrackWerk.exe holds yt-dlp.exe, qjs.exe and ffmpeg.exe.
 SOURCE uses them to fetch audio from YouTube. Keep them next to the exe; without them
 SOURCE still works with the Internet Archive, Wikimedia Commons, SomaFM and radio.
 
+Studio's recorder records mics, line-ins and USB interfaces into Documents\TrackWerk\Recordings.
+If it says WINDOWS BLOCKS THE MIC, open Windows Settings > Privacy & security > Microphone and turn on
+"Let desktop apps access your microphone".
+
 
 CONTROLS
 --------

@@ -28,7 +28,7 @@
 #include "windows/audio-outputs-win.h"  // SETTINGS > AUDIO OUT; empty off Windows
 #include "sdl/linux-audio-outputs.h"     // SETTINGS > AUDIO OUT on Linux; empty elsewhere
 #ifdef PT_NATIVE_STUDIO_SERVICES
-#if !defined(PT_MIYOO_PLUS_ARCHIVE) && !defined(_WIN32)   // Windows: SOURCE only, no recorder yet
+#if !defined(PT_MIYOO_PLUS_ARCHIVE)
 #include "linux/capture-router.h"
 #endif
 #include "linux/source-sampler.h"
@@ -198,7 +198,7 @@ int main(int argc, char** argv) {
     cfg.mediaBaseDir = hasProject ? baseDir : appRoot;
 
 #ifdef PT_NATIVE_STUDIO_SERVICES
-#if !defined(PT_MIYOO_PLUS_ARCHIVE) && !defined(_WIN32)   // Windows: SOURCE only, no recorder yet
+#if !defined(PT_MIYOO_PLUS_ARCHIVE)
     log_startup_phase("CaptureRouter construction begin");
     auto recorder = std::make_unique<ptshell::CaptureRouter>(appRoot);
     // Input monitoring rides the already-open output; the recorder's ring is the only thing the
@@ -209,7 +209,7 @@ int main(int argc, char** argv) {
     log_startup_phase("SourceSampler construction begin");
     auto sources = std::make_unique<pt::platform::SourceSampler>(appRoot);
     log_startup_phase("SourceSampler construction ready");
-#if !defined(PT_MIYOO_PLUS_ARCHIVE) && !defined(_WIN32)   // Windows: SOURCE only, no recorder yet
+#if !defined(PT_MIYOO_PLUS_ARCHIVE)
     cfg.capture = recorder.get();
 #endif
     cfg.sources = sources.get();
@@ -334,7 +334,7 @@ int main(int argc, char** argv) {
 #ifdef PT_NATIVE_STUDIO_SERVICES
     audio.set_external_audio(nullptr, nullptr);
     sources.reset();
-#if !defined(PT_MIYOO_PLUS_ARCHIVE) && !defined(_WIN32)   // Windows: SOURCE only, no recorder yet
+#if !defined(PT_MIYOO_PLUS_ARCHIVE)
     audio.set_monitor_audio(nullptr, nullptr);
     recorder.reset();
 #endif

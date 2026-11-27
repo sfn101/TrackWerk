@@ -2827,6 +2827,21 @@ Plain text, and readable on the device itself. It records the whole start-up —
 found, how many samples loaded, which controller was detected — which is exactly what a bug report
 needs and what is hardest to describe from memory. If something is wrong, attach this file.
 
+### Recording a mic, line-in or USB interface
+
+Studio's recorder (**RECORD**) takes a microphone, a line-in or a USB audio interface into a new WAV in
+`Recordings/`, which you then open in the sample editor with **Use Take**. It works on Android, Linux
+and Windows. The input list shows the system default and every input the system reports; recording,
+the peak meters and the take work the same everywhere. Takes are mono or stereo, 44.1 or 48 kHz,
+16-bit, up to 10 minutes.
+
+On **Windows** it records through Windows' own audio, whatever SETTINGS > AUDIO OUT plays through.
+Hearing the input while you record (monitoring) works with AUDIO OUT on SYSTEM; on an ASIO driver the
+take records but you don't hear the input through TrackWerk. If Windows blocks desktop apps from the
+microphone, the recorder says `WINDOWS BLOCKS THE MIC: SETTINGS > PRIVACY > MICROPHONE`: open that
+page in Windows Settings and turn on **Let desktop apps access your microphone**. The iPhone USB input
+is Linux only.
+
 ### YouTube in Studio > Sources
 
 On Android, Windows and Linux desktops (not on handhelds), Studio > Sources can take audio from
@@ -3489,7 +3504,7 @@ This appendix lists the keys of the 1.3 Studio additions. The illustrated update
 | L (hold) + D-pad | Stage page and XY pad page (Froggy, Croaker) | Move the firefly: X is the first macro, Y the second |
 | Finger drag | Same pages, touch screens | Moves the firefly |
 
-Rows: Lyrics, Voice (frog, man, woman, child), Croak, Vibrato, Glide, Coda (0 = off), Syllable (Auto or a fixed number), Pitch source (Note or Mic; Mic on Linux builds only, while the recorder listens). Macros: Mouth, Breath, Throat. Spell words the way they should sound. The lyrics belong to the instrument and are saved with the project and with the instrument preset.
+Rows: Lyrics, Voice (frog, man, woman, child), Croak, Vibrato, Glide, Coda (0 = off), Syllable (Auto or a fixed number), Pitch source (Note or Mic; Mic on Linux and Windows builds, while the recorder listens). Macros: Mouth, Breath, Throat. Spell words the way they should sound. The lyrics belong to the instrument and are saved with the project and with the instrument preset.
 
 **Control sheets.** Each family draws its values its own way: dials (Rings, Elements, Low End and Sirens), an LCD (Braids, Vintage Chips), a bar graph (Gravity, Spectral) and plain blocks elsewhere. The values and keys are the same everywhere.
 

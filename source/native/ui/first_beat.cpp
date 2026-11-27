@@ -1,4 +1,5 @@
 #include "ui/first_beat.h"
+#include "ui/modules/help_overlay.h"
 
 #include "songcore/model.h"
 #include "ui/app_state.h"
@@ -224,7 +225,7 @@ void draw_first_beat(Canvas& c, const AppState& s) {
 
 void draw_first_beat_help_strip(Canvas& c, const AppState& s) {
     const Theme& t = s.theme;
-    const int h = 26, y = DESIGN_H - h;
+    const int h = help_overlay_geometry::FOOT_H, y = DESIGN_H - h;   // the full help stays above it
     c.reset_clip();
     c.fill_rect(0, y, DESIGN_W, h, with_alpha(t.background, .94f));
     c.fill_rect(0, y, DESIGN_W, 1, t.rowCursor);

@@ -122,7 +122,7 @@ void HelpOverlayModule::draw(Canvas& c, HelpTopic topic, const Theme& t, int scr
             return;
         }
         c.draw_text(text, x, y + TEXT_PADDING, isKey ? t.textEmpty : t.textValue, CHAR_SPACING, FONT_SCALE);
-    }, true);
+    }, true, help_overlay_scrolls(e));
 
     // More text above or below: a thin bar on the right edge, and an arrow at the end that hides text.
     if (maxScroll > 0) {

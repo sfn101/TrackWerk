@@ -62,11 +62,13 @@ constexpr int box_h(int rows) {
     const int contentEnd   = textBottom > mascotBottom ? textBottom : mascotBottom;
     return contentEnd + ROW_HEIGHT + ROW_HEIGHT + PAD;
 }
-constexpr int box_y(int boxH) { return (DESIGN_H - boxH) / 2; }
+// The strip at the canvas's foot while help is up (First Beat's START line): the box stays above it.
+inline constexpr int FOOT_H = 26;
+constexpr int box_y(int boxH) { return (DESIGN_H - FOOT_H - boxH) / 2; }
 constexpr int hint_dy(int boxH) { return boxH - PAD - ROW_HEIGHT; }
 
 // The tallest box whose frame stays on the canvas.
-inline constexpr int MAX_BOX_H = DESIGN_H - 2 * (MODAL_BORDER - 1);
+inline constexpr int MAX_BOX_H = DESIGN_H - FOOT_H - 2 * (MODAL_BORDER - 1);
 
 // The most text rows (title counted) a box of MAX_BOX_H shows; a longer topic scrolls the rows under the
 // mascot (specs/help-and-lessons.md, phase B2).
@@ -90,7 +92,9 @@ static_assert(HELP_TITLE_MAX_CHARS == BESIDE_COLS,
 // `air` adds a blank row between the title's own line and the rest (specs/help-and-lessons.md, phase
 // B); the overlay uses it only where the box still fits (`help_overlay_air`).
 template <class Emit>
-constexpr int help_overlay_flow(const HelpEntry& e, Emit&& emit, bool air = false) {
+// `below`: everything after the title's own line starts under the mascot, so a topic that scrolls moves
+// whole paragraphs and never splits one between the rows beside the mascot and the scrolling ones.
+constexpr int help_overlay_flow(const HelpEntry& e, Emit&& emit, bool air = false, bool below = false) {
     using namespace help_overlay_geometry;
     constexpr int TOO_WIDE = 1000;
 
@@ -132,6 +136,7 @@ constexpr int help_overlay_flow(const HelpEntry& e, Emit&& emit, bool air = fals
     if (!flow(e.line1 + titleLen + (e.line1[titleLen] == ':' ? 1 : 0))) return TOO_WIDE;
     end_paragraph();
     if (air) ++row;
+    if (below && row < BESIDE_ROWS) row = BESIDE_ROWS;
 
     const int lastBody = last_written(e.body, HELP_BODY_LINES);
     if (lastBody < 0) {
@@ -181,8 +186,15 @@ constexpr bool help_overlay_words_fit() {
 
 static_assert(detail::help_overlay_words_fit(), "a help topic holds a word wider than the full overlay's rows");
 
+// Whether a topic is laid out to scroll: too tall for the box with its text beside the mascot.
+constexpr bool help_overlay_scrolls(const HelpEntry& e) {
+    return help_overlay_flow(e, detail::HelpFlowNoEmit{}, true) > help_overlay_geometry::max_visible_rows();
+}
+
 // The rows a topic needs (title counted), with the blank row under the title.
-constexpr int help_overlay_rows(const HelpEntry& e) { return help_overlay_flow(e, detail::HelpFlowNoEmit{}, true); }
+constexpr int help_overlay_rows(const HelpEntry& e) {
+    return help_overlay_flow(e, detail::HelpFlowNoEmit{}, true, help_overlay_scrolls(e));
+}
 
 // How far a topic scrolls, in rows: 0 when it fits.
 constexpr int help_overlay_max_scroll(const HelpEntry& e) {

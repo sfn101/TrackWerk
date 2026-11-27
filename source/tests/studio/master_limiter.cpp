@@ -131,6 +131,7 @@ struct DelayedClick {
     void setDustDepthForRender(int) {}
     void setLimiterPreGain(int) {}
     void setLimiterMode(int) {}
+    void setInterpMode(int) {}
     void setMasterEqSlot(int) {}
     void setStemsMode(int) {}
     void scheduleNoteOffAll(int64_t) {}

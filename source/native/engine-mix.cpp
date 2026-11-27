@@ -427,6 +427,8 @@ void AudioEngine::processAudioBlock(float* output, int numFrames, int channelCou
 void AudioEngine::walkMixerRamps(BlockMix& b) {
     b.offlineRender = isOfflineRendering.load(std::memory_order_relaxed);
     const bool offlineRender = b.offlineRender;
+    const int songInterp = interpMode.load(std::memory_order_relaxed);
+    b.interpMode = offlineRender ? songInterp : std::min(songInterp, interpLimit.load(std::memory_order_relaxed));
 
     // ⚠️ Each is a PAIR (first frame, last) — the mute its own ramp, not folded into the fader — read
     // at two sites: the sampler's per-sample gain and the SoundFont buffer post-chain. An export snaps
@@ -1043,6 +1045,11 @@ void AudioEngine::mixSamplerPieceAs(Voice& voice, const BlockMix& b, int from, i
     Playhead   ph           = playheadOf(voice, modulatedRate);
     const bool stereo       = granular || ph.right != nullptr;
     const int  lastReadable = voice.sampleLength - 1;   // the read needs idx + 1
+    // The sample read: the downsample's own and LINEAR are today's, the others sample-interp.h's.
+    const int interp = b.interpMode, sampleLen = voice.sampleLength;
+    const auto rd = [interp, sampleLen](const float* d, int i, float f, int ds, float rate) {
+        return ds > 0 || interp == INTERP_LINEAR ? Playhead::read(d, i, f, ds) : interp_read(d, sampleLen, i, f, interp, rate);
+    };
 
     // A chord's other playheads: the voice's own, at their own place and rate.
     const int chordExtra = Chord ? voice.chordExtra : 0;
@@ -1172,14 +1179,14 @@ void AudioEngine::mixSamplerPieceAs(Voice& voice, const BlockMix& b, int from, i
             if(!grain.active())isActive=false;
         }
         float procL = granular ? grainFrame.left : generated ? synth.next(voice.baseFrequency * modulatedRate*voice.studioTuneRatio, b.sampleRate)
-                                : Playhead::read(ph.left, idx, frac, effDownsample);
-        float procR = granular ? grainFrame.right : stereo ? Playhead::read(ph.right, idx, frac, effDownsample) : procL;
+                                : rd(ph.left, idx, frac, effDownsample, ph.rate);
+        float procR = granular ? grainFrame.right : stereo ? rd(ph.right, idx, frac, effDownsample, ph.rate) : procL;
         const bool dsBlend = dsFade.moving();
         float      dsOld   = 0.0f;
         if (dsBlend && !generated && !granular) {   // the downsample changed mid-note: the old read fades out
             dsOld = dsFade.next();
-            procL = Playhead::read(ph.left, idx, frac, dsPrev) * dsOld + procL * (1.0f - dsOld);
-            if (stereo) procR = Playhead::read(ph.right, idx, frac, dsPrev) * dsOld + procR * (1.0f - dsOld);
+            procL = rd(ph.left, idx, frac, dsPrev, ph.rate) * dsOld + procL * (1.0f - dsOld);
+            if (stereo) procR = rd(ph.right, idx, frac, dsPrev, ph.rate) * dsOld + procR * (1.0f - dsOld);
         }
         // A strum holds the voice's own playhead where it starts until its turn.
         bool ownWaits = false;
@@ -1205,12 +1212,12 @@ void AudioEngine::mixSamplerPieceAs(Voice& voice, const BlockMix& b, int from, i
                     const float remaining = c.framesLeft();
                     if (remaining >= 0.0f && remaining < (float)DECLICK_SAMPLES) g *= remaining / (float)DECLICK_SAMPLES;
                 }
-                float cL = Playhead::read(c.left, cIdx, cFrac, effDownsample);
-                if (dsBlend) cL = Playhead::read(c.left, cIdx, cFrac, dsPrev) * dsOld + cL * (1.0f - dsOld);
+                float cL = rd(c.left, cIdx, cFrac, effDownsample, c.rate);
+                if (dsBlend) cL = rd(c.left, cIdx, cFrac, dsPrev, c.rate) * dsOld + cL * (1.0f - dsOld);
                 procL += cL * g;
                 if (stereo) {
-                    float cR = Playhead::read(c.right, cIdx, cFrac, effDownsample);
-                    if (dsBlend) cR = Playhead::read(c.right, cIdx, cFrac, dsPrev) * dsOld + cR * (1.0f - dsOld);
+                    float cR = rd(c.right, cIdx, cFrac, effDownsample, c.rate);
+                    if (dsBlend) cR = rd(c.right, cIdx, cFrac, dsPrev, c.rate) * dsOld + cR * (1.0f - dsOld);
                     procR += cR * g;
                 }
                 if (!c.advance()) chordDone[k] = true;

@@ -202,6 +202,7 @@ void push_mixer(Engine& engine, const Project& project, MixerHeld held = {}) {
     engine.setDustDepth(project.dustDepth);
     engine.setLimiterPreGain(project.limiterPreGain);
     engine.setLimiterMode(project.limiterMode);
+    engine.setInterpMode(project.interpMode);
     push_global_effects(engine, project, held);
 }
 
@@ -264,6 +265,7 @@ void apply_master_bus_for_render(Engine& engine, const Project& project) {
     else                          engine.setDustDepthForRender(project.dustDepth);
     engine.setLimiterPreGain(project.limiterPreGain);
     engine.setLimiterMode(project.limiterMode);
+    engine.setInterpMode(project.interpMode);
     engine.setMasterEqSlot(project.masterEqSlot);
 }
 

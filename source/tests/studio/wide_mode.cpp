@@ -256,7 +256,7 @@ int main(int argc, char** argv) {
         const Ref refs[] = {
             {ScreenType::SONG, 0x3ee210682c1ad64cull}, {ScreenType::PHRASE, 0xcd3ee1bb58ec9150ull},
             {ScreenType::INSTRUMENT, 0xcb1a79e96342aca1ull}, {ScreenType::MIXER, 0x18bd0f3a016a447eull},
-            {ScreenType::SETTINGS, 0xb002fc343b44b6faull},
+            {ScreenType::SETTINGS, 0xd8def639c37866b6ull},
         };
         for (const Ref& r : refs) {
             state.currentScreen = r.screen;

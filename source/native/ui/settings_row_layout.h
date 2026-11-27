@@ -35,9 +35,11 @@ enum class SettingsRow {
     LATENCY    = 20,   // read-only: the output's latency in ms (every platform)
     SCREEN     = 21,   // 4:3 / 16:9 — applies at the next start (specs/wide-mode.md)
     TOUCH_BTNS = 22,   // AUTO / ALWAYS / OFF — the on-screen buttons (touch screens only)
+    INTERP_DEF = 23,   // NONE … SINC 8 LP — the INTERP a new song starts on
+    INTERP_LIM = 24,   // NONE … SINC 8 LP — the highest INTERP live playback uses
 };
 
-inline constexpr int SETTINGS_ROW_COUNT = 23;
+inline constexpr int SETTINGS_ROW_COUNT = 25;
 
 // The order rows are drawn and walked; every SettingsRow exactly once.
 inline constexpr SettingsRow SETTINGS_DISPLAY_ORDER[SETTINGS_ROW_COUNT] = {
@@ -45,7 +47,7 @@ inline constexpr SettingsRow SETTINGS_DISPLAY_ORDER[SETTINGS_ROW_COUNT] = {
     SettingsRow::SCALING,   // sharp scaling (roadmap 9), not wide mode: wide mode builds and works without this row
     SettingsRow::SCREEN,
     SettingsRow::OVERLAY,
-    SettingsRow::AUDIO_OUT, SettingsRow::LATENCY,
+    SettingsRow::AUDIO_OUT, SettingsRow::LATENCY, SettingsRow::INTERP_DEF, SettingsRow::INTERP_LIM,
     SettingsRow::BTN_SOUND, SettingsRow::BTN_VIBRO, SettingsRow::ABXY,
     SettingsRow::METRONOME,
     SettingsRow::KB_INSERT, SettingsRow::CURSOR,    SettingsRow::NAV,
@@ -173,13 +175,14 @@ enum class ProjectRow {
     COLLECT   = 9,   // COLLECT    — the song and its files into Songs/<name>
     SWING     = 10,  // Global sixteenth swing, 50% straight .. 75% (3:1).
     LIMITER   = 11,  // CLASSIC | CLEAN — the master limiter (specs/master-limiter.md)
+    INTERP    = 12,  // NONE … SINC 8 LP — the sample read (specs/sample-interpolation.md)
 };
 
-inline constexpr int PROJECT_ROW_COUNT = 12;
+inline constexpr int PROJECT_ROW_COUNT = 13;
 
 // The order rows are drawn and walked; every ProjectRow exactly once.
 inline constexpr ProjectRow PROJECT_DISPLAY_ORDER[PROJECT_ROW_COUNT] = {
-    ProjectRow::TEMPO,   ProjectRow::SWING,     ProjectRow::TRANSPOSE, ProjectRow::LIMITER,
+    ProjectRow::TEMPO,   ProjectRow::SWING,     ProjectRow::TRANSPOSE, ProjectRow::LIMITER, ProjectRow::INTERP,
     ProjectRow::NAME,    ProjectRow::PROJECT,   ProjectRow::COLLECT,   ProjectRow::EXPORT,  ProjectRow::COMPACT,
     ProjectRow::SYSTEM,  ProjectRow::MIDI,      ProjectRow::EXIT,
 };
@@ -255,7 +258,7 @@ inline int project_row_max_column(ProjectRow row) {
 
 // Group gaps: after the values, after the actions, and before EXIT.
 inline bool project_row_gap_after(ProjectRow row) {
-    return row == ProjectRow::LIMITER || row == ProjectRow::COMPACT || row == ProjectRow::MIDI;
+    return row == ProjectRow::INTERP || row == ProjectRow::COMPACT || row == ProjectRow::MIDI;
 }
 
 // How far down a PROJECT row is drawn. Unlike SETTINGS a hidden row adds nothing, so without MIDI,

@@ -1,4 +1,5 @@
 #include "ui/modules/settings_editor.h"
+#include "sample-interp.h"
 
 #include <algorithm>
 
@@ -128,6 +129,9 @@ void SettingsModule::draw(Canvas& c, int x, int y, const SettingsState& s) const
         c.draw_text(s.latencyText, val1X, ry + TEXT_PADDING, t.textEmpty, CHAR_SPACING, FONT_SCALE);
     }
 
+    param_row(SettingsRow::INTERP_DEF, "INTERP DEF", interp_name(v.interpDefault));
+    param_row(SettingsRow::INTERP_LIM, "INTERP MAX", interp_name(v.interpLimit));
+
     dual_row(SettingsRow::BTN_SOUND, "BTN SOUND", on_off(v.buttonSoundEnabled),
              "VOL", hex2(v.buttonSoundVolume));
     // POW is LO/HI: the target ROMs have only EFFECT_TICK and EFFECT_CLICK (LO < 128 ≤ HI).
@@ -246,6 +250,8 @@ CursorContext SettingsModule::cursor_context(const SettingsState& s) const {
                                   static_cast<int>(visualizer_names().size()));
 
         case SettingsRow::HELP:       return cc::enum_cycle(v.helpMode, 3);
+        case SettingsRow::INTERP_DEF: return cc::enum_cycle(v.interpDefault, INTERP_MODE_COUNT);
+        case SettingsRow::INTERP_LIM: return cc::enum_cycle(v.interpLimit, INTERP_MODE_COUNT);
 
         // A opens the theme editor.
         case SettingsRow::APPEARANCE: return cc::read_only();
@@ -325,6 +331,8 @@ SettingsInputResult SettingsModule::handle_input(SettingsValues& v, Theme& theme
             break;
 
         case SettingsRow::HELP: v.helpMode = clamp(value, 0, 2); break;
+        case SettingsRow::INTERP_DEF: v.interpDefault = clamp(value, 0, INTERP_MODE_COUNT - 1); break;
+        case SettingsRow::INTERP_LIM: v.interpLimit   = clamp(value, 0, INTERP_MODE_COUNT - 1); break;
 
         // A-only rows: the dispatcher's.
         case SettingsRow::APPEARANCE:

@@ -36,6 +36,7 @@ extern SoundfontVoice sfVoices[SF_VOICE_COUNT];
 #include "studio/synth.h"
 #include "studio/rack.h"
 #include "live-resampler.h"
+#include "sample-interp.h"
 #include "common/local_wav_source.h"
 #include "studio/sample_granular.h"
 #include "studio/granular_exchange.h"
@@ -559,6 +560,12 @@ public:
     // The output delay the limiter in force adds, in frames at the device rate: SETTINGS > LATENCY,
     // OFFSET AUTO and the renders' alignment read it. Any thread.
     int getLimiterLatencyFrames() const;
+    // PROJECT > INTERP (sample-interp.h) and SETTINGS > INTERP LIMIT. Live playback reads the lower of
+    // the two; a render reads the song's mode alone, so it sounds the same on every device.
+    void setInterpMode(int mode);
+    void setInterpLimit(int mode);
+    // The song's mode is above the device's limit, so live playback is lowered.
+    bool interpLimited() const;
 
 
     // SoundFont voice first.
@@ -595,6 +602,7 @@ public:
         float   sampleRate;
         int64_t startFrame;           // the block's first frame on the engine clock
         bool    offlineRender;
+        int     interpMode;           // the sample read in force (sample-interp.h)
         bool    octaWanted;           // the OCTA scopes are being drawn
         bool    spectrumWanted;       // the send spectra are being drawn
         int     monitoredInstrId;     // the EQ screen's instrument, or -1
@@ -1182,6 +1190,7 @@ private:
     float masterMaximum[2] = {};
     float limiterInputMaximum = 0.0f;
     std::atomic<int> limiterModeInForce{0};   // what getLimiterLatencyFrames reads
+    std::atomic<int> interpMode{1}, interpLimit{4};   // LINEAR; SINC 8 LP
     // Callback-owned peaks wait here if the UI has the meter lock.
     float pendingMasterMaximum[2] = {};
     float pendingLimiterInputMaximum = 0.0f;

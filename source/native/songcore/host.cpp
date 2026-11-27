@@ -428,6 +428,7 @@ void SongcoreHost::new_project() {
     stop();
     if (engine_) engine_->local_wav_source().close();
     songcore::new_project(project_);
+    project_.interpMode = newSongInterp_;
 
     if (engine_) {
         engine_->clearAllSamples();

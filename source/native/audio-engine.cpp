@@ -17,6 +17,7 @@
 SoundfontVoice sfVoices[SF_VOICE_COUNT];
 
 AudioEngine::AudioEngine() {
+    SincTables::get();   // built here, never on the audio thread
     for (int i = 0; i < 256; i++) {
         studioCodes[i].store(-1);
         studioSynthParams.edit(i)=StudioSynthRow{studio::default_synth_params(),kStudioParamsAnyCode,0};
@@ -782,6 +783,18 @@ void AudioEngine::setLimiterMode(int mode) {
     busSettings.limiterMode = mode == 1 ? 1 : 0;
     limiterModeInForce.store(busSettings.limiterMode, std::memory_order_relaxed);
     recordBus(BUS_LIMITER);
+}
+
+void AudioEngine::setInterpMode(int mode) {
+    interpMode.store(std::clamp(mode, 0, INTERP_MODE_COUNT - 1), std::memory_order_relaxed);
+}
+
+void AudioEngine::setInterpLimit(int mode) {
+    interpLimit.store(std::clamp(mode, 0, INTERP_MODE_COUNT - 1), std::memory_order_relaxed);
+}
+
+bool AudioEngine::interpLimited() const {
+    return interpMode.load(std::memory_order_relaxed) > interpLimit.load(std::memory_order_relaxed);
 }
 
 int AudioEngine::getLimiterLatencyFrames() const {

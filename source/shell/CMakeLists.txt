@@ -231,6 +231,8 @@ if(WIN32)
     )
     FetchContent_MakeAvailable(curl)
     target_sources(pockettracker-sdl PRIVATE linux/source-sampler.cpp)
+    # The recorder too (specs/recording-windows.md): Linux's SDL capture, through WASAPI. No iPhone USB.
+    target_sources(pockettracker-sdl PRIVATE linux/sample-recorder.cpp linux/capture-router.cpp)
     target_link_libraries(pockettracker-sdl PRIVATE CURL::libcurl ws2_32)
     target_compile_definitions(pockettracker-sdl PRIVATE PT_NATIVE_STUDIO_SERVICES=1)
     # The helpers beside the dev exe too. An empty folder until fetch-helpers.ps1 has run: SOURCE then
@@ -357,6 +359,20 @@ elseif(TARGET SDL2::SDL2-static)
 else()
     target_include_directories(pockettracker-sdl PRIVATE ${SDL2_INCLUDE_DIRS})
     target_link_libraries(pockettracker-sdl PRIVATE ${SDL2_LIBRARIES})
+endif()
+
+# The Windows recorder against SDL's dummy capture driver (specs/recording-windows.md): the device
+# list, mono and stereo takes, stale inputs, rapid stops. CI runs it on the Windows job.
+if(WIN32 AND PT_SAFETY_CHECK)
+    add_executable(ptsdl-capture-check ../tests/studio/sdl_capture_check.cpp linux/sample-recorder.cpp)
+    target_include_directories(ptsdl-capture-check PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+    target_compile_definitions(ptsdl-capture-check PRIVATE SDL_MAIN_HANDLED)
+    target_link_libraries(ptsdl-capture-check PRIVATE pt-ui)
+    if(TARGET SDL2::SDL2)
+        target_link_libraries(ptsdl-capture-check PRIVATE SDL2::SDL2)
+    elseif(TARGET SDL2::SDL2-static)
+        target_link_libraries(ptsdl-capture-check PRIVATE SDL2::SDL2-static)
+    endif()
 endif()
 
 # The shipped native shell must not retain the maintainer home path.

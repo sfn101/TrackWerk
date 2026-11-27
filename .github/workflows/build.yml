@@ -115,5 +115,7 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           build/windows/native/Release/ptoversampled-drive-check.exe
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          build/windows/Release/ptsdl-capture-check.exe
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           build/windows/native/Release/ptfile-validation-check.exe "$env:RUNNER_TEMP/ptfile-validation-check"
           if ($LASTEXITCODE) { exit $LASTEXITCODE }

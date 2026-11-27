@@ -10,7 +10,11 @@
 #include <stdexcept>
 #include <thread>
 #include <vector>
+#ifdef _WIN32
+#include <random>
+#else
 #include <unistd.h>
+#endif
 
 using Json = nlohmann::json;
 namespace {
@@ -58,10 +62,21 @@ void checkWav(const Json& state, int channels, int rate) {
 int main() {
     std::filesystem::path root;
     try {
+#ifdef _WIN32
+        // mkdtemp's Windows twin: a random folder that did not exist before.
+        std::random_device seed;
+        for (int attempt = 0; attempt < 32 && root.empty(); ++attempt) {
+            const auto candidate = std::filesystem::temp_directory_path() /
+                                   ("pt-sdl-capture-" + std::to_string(seed()));
+            if (std::filesystem::create_directory(candidate)) root = candidate;
+        }
+        require(!root.empty(), "cannot create test directory");
+#else
         std::string pattern = (std::filesystem::temp_directory_path() / "pt-sdl-capture-XXXXXX").string();
         std::vector<char> name(pattern.begin(), pattern.end()); name.push_back(0);
         const auto created = mkdtemp(name.data());
         require(created, "cannot create test directory"); root = created;
+#endif
         SDL_setenv("SDL_AUDIODRIVER", "dummy", 1);
         require(SDL_Init(SDL_INIT_AUDIO | SDL_INIT_TIMER) == 0, SDL_GetError());
         {

@@ -2,7 +2,9 @@
 #include "linux/monitor-ring.h"
 #include "studio/pitch_track.h"
 #include "studio/mic_pitch.h"
+#ifndef _WIN32
 #include "linux/usb-audio-diagnosis.h"
+#endif
 
 #include <SDL.h>
 #include "vendor/nlohmann/json.hpp"
@@ -23,7 +25,19 @@
 #include <thread>
 #include <utility>
 #include <vector>
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#include <fcntl.h>
+#include <io.h>
+#include <random>
+#include <share.h>
+#include <sys/stat.h>
+#else
 #include <unistd.h>
+#endif
 
 namespace ptshell {
 namespace {
@@ -64,6 +78,24 @@ class WavWriter {
 public:
     WavWriter(const std::filesystem::path& dir, int rate, int channels)
         : rate_(rate), channels_(channels) {
+#ifdef _WIN32
+        // mkstemps' Windows twin: a random name, created only if it does not exist yet.
+        int fd = -1;
+        std::random_device seed;
+        for (int attempt = 0; attempt < 32 && fd < 0; ++attempt) {
+            char suffix[8];
+            std::snprintf(suffix, sizeof suffix, "%06x", static_cast<unsigned>(seed()) & 0xFFFFFFu);
+            const std::filesystem::path candidate = dir / ("capture_" + std::string(suffix) + ".wav");
+            if (_wsopen_s(&fd, candidate.wstring().c_str(), _O_CREAT | _O_EXCL | _O_WRONLY | _O_BINARY,
+                          _SH_DENYWR, _S_IREAD | _S_IWRITE) == 0)
+                path = candidate.string();
+            else
+                fd = -1;
+        }
+        if (fd < 0) throw std::runtime_error("Cannot create a recording file");
+        file_ = _fdopen(fd, "wb");
+        if (!file_) { _close(fd); std::filesystem::remove(path); throw std::runtime_error("Cannot open WAV file"); }
+#else
         std::string pattern = (dir / "capture_XXXXXX.wav").string();
         std::vector<char> name(pattern.begin(), pattern.end()); name.push_back(0);
         const int fd = mkstemps(name.data(), 4);
@@ -71,6 +103,7 @@ public:
         path = name.data();
         file_ = fdopen(fd, "wb");
         if (!file_) { ::close(fd); std::filesystem::remove(path); throw std::runtime_error("Cannot open WAV file"); }
+#endif
         unsigned char header[44]{};
         if (std::fwrite(header, 1, sizeof header, file_) != sizeof header) {
             std::fclose(file_); file_ = nullptr; std::filesystem::remove(path);
@@ -99,7 +132,11 @@ public:
         std::copy_n(reinterpret_cast<const unsigned char*>("data"), 4, h + 36);
         le32(h + 40, bytes);
         bool ok = std::fflush(file_) == 0;
+#ifdef _WIN32
+        if (ok) ok = _chsize_s(_fileno(file_), static_cast<int64_t>(44u) + bytes) == 0;
+#else
         if (ok) ok = ::ftruncate(fileno(file_), static_cast<off_t>(44u + bytes)) == 0;
+#endif
         if (ok) ok = std::fseek(file_, 0, SEEK_SET) == 0;
         if (ok) ok = std::fwrite(h, 1, sizeof h, file_) == sizeof h;
         if (std::fclose(file_) != 0) ok = false;
@@ -124,6 +161,23 @@ std::string sdlError(const char* prefix) {
     const char* error = SDL_GetError();
     return std::string(prefix) + (error && *error ? std::string(": ") + error : "");
 }
+
+#ifdef _WIN32
+// Settings > Privacy > Microphone: Windows then hands desktop apps an input that opens but records only
+// silence. Its switches are these registry values; any one at "Deny" blocks us.
+bool windowsBlocksMic() {
+    const auto denied = [](HKEY root, const wchar_t* key) {
+        wchar_t value[16] = {};
+        DWORD size = sizeof value;
+        return RegGetValueW(root, key, L"Value", RRF_RT_REG_SZ, nullptr, value, &size) == ERROR_SUCCESS &&
+               std::wstring(value) == L"Deny";
+    };
+    const wchar_t* store = L"Software\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\microphone";
+    const std::wstring desktop = std::wstring(store) + L"\\NonPackaged";
+    return denied(HKEY_LOCAL_MACHINE, store) || denied(HKEY_CURRENT_USER, store) ||
+           denied(HKEY_CURRENT_USER, desktop.c_str());
+}
+#endif
 
 std::string inputKind(std::string name) {
     std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) {
@@ -258,8 +312,10 @@ struct SdlSampleRecorder::Impl {
         }
         // A USB interface the firmware cannot drive is plugged in: every row says so (the Record page
         // shows the selected row's detail), so nobody hunts for a missing input in the list.
+#ifndef _WIN32
         const auto usb = usb_audio_diagnosis(usb_audio_seen());
         if (!usb.empty()) for (auto& row : result) row["detail"] = usb;
+#endif
         cachedInputs = result; haveInputs = true; discoveryFailed = false;
         return result;
     }
@@ -337,6 +393,11 @@ struct SdlSampleRecorder::Impl {
                 endDriver("resolve", requestedId);
                 if (stopRequested.load()) throw Cancelled{};
                 if (!found) throw std::runtime_error("Selected input is no longer connected; refresh inputs (USB requires OS support)");
+#ifdef _WIN32
+                // Not under SDL's test driver, which never reaches a real microphone.
+                const char* driver = SDL_GetCurrentAudioDriver();
+                if ((!driver || std::string(driver) != "dummy") && windowsBlocksMic()) throw std::runtime_error("WINDOWS BLOCKS THE MIC: SETTINGS > PRIVACY > MICROPHONE");
+#endif
                 SDL_AudioSpec want{}, got{};
                 want.freq = rate; want.format = AUDIO_S16LSB;
                 // 512 frames ≈ 10.7 ms: the monitor should not add a second period of its own.

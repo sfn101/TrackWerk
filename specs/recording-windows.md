@@ -26,6 +26,16 @@ Windows gets one, so mic, line-in and USB interfaces record into samples there t
 The Studio's Input Recorder lists the system default, mics, line-ins and USB interfaces. Recording, the take, the peak
 meters and the import work exactly as on Linux.
 
+## Built (2026-11-27)
+
+- The WAV file's unique name and its final trim use `_wsopen_s` and `_chsize_s` on Windows.
+- The privacy block is read from the registry (`CapabilityAccessManager\ConsentStore\microphone`: the machine
+  switch, the user switch and the desktop-apps switch). If any is `Deny`, Record shows the message at once instead of
+  opening the input.
+- Monitoring (hearing the input) rides the SDL output, so it works with AUDIO OUT on SYSTEM; on ASIO the take records
+  but isn't monitored.
+- The host check is the existing `sdl_capture_check.cpp`, made portable, built on Windows as `ptsdl-capture-check`.
+
 ## Errors
 
 - If Windows blocks desktop apps from the microphone (Settings > Privacy > Microphone), the device fails to open or

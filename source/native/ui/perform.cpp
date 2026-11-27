@@ -343,7 +343,7 @@ void draw_perform(Canvas& c, int x, int y, const AppState& s) {
                      muted ? error_ink(t) : t.textValue, 12);
     }
 
-    c.draw_label("A+arrows: play   B+arrows: kind / synth   L+arrows, L+A: tracks / macro",
+    c.draw_label("A+arrows: play  B+arrows: kind/synth  L+left/right, L+A: tracks/macro",
                  x + 2, y + 380 - 18, t.textParam, 12);
 }
 

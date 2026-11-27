@@ -1,6 +1,9 @@
 // The plain buttons — A, B, SELECT, START — and LIVE mode's two chords.
 
 #include "ui/dispatch/dispatch_common.h"
+#include "ui/modules/help_overlay.h"
+
+#include <algorithm>
 
 #include "songcore/traversal.h"
 #include "ui/song_pointer.h"
@@ -21,12 +24,18 @@ void InputDispatcher::on_select() {
     }
     s_.helpFull = static_cast<HelpMode>(s_.settings.helpMode) == HelpMode::FULL;
     s_.helpOpen = !s_.helpFull;
+    s_.helpScroll = 0;
 }
 
 void InputDispatcher::on_help_button(Button button) {
     if (button == Button::A) {
         s_.helpFull = !s_.helpFull;
         s_.helpOpen = !s_.helpFull;
+        s_.helpScroll = 0;
+    } else if (s_.helpFull && (button == Button::DPAD_UP || button == Button::DPAD_DOWN)) {
+        // UP / DOWN scroll a topic longer than the box (phase B2); a short one does not move.
+        const int max = help_overlay_max_scroll(help_entry(help_topic(s_)));
+        s_.helpScroll = std::clamp(s_.helpScroll + (button == Button::DPAD_DOWN ? 3 : -3), 0, max);
     } else if (button == Button::B || button == Button::SELECT) {
         on_help_dismiss();
     } else if (button == Button::START) {

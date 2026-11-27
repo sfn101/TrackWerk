@@ -880,7 +880,7 @@ void input_page(Canvas& c,const AppState& s){
  const int64_t frames=internal?rv.frames:v.frames;const int rate=internal?rv.rate:v.actualRate;
  studio_card(c,16,102,608,70,t);
  c.draw_label("RECORD / Internal + input",30,113,t.textValue,18);
- label(c,internal?"Internal mix includes Punch + Master. Start: play song.":s.captureBackend?"Microphone / USB interface / experimental iPhone":"External input unavailable; internal resampling works",30,145,t.textParam,477);
+ label(c,internal?"Internal mix includes Punch + Master. Start: playback.":s.captureBackend?"Microphone / USB interface / experimental iPhone":"External input unavailable; internal resampling works",30,145,t.textParam,477);
  char time[32];std::snprintf(time,sizeof(time),"%02lld:%02lld",static_cast<long long>(frames/std::max(rate,1)/60),static_cast<long long>(frames/std::max(rate,1)%60));
  c.draw_text(time,531,119,receiving?t.meterHigh:t.textValue,1,3);
  const std::string input=selected?selected->name+(disconnected?" / disconnected":""):"Internal master / resample";
@@ -913,7 +913,7 @@ void input_page(Canvas& c,const AppState& s){
   label(c,"POST FX / MASTER",430,220,t.rowCursor,180,12);
   label(c,"Punch-in included",430,238,t.textParam,180,12);
   status=rv.active?(rv.frames>0?"REC - internal mix":"Waiting for frames"):rv.saving?"Saving take...":rv.failed?"Save failed - retry":rv.frames>0?"Resample ready":"Ready: internal mix";
-  detail=rv.message.empty()?"Start: play song. A starts or stops resampling. No USB input needed. Stop playback before Use Take.":rv.message;
+  detail=rv.message.empty()?"Start: playback. A starts or stops resampling. No USB input needed. Stop playback before Use Take.":rv.message;
  }else{
   c.draw_label("Actual input level",430,196,t.textParam);
   meter(c,430,221,180,12,v.receiving()?v.peakL:0.f,t);meter(c,430,242,180,12,v.receiving()?v.peakR:0.f,t);

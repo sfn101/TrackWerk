@@ -1,7 +1,6 @@
 // Real units in help lines (specs/help-and-lessons.md, phase B). Every "XX=-6 dB" or "XX is -6 dB" in a
 // help line is recomputed from the code's own conversion (songcore::hex_to_float, a level of XX/255)
-// and must match to the precision printed. Also counts the help topics that get the blank row under
-// their title. Portable, no assert: CI runs it on Linux and Windows. Usage: pthelp-units-check
+// and must match to the precision printed. Also counts the help topics that scroll. Portable, no assert: CI runs it on Linux and Windows. Usage: pthelp-units-check
 #include "songcore/model.h"
 #include "ui/fx_helper.h"
 #include "ui/help_text.h"
@@ -63,11 +62,10 @@ int main() {
     }
     check(figures >= 5, "the dB figures were found (" + std::to_string(figures) + ")");
 
-    int withAir = 0;
-    for (const HelpEntry& e : HELP_ENTRIES) withAir += help_overlay_air(e) ? 1 : 0;
-    std::printf("      %d dB figures checked; %d of %zu help topics get the blank row under the title\n", figures,
-                withAir, sizeof(HELP_ENTRIES) / sizeof(HELP_ENTRIES[0]));
-    check(withAir > 0, "some topics get the blank row");
+    int scrolling = 0;
+    for (const HelpEntry& e : HELP_ENTRIES) scrolling += help_overlay_max_scroll(e) > 0 ? 1 : 0;
+    std::printf("      %d dB figures checked; %d of %zu help topics scroll in the full help\n", figures,
+                scrolling, sizeof(HELP_ENTRIES) / sizeof(HELP_ENTRIES[0]));
 
     std::printf(failures ? "%d FAILED\n" : "all passed\n", failures);
     return failures ? 1 : 0;

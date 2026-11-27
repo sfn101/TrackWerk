@@ -74,7 +74,7 @@ void TrackerLayout::draw(Canvas& c, const AppState& s) {
     draw_first_beat(c, s);   // the tutorial card, under help
 
     if (s.project) {
-        if (s.helpFull) helpOverlay_.draw(c, help_topic(s), s.theme);
+        if (s.helpFull) helpOverlay_.draw(c, help_topic(s), s.theme, s.helpScroll);
         else if (s.helpOpen) helpPanel_.draw(c, help_topic(s), s.theme);
         if (s.helpFull || s.helpOpen) draw_first_beat_help_strip(c, s);   // START: First beat
     }

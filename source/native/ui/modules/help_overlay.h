@@ -68,6 +68,14 @@ constexpr int hint_dy(int boxH) { return boxH - PAD - ROW_HEIGHT; }
 // The tallest box whose frame stays on the canvas.
 inline constexpr int MAX_BOX_H = DESIGN_H - 2 * (MODAL_BORDER - 1);
 
+// The most text rows (title counted) a box of MAX_BOX_H shows; a longer topic scrolls the rows under the
+// mascot (specs/help-and-lessons.md, phase B2).
+constexpr int max_visible_rows() {
+    int rows = BESIDE_ROWS;
+    while (box_h(rows + 1) <= MAX_BOX_H) ++rows;
+    return rows;
+}
+
 static_assert(TITLE_GAP >= 0, "the rows beside the help mascot run into the rows under it");
 
 static_assert(BOX_X >= MODAL_BORDER - 1, "the help overlay's frame would draw off the canvas");
@@ -162,29 +170,31 @@ struct HelpFlowNoEmit {
     constexpr void operator()(int, int, const char*, int, bool) const {}
 };
 
-constexpr bool help_overlay_fits() {
+// A taller topic now scrolls, so only a word no row can hold is an error.
+constexpr bool help_overlay_words_fit() {
     for (const HelpEntry& e : HELP_ENTRIES)
-        if (help_overlay_geometry::box_h(help_overlay_flow(e, HelpFlowNoEmit{})) >
-            help_overlay_geometry::MAX_BOX_H)
-            return false;
+        if (help_overlay_flow(e, HelpFlowNoEmit{}, true) >= 1000) return false;
     return true;
 }
 
 }  // namespace detail
 
-static_assert(detail::help_overlay_fits(),
-              "a help topic's text, re-wrapped for the full overlay, makes a box taller than the canvas");
+static_assert(detail::help_overlay_words_fit(), "a help topic holds a word wider than the full overlay's rows");
 
-// The blank row under the title, wherever the box still fits with it.
-constexpr bool help_overlay_air(const HelpEntry& e) {
-    return help_overlay_geometry::box_h(help_overlay_flow(e, detail::HelpFlowNoEmit{}, true)) <=
-           help_overlay_geometry::MAX_BOX_H;
+// The rows a topic needs (title counted), with the blank row under the title.
+constexpr int help_overlay_rows(const HelpEntry& e) { return help_overlay_flow(e, detail::HelpFlowNoEmit{}, true); }
+
+// How far a topic scrolls, in rows: 0 when it fits.
+constexpr int help_overlay_max_scroll(const HelpEntry& e) {
+    const int over = help_overlay_rows(e) - help_overlay_geometry::max_visible_rows();
+    return over > 0 ? over : 0;
 }
 
 class HelpOverlayModule {
   public:
-    // The backdrop, the box and `topic`; the caller decides whether it is up.
-    void draw(Canvas& c, HelpTopic topic, const Theme& t) const;
+    // The backdrop, the box and `topic`, scrolled down by `scroll` rows (clamped); the caller decides
+    // whether it is up.
+    void draw(Canvas& c, HelpTopic topic, const Theme& t, int scroll = 0) const;
 };
 
 }  // namespace pt::ui

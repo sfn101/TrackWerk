@@ -1082,7 +1082,13 @@ void AudioEngine::applySampleFx(int id, int fxType, int fxValue, float sampleRat
             DriveModule drive;
             drive.reset();
             drive.setDrive(fxValue);
-            for (int i = 0; i < len; i++) buf[i] = drive.processMono(buf[i]);
+            // Offline, so always the oversampled drive; its delay is dropped, so the edit stays in place.
+            // shortcut: 2×, not the spec's 4× (whose delay is not a whole frame); raise it if 2× ever aliases.
+            drive.setOversample(true);
+            for (int i = 0; i < len + HalfbandOS2::DELAY; i++) {
+                const float y = drive.processMono(i < len ? buf[i] : 0.0f);
+                if (i >= HalfbandOS2::DELAY) buf[i - HalfbandOS2::DELAY] = y;
+            }
         } else if (fxType == 3) { // EQ — apply preset slot (fxValue = slot 0-127)
             int slot = std::min(fxValue, 127);
             const EqPresetBank& preset = eqPresets.staged(slot);

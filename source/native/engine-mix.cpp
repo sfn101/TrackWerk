@@ -295,7 +295,8 @@ void AudioEngine::triggerSamplerNote(const ScheduledNote& note, int frame, int64
 // ⚠️ The fader goes on the rendered samples, not on the TSF channel: a channel volume is one value per
 // render call, a staircase. Above the chain, so drive and filter hear the faded signal.
 static void faderThenChain(InstrumentChain& chain, float* buf, int from, int to,
-                           float fStart, float fEnd, int numFrames) {
+                           float fStart, float fEnd, int numFrames, bool oversampleDrive) {
+    chain.drive.setOversample(oversampleDrive);
     if (fStart != 1.0f || fEnd != 1.0f) {
         for (int i = from; i < to; i++) {
             const float g = fStart + (fEnd - fStart) * (float)(i + 1) / (float)numFrames;
@@ -1103,6 +1104,7 @@ void AudioEngine::mixSamplerPieceAs(Voice& voice, const BlockMix& b, int from, i
     Ramp      fadeIn     = voice.fadeIn;
 
     InstrumentChain& chain = voice.chain;
+    chain.drive.setOversample(interp >= INTERP_CUBIC);   // the drive follows INTERP
     const bool chainIdle   = chain.idle();
     bool       chainRan    = false;
 
@@ -1500,7 +1502,7 @@ void AudioEngine::renderSoundfontPiece(SoundfontVoice& sv, int t, tsf* h, const 
             renderSoundfontKeys(sv, h, t, sfBuf, from, to);
         }
         applyGainRamp(sfBuf + from * 2, to - from, sv.volGainFrom, sv.volGainTo);
-        faderThenChain(sv.chain, sfBuf, from, to, faderStart, faderEnd, numFrames);
+        faderThenChain(sv.chain, sfBuf, from, to, faderStart, faderEnd, numFrames, b.interpMode >= INTERP_CUBIC);
     } else {
         // ⚠️ A steal renders the two notes apart, each through its own fader and chain, and adds them:
         // the old one up to `fadeEnd` (past the new onset) through `cutChain`, faded at its output — TSF's
@@ -1513,7 +1515,7 @@ void AudioEngine::renderSoundfontPiece(SoundfontVoice& sv, int t, tsf* h, const 
         // The old note keeps the gain it ended the last piece on — the new note's envelope has
         // already replaced the mods, and must not reach the note it cuts.
         applyGainRamp(sfBuf + from * 2, fadeEnd - from, sv.volGain, sv.volGain);
-        if (sv.cutting) faderThenChain(sv.cutChain, sfBuf, from, fadeEnd, faderStart, faderEnd, numFrames);
+        if (sv.cutting) faderThenChain(sv.cutChain, sfBuf, from, fadeEnd, faderStart, faderEnd, numFrames, b.interpMode >= INTERP_CUBIC);
         Ramp out;
         out.start(1.0f, 0.0f, rampLen - 1);   // at zero on the last frame
         for (int i = rampStart; i < fadeEnd; i++) {
@@ -1531,7 +1533,7 @@ void AudioEngine::renderSoundfontPiece(SoundfontVoice& sv, int t, tsf* h, const 
             float* const note = sfNoteBuf;
             renderSoundfontKeys(sv, h, t, note, sfStart, to);
             applyGainRamp(note + sfStart * 2, noteFrames, sv.volGainFrom, sv.volGainTo);
-            faderThenChain(sv.chain, note, sfStart, to, b.trackVolStart[t], b.trackVolEnd[t], numFrames);
+            faderThenChain(sv.chain, note, sfStart, to, b.trackVolStart[t], b.trackVolEnd[t], numFrames, b.interpMode >= INTERP_CUBIC);
             for (int i = sfStart * 2; i < to * 2; i++) sfBuf[i] += note[i];
         }
     }

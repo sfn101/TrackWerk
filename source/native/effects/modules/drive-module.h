@@ -1,6 +1,7 @@
 #pragma once
 #include "../glide.h"
 #include "../primitives/daisysp/overdrive.h"
+#include "../primitives/halfband-os2.h"
 
 // Overdrive (DaisySP), level-compensated. drive 0-255 (0 = off) → SetDrive 0.30..0.60 — below 0.3
 // the DaisySP stage only attenuates. Stateless, so one instance serves both channels.
@@ -13,6 +14,17 @@ struct DriveModule {
     int  prevDrive = 0;
     Ramp oldShare;               // the old setting's share of the output, 1 to 0
     bool fresh     = true;
+
+    // INTERP CUBIC and above: the curve runs at 2× (specs/oversampled-drive.md); off is today's drive.
+    // The filters restart whenever the drive comes back from bypass, so no old audio is replayed.
+    bool        oversample = false;
+    bool        osPrimed   = false;
+    HalfbandOS2 osL, osR;
+
+    void setOversample(bool on) {
+        if (on != oversample) osPrimed = false;
+        oversample = on;
+    }
 
     void reset() {
         drive = 0;
@@ -33,9 +45,29 @@ struct DriveModule {
         od.SetDrive(0.3f + (d / 255.0f) * 0.3f);
     }
 
+    // The drive curve on one sample, with the fading-out setting mixed in by `k`.
+    inline float curve(float in, bool fading, float k) {
+        float out = enabled() ? od.Process(in) : in;
+        if (fading) out = (prevDrive > 0 ? odPrev.Process(in) : in) * k + out * (1.0f - k);
+        return out;
+    }
+
+    inline void prime() {
+        if (osPrimed) return;
+        osL.reset();
+        osR.reset();
+        osPrimed = true;
+    }
+
     inline float processMono(float in) {
         fresh = false;
-        if (!enabled() && !oldShare.moving()) return in;
+        if (!enabled() && !oldShare.moving()) { osPrimed = false; return in; }
+        if (oversample) {
+            prime();
+            const bool fading = oldShare.moving();
+            const float k = fading ? oldShare.next() : 0.0f;
+            return osL.process(in, [&](float u) { return curve(u, fading, k); });
+        }
         float out = enabled() ? od.Process(in) : in;
         if (oldShare.moving()) {
             const float k = oldShare.next();
@@ -46,7 +78,15 @@ struct DriveModule {
 
     inline void processStereo(float& L, float& R) {
         fresh = false;
-        if (!enabled() && !oldShare.moving()) return;
+        if (!enabled() && !oldShare.moving()) { osPrimed = false; return; }
+        if (oversample) {
+            prime();
+            const bool fading = oldShare.moving();
+            const float k = fading ? oldShare.next() : 0.0f;
+            L = osL.process(L, [&](float u) { return curve(u, fading, k); });
+            R = osR.process(R, [&](float u) { return curve(u, fading, k); });
+            return;
+        }
         float outL = enabled() ? od.Process(L) : L, outR = enabled() ? od.Process(R) : R;
         if (oldShare.moving()) {
             const float k = oldShare.next();

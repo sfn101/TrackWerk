@@ -875,7 +875,10 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
      {"Pushes the sound into soft",
       "distortion. 00 is clean, low",
       "values make it warmer, high",
-      "values make it crunchy."},
+      "values make it crunchy. On",
+      "PROJECT INTERP CUBIC and above",
+      "it runs at double rate, so high",
+      "notes stay clean, not harsh."},
      {"A+←/→ changes by 1, A+↑/↓ by 16",
       "A+B sets it back to 00"}},
     /* INST_FILTER */

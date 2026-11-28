@@ -254,9 +254,9 @@ int main(int argc, char** argv) {
         };
         struct Ref { ScreenType screen; uint64_t hash; };
         const Ref refs[] = {
-            {ScreenType::SONG, 0x3ee210682c1ad64cull}, {ScreenType::PHRASE, 0xcd3ee1bb58ec9150ull},
-            {ScreenType::INSTRUMENT, 0xcb1a79e96342aca1ull}, {ScreenType::MIXER, 0x18bd0f3a016a447eull},
-            {ScreenType::SETTINGS, 0xb4ce31f37a538e8dull},
+            {ScreenType::SONG, 0xa6f2014e3c0e4bfcull}, {ScreenType::PHRASE, 0x88bfa4d3db297ec0ull},
+            {ScreenType::INSTRUMENT, 0xc8cd9eccdc3f09d1ull}, {ScreenType::MIXER, 0x950768283698bc0eull},
+            {ScreenType::SETTINGS, 0x7035264bba6665ddull},
         };
         for (const Ref& r : refs) {
             state.currentScreen = r.screen;

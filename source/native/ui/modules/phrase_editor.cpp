@@ -166,7 +166,7 @@ void PhraseEditorModule::draw_overview(Canvas& c, int x, int y, const PhraseOver
                             : songcore::note_name(s.phrase.steps[cursor].note);
     else readout += "---";
     // Status and the two clipboard/selection lines retain the upper portion of the strip.
-    c.draw_label(Canvas::clip_label(readout,140,12), x + width - 150, y + height - 17, t.textValue,12);
+    shaded_label(c, Canvas::clip_label(readout,140,12), x + width - 150, y + height - 17, t.textValue, t.background, 12);
 }
 
 void PhraseEditorModule::draw(Canvas& c, int x, int y, const PhraseEditorState& s) const {

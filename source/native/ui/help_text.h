@@ -414,10 +414,10 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
       "A+→ on -- puts chain 00",
       "A+B clears the cell",
       "L+B+A clones chain and phrases",
+      "SELECT+↑/↓ undo / redo",
       "",
       "COPY:",
       "L+B marks, again: row, screen",
-      "D-PAD in a mark moves its edge",
       "B copies mark, A+B deletes it",
       "L+A cuts the mark, else pastes",
       "A+D-PAD changes marked column",
@@ -466,6 +466,7 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
       "A+→ on -- puts phrase 00",
       "A+B clears PH, TSP back to 00",
       "L+B+A copies to a new phrase",
+      "SELECT+↑/↓ undo / redo",
       "",
       "COPY:",
       "L+B marks, again: row, screen",
@@ -476,7 +477,7 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
       "L+R drops the mark or buffer",
       "",
       "PLAY:",
-      "START plays this chain",
+      "START plays from the cursor row",
       "R+START plays the whole song",
       "",
       "BASICS:",
@@ -497,7 +498,7 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
       "16:9: other tracks beside"},
      {"MOVE:",
       "↑/↓ past an end: next phrase",
-      "B+←/→ track, ↑/↓ row (NAV SONG)",
+      "B+←/→ track, ↑/↓ row, next chain",
       "B+←/→ phrase number (NAV POOL)",
       "R+→ instrument, R+← the chain",
       "R+↑/↓ GROOVE / MIXER",
@@ -512,7 +513,7 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
       "A+→ on --- puts C-4",
       "A+B clears (V 7F, FX value 00)",
       "A+B on --- writes OFF",
-      "L+B+A copies to a new phrase",
+      "L+B+A copy, the chain plays it",
       "",
       "TOOLS:",
       "L+→ fill: every 8, 6, 4 .. ramp",
@@ -530,7 +531,7 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
       "A+D-PAD changes marked column",
       "",
       "BASICS:",
-      "START plays it, R+START the song",
+      "START from cursor, R+START song",
       "SELECT opens help",
       "SELECT+START opens the show view",
       "L+SELECT Studio PUNCH (R: SYNTH)",
@@ -604,6 +605,7 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
       "A+↑/↓ by 16 (N an octave)",
       "A+↑/↓ on FX type: command list",
       "A+B clears (N 00, V --)",
+      "SELECT+↑/↓ undo / redo",
       "",
       "COPY:",
       "L+B marks, again: row, screen",
@@ -2458,7 +2460,13 @@ inline constexpr HelpEntry HELP_ENTRIES[] = {
       "the song TEMPO."},
      {"A+D-PAD picks the length"}},
     /* SE_SNAP */
-    {"SNAP: stops edits clicking", "Puts a dragged edge where", "the wave crosses the middle."},
+    {"SNAP: stops edits clicking", "Puts a dragged edge where", "the wave crosses the middle.",
+     {"While SNAP is ON, a selection",
+      "edge you move lands where the",
+      "wave crosses the middle, so a",
+      "cut or a fade does not click.",
+      "OFF puts it on the exact frame."},
+     {"A turns SNAP ON or OFF"}},
     /* SE_SEL_START */
     {"START: start of the selection", "A+←/→ drags it a little,", "A+↑/↓ a lot.",
      {"The buttons below work on the",
@@ -3635,6 +3643,10 @@ inline HelpTopic sample_editor_cell_topic(int row, int column, int slice_method)
         // Rows 3..8 are the selection; the column is which edge.
         case 3: case 4: case 5: case 6: case 7: case 8:
             return (column == 1) ? HelpTopic::SE_SEL_END : HelpTopic::SE_SEL_START;
+
+        // The view tools: FIT SEL, FIT SL, ALL, SNAP, WAVE. SNAP has its own entry; the rest are the screen's.
+        case 9:
+            return column == 3 ? HelpTopic::SE_SNAP : HelpTopic::NONE;
 
         case 10:
             if (column == 0) return HelpTopic::SE_SLICE_METHOD;

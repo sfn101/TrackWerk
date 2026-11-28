@@ -24,6 +24,7 @@ namespace pt::ui {
  */
 void InputDispatcher::reset_editing_context() {
     phraseHistory_.clear();
+    seqHistory_.clear();
     s_.harmony = {};
     phraseArrow_.phraseId = -1;
     phraseRotation_.phraseId = -1;

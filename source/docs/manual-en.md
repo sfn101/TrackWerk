@@ -414,7 +414,7 @@ Works on PHRASE, CHAIN, SONG, and TABLE screens.
 | L + A (in selection) | Cut (copy + clear), exit selection mode |
 | L + A (outside selection) | Paste clipboard at cursor |
 | A + B (in selection) | Delete selection (no clipboard), exit selection mode |
-| L + B + A | Deep-clone the chain or phrase under the cursor into the next free slot |
+| L + B + A | Deep-clone the chain or phrase under the cursor into the next free slot. On PHRASE, the chain row that played the original now plays the copy, which stays on screen for editing |
 | L + R | Leave selection mode (nothing copied) |
 
 **Selection increment:** In selection mode, **A + LEFT/RIGHT** changes the cursor's column by one step on every selected row; **A + UP/DOWN** does the same with the large step.
@@ -544,6 +544,7 @@ A `>` also marks the playing row on the CHAIN and PHRASE screens. It is only dra
 | A + B | Delete (set to --) |
 | B + UP/DOWN | Page up / down (jump 16 rows) |
 | B + LEFT/RIGHT | Switch between SONG and LIVE mode |
+| SELECT + UP / DOWN | Undo / redo the last edits on this screen (up to 24; history kept until you open another song) |
 | START | Play song from current row |
 
 > [!TIP]
@@ -598,7 +599,8 @@ When played, the chain loops from slot 00 after the last filled slot.
 | A + B | Delete slot |
 | B + LEFT/RIGHT | NAV = SONG (default): the nearest filled song cell left / right on the same song row. NAV = POOL: previous / next chain |
 | B + UP/DOWN | NAV = SONG: the nearest filled song row up / down in this track. NAV = POOL: nothing |
-| START | Play current chain |
+| SELECT + UP / DOWN | Undo / redo the last edits on this screen (up to 24; history kept until you open another song) |
+| START | Play the chain from the cursor's row (from the next filled row if that one is empty), then loop it from the top |
 
 > [!TIP]
 > Use **TSP** to play the same phrase at multiple pitches without copying it. One phrase can become a verse, chorus, and bridge by giving it different TSP values across chain slots — `07` = +7 semitones (a perfect fifth up), `0C` = +12 (one octave up).
@@ -636,9 +638,10 @@ Notes are written as pitch + octave: `C-4`, `C#4`, `D-4`, … `G-9`. Range is **
 | A + B | Note: clear it. V: back to `7F`. I: nothing. FX type: clear the command. FX value: `00` |
 | A + B on an empty note | Insert **OFF** — the note sounding on the track is let go |
 | B + LEFT/RIGHT | NAV = SONG (default): the nearest track whose chain has a phrase at this chain row. NAV = POOL: previous / next phrase |
-| B + UP/DOWN | NAV = SONG: the previous / next filled row of the chain. NAV = POOL: nothing |
+| B + UP/DOWN | NAV = SONG: the previous / next filled row of the chain; past its last (first) phrase, on into the next (previous) chain of this track, so a whole track can be walked from PHRASE. NAV = POOL: nothing |
 | L + D-pad | Fill rows from the cell under the cursor — see *Fill* below |
-| START | Play current phrase (loops) |
+| SELECT + UP / DOWN | Undo / redo the last edits of this phrase (up to 24) |
+| START | Play the phrase from the cursor's step, then loop it from the top |
 
 ### Fill
 
@@ -1118,6 +1121,7 @@ By default, instrument N uses table N. Override per-note with the **TBL** phrase
 | A + B | Delete value |
 | B + LEFT/RIGHT | Previous / next table |
 | B + UP/DOWN | Jump 16 tables |
+| SELECT + UP / DOWN | Undo / redo the last edits on this screen (up to 24; history kept until you open another song) |
 | L + B / copy / paste | Selection, copy, paste (same as phrase) |
 
 ---
@@ -3270,7 +3274,7 @@ exports and sample-editor saves keep their own folders.
 | L + A *(outside selection)* | Paste at cursor |
 | A + B *(in selection)* | Delete selection (no clipboard), exit |
 | A + D-pad *(in selection)* | Change the cursor's column on every selected row |
-| L + B + A | Deep-clone the chain / phrase under the cursor |
+| L + B + A | Deep-clone the chain / phrase under the cursor (PHRASE: the chain then plays the copy) |
 | L + D-pad | Fill rows from one cell (PHRASE) |
 | L + R *(in selection)* | Leave selection mode; the copy buffer survives |
 | L + R *(outside selection)* | Clear the copy buffer |

@@ -65,6 +65,30 @@ inline Argb with_alpha(Argb c, float alpha) {
     return (v << 24) | (c & 0x00FFFFFFu);
 }
 
+// ─── Text over the top strip: a soft shade keeps it readable over any visualizer ─────────────────
+// The visual just behind the text is darkened (lightened on a Daylight theme) in three soft layers that
+// fade out at the edges, so the letters stay plain and nothing reads as a box. `ground` is the
+// theme's background.
+inline void text_shade(Canvas& c, int x, int y, int w, int h, Argb ground) {
+    const Argb ink = light_ground(ground) ? 0xFFFFFFFFu : 0xFF000000u;
+    const float alpha[] = {.25f, .30f, .40f};   // outer to inner; they stack to about 70 %
+    for (int i = 0; i < 3; ++i) {
+        const int pad = 8 - i * 3;
+        c.fill_rect(x - pad, y - pad / 2, w + 2 * pad, h + pad, with_alpha(ink, alpha[i]));
+    }
+}
+
+inline void shaded_text(Canvas& c, const std::string& s, int x, int y, Argb color, Argb ground, int spacing,
+                        int scale) {
+    text_shade(c, x, y, Canvas::text_width(s, spacing, scale), 7 * scale, ground);
+    c.draw_text(s, x, y, color, spacing, scale);
+}
+
+inline void shaded_label(Canvas& c, const std::string& s, int x, int y, Argb color, Argb ground, int size = 12) {
+    text_shade(c, x, y, Canvas::label_width(s, size), size + 2, ground);
+    c.draw_label(s, x, y, color, size);
+}
+
 // ─── Reference colours (TrackWerk 1.2) ───────────────────────────────────────────────────────────
 
 // A reference number's own colour: chain numbers on SONG, phrase numbers on CHAIN. The theme's accent

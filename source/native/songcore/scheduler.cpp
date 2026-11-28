@@ -103,7 +103,7 @@ void Sequencer::release_mixer_vol_track(int track) {
     if (track >= 0 && track < 8) mixerVolTracks_ &= ~(1 << track);
 }
 
-void Sequencer::playPhrase(int phraseId, int trackId) {
+void Sequencer::playPhrase(int phraseId, int trackId, int startRow) {
     stop();
     currentProject_ = project_;
     currentPhraseId_ = phraseId;
@@ -115,11 +115,12 @@ void Sequencer::playPhrase(int phraseId, int trackId) {
     int tempo = tempo_in_force(*project_);
     router_.t_play("PHRASE", "id=" + hex2(phraseId), playbackStartFrame_, tempo, sampleRate_);
     nextFrameToSchedule_ = playbackStartFrame_;
-    begin_phrase(phraseId, playbackStartFrame_, playbackTrack_, project_transpose_semitones(*project_), 0);
+    begin_phrase(phraseId, playbackStartFrame_, playbackTrack_, project_transpose_semitones(*project_),
+                 clampi(startRow, 0, PHRASE_ROWS - 1));
     updatePlaybackBuffer();
 }
 
-void Sequencer::playChain(int chainId, int trackId) {
+void Sequencer::playChain(int chainId, int trackId, int startRow) {
     stop();
     currentProject_ = project_;
     currentChainId_ = chainId;
@@ -135,7 +136,8 @@ void Sequencer::playChain(int chainId, int trackId) {
     nextChainRowToSchedule_ = 0;
     chainRowStartFrames_.clear();
     phraseStepStartFrames_.clear();
-    int firstRow = findNextNonEmptyChainRow(0, chain);
+    // From the cursor's row, or the next filled one (wrapping round to the top).
+    int firstRow = findNextNonEmptyChainRow(clampi(startRow, 0, CHAIN_ROWS - 1), chain);
     if (firstRow >= 0) {
         int phraseId = chain_phrase_ref(chain, firstRow);
         int transposeSemitones = chain_transpose_semitones(chain, firstRow);

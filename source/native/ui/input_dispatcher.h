@@ -33,6 +33,7 @@
 #include "ui/modules/modulation.h"
 #include "ui/modules/phrase_editor.h"
 #include "ui/modules/project_editor.h"
+#include "ui/sequence_history.h"
 #include "ui/modules/qwerty_keyboard.h"
 #include "ui/modules/sample_editor.h"
 #include "ui/modules/settings_editor.h"
@@ -508,6 +509,12 @@ class InputDispatcher {
     PhraseRotation phraseRotation_{};
     std::optional<PhraseCheckpoint> phrase_checkpoint() const;
     void record_phrase_edit(const std::optional<PhraseCheckpoint>&);
+
+    // SONG, CHAIN and TABLE's undo (ui/sequence_history.h): a checkpoint before an edit, recorded after.
+    SequenceHistory seqHistory_{};
+    bool sequence_history_context() const;
+    std::optional<SequenceHistory::Parts> sequence_checkpoint() const;
+    void record_sequence_edit(const std::optional<SequenceHistory::Parts>&);
 
     // Where the first A of an A,A landed; it counts only if the cursor did not move.
     bool         hasInsertPos_ = false;

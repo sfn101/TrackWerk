@@ -118,7 +118,9 @@ inline NavResult step_sideways(const NavState& s, int step) {
         return {main_screen_for_column(target), target};
     }
     if (!is_main_row(s.currentScreen)) {
-        const int c = screen_column(s.currentScreen);
+        // ⚠️ The context column, not the screen's own: PERFORM sits in three columns, has none of its own,
+        // and dropped to PHRASE from every one of them.
+        const int c = context_column(s);
         return {main_screen_for_column(c), c};
     }
     return step_along_main_row(s.currentScreen, step);

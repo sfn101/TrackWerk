@@ -760,13 +760,13 @@ void TrackerLayout::draw_status_line(Canvas& c, const AppState& s, int scopeY) c
     if (s.statusMessage.empty()) {
         statusShown_.clear();   // the same message later enters again
         if (s.settings.helpMode != static_cast<int>(HelpMode::OFF)) {
-            c.draw_label("SELECT HELP", SIDE_SPACER + 10, scopeY + 10, s.theme.textParam, 12);
+            shaded_label(c, "SELECT HELP", SIDE_SPACER + 10, scopeY + 10, s.theme.textParam, s.theme.background, 12);
             // A newcomer on an empty song learns that a guided start exists, until it was finished
             // once (firstBeatDone). Never while it runs, never with help switched OFF.
             if (first_beat_invite(s))
-                c.draw_label("NEW HERE?  SELECT, THEN START: FIRST BEAT",
+                shaded_label(c, "NEW HERE?  SELECT, THEN START: FIRST BEAT",
                              SIDE_SPACER + 10 + Canvas::label_width("SELECT HELP", 12) + 18, scopeY + 10,
-                             s.theme.rowCursor, 12);
+                             s.theme.rowCursor, s.theme.background, 12);
         }
         return;
     }
@@ -789,12 +789,12 @@ void TrackerLayout::draw_status_line(Canvas& c, const AppState& s, int scopeY) c
         const int width = Canvas::text_width(text, CHAR_SPACING, FONT_SCALE);
         int dx = s.statusSuccess ? static_cast<int>((1.f - e) * -26.f)
                                  : static_cast<int>(std::sin(p * 18.f) * 5.f * (1.f - p));
-        c.draw_text(text, SIDE_SPACER + 10 + dx, scopeY + 10, with_alpha(color, .25f + .75f * e), CHAR_SPACING, FONT_SCALE);
+        shaded_text(c, text, SIDE_SPACER + 10 + dx, scopeY + 10, with_alpha(color, .25f + .75f * e), s.theme.background, CHAR_SPACING, FONT_SCALE);
         c.fill_rect(SIDE_SPACER + 10, scopeY + 10 + ROW_HEIGHT - 6, static_cast<int>(width * e), 1,
                     with_alpha(color, .7f * (1.f - p)));
         return;
     }
-    c.draw_text(text, SIDE_SPACER + 10, scopeY + 10, color, CHAR_SPACING, FONT_SCALE);
+    shaded_text(c, text, SIDE_SPACER + 10, scopeY + 10, color, s.theme.background, CHAR_SPACING, FONT_SCALE);
 }
 
 // A held on a CHD value: the chord's name and its notes. In a PHRASE, made of this row's note in the
@@ -857,9 +857,9 @@ bool TrackerLayout::draw_chord_hint(Canvas& c, const AppState& s, int scopeY) co
         }
     }
     const int x = SIDE_SPACER + 10, y = scopeY + 10;
-    c.draw_text(Canvas::clip_text(head, STATUS_MAX_CHARS), x, y, s.theme.vizWave, CHAR_SPACING, FONT_SCALE);
-    c.draw_text(Canvas::clip_text(notes, STATUS_MAX_CHARS), x, y + 21, s.theme.textTitle, CHAR_SPACING,
-                FONT_SCALE);
+    shaded_text(c, Canvas::clip_text(head, STATUS_MAX_CHARS), x, y, s.theme.vizWave, s.theme.background, CHAR_SPACING, FONT_SCALE);
+    shaded_text(c, Canvas::clip_text(notes, STATUS_MAX_CHARS), x, y + 21, s.theme.textTitle, s.theme.background, CHAR_SPACING,
+                  FONT_SCALE);
     return true;
 }
 
@@ -873,9 +873,9 @@ void TrackerLayout::draw_selection_clipboard(Canvas& c, const AppState& s, int s
     const int y = scopeY + 10;
 
     if (!sel.empty())
-        c.draw_text(sel, x, y, s.theme.vizWave, CHAR_SPACING, FONT_SCALE);
+        shaded_text(c, sel, x, y, s.theme.vizWave, s.theme.background, CHAR_SPACING, FONT_SCALE);
     if (!clip.empty())
-        c.draw_text(clip, x, sel.empty() ? y : y + 21, s.theme.textTitle, CHAR_SPACING, FONT_SCALE);
+        shaded_text(c, clip, x, sel.empty() ? y : y + 21, s.theme.textTitle, s.theme.background, CHAR_SPACING, FONT_SCALE);
 }
 
 void TrackerLayout::draw_track_rail(Canvas& c, const AppState& s, int x, int y, bool left) const {

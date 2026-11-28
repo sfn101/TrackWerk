@@ -332,9 +332,10 @@ class Sequencer {
     // ── transport starts ──
 
     // Every trace golden relies on `trackId` defaulting to 0.
-    void playPhrase(int phraseId, int trackId = 0);
+    // `startRow`: the first pass begins there (the cursor's row); every later lap from the top.
+    void playPhrase(int phraseId, int trackId = 0, int startRow = 0);
 
-    void playChain(int chainId, int trackId = 0);
+    void playChain(int chainId, int trackId = 0, int startRow = 0);
 
     // `offsetSteps` into the row: each track that far into its own column (a song position).
     void playSong(int startRow = 0, int offsetSteps = 0, bool live = false);

@@ -82,12 +82,15 @@ bool InputDispatcher::route(Gesture g) {
                                   g == Gesture::L_A || g == Gesture::L_UP || g == Gesture::L_DOWN ||
                                   g == Gesture::L_LEFT || g == Gesture::L_RIGHT;
     const auto checkpoint = phraseEdit ? phrase_checkpoint() : std::nullopt;
+    // SONG / CHAIN / TABLE undo takes the same edits, and L+B+A's clones too.
+    const auto sequence = (phraseEdit || (!top && g == Gesture::L_B_A)) ? sequence_checkpoint() : std::nullopt;
     bool handled = top && (this->*top->handle)(g) == GestureResult::TAKEN;
     if (!handled) {
         const ScreenHandler* h = screen();
         handled = h && (this->*h->handle)(g) == GestureResult::TAKEN;
     }
     record_phrase_edit(checkpoint);
+    record_sequence_edit(sequence);
     return handled;
 }
 
